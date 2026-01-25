@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 
 // Routes that require authentication
 const protectedRoutes = [
@@ -16,13 +16,16 @@ const protectedRoutes = [
 // Routes that should redirect to dashboard if already authenticated
 const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
 
-// Public routes (no auth required)
-const publicRoutes = ["/", "/pricing", "/privacy", "/terms"];
-
-export default auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
+export async function proxy(request: NextRequest) {
+  const { nextUrl } = request;
   const pathname = nextUrl.pathname;
+
+  // Get the JWT token to check auth status
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET
+  });
+  const isLoggedIn = !!token;
 
   // Check if the path is a protected route
   const isProtectedRoute = protectedRoutes.some(
@@ -44,7 +47,7 @@ export default auth((req) => {
   // Redirect to dashboard if accessing auth routes while logged in
   if (isAuthRoute && isLoggedIn) {
     // Check if user needs onboarding
-    const onboardingCompleted = req.auth?.user?.onboardingCompleted;
+    const onboardingCompleted = token?.onboardingCompleted;
     if (!onboardingCompleted) {
       return NextResponse.redirect(new URL("/onboarding", nextUrl));
     }
@@ -53,7 +56,7 @@ export default auth((req) => {
 
   // For protected routes, check if onboarding is needed
   if (isProtectedRoute && isLoggedIn) {
-    const onboardingCompleted = req.auth?.user?.onboardingCompleted;
+    const onboardingCompleted = token?.onboardingCompleted;
     if (!onboardingCompleted && pathname !== "/onboarding") {
       return NextResponse.redirect(new URL("/onboarding", nextUrl));
     }
@@ -64,7 +67,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
