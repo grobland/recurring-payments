@@ -26,10 +26,11 @@ This roadmap delivers milestone v1.0 "Get It Running" — configuring all servic
   2. Stripe test mode API keys are set in environment
   3. Resend API key is set in environment
   4. App is deployed to Vercel preview URL and accessible in browser
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
+- [ ] 01-01-PLAN.md — Configure API keys (OpenAI, Stripe, Resend) and verify they work
+- [ ] 01-02-PLAN.md — Deploy to Vercel and verify preview URL is accessible
 
 ### Phase 2: PDF Import Verification
 **Goal**: User can upload a bank statement PDF and see extracted subscriptions in the dashboard
@@ -80,7 +81,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Service Configuration | 0/TBD | Not started | - |
+| 1. Service Configuration | 0/2 | Ready to execute | - |
 | 2. PDF Import Verification | 0/TBD | Not started | - |
 | 3. Core CRUD Verification | 0/TBD | Not started | - |
 | 4. Email Reminders Verification | 0/TBD | Not started | - |
