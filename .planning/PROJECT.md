@@ -8,6 +8,15 @@ A web application for tracking and managing recurring subscriptions. Users can a
 
 Users can see all their subscriptions in one place and never get surprised by a renewal again.
 
+## Current Milestone: v1.0 Get It Running
+
+**Goal:** Configure all service integrations and verify the three core features work end-to-end in a deployed environment.
+
+**Target features:**
+- PDF import with OpenAI GPT-4 Vision
+- Core CRUD (add/edit/delete subscriptions)
+- Email reminders via Resend
+
 ## Requirements
 
 ### Validated
@@ -68,4 +77,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | PDF import as priority | Most unique/interesting feature, proves AI integration works | — Pending |
 
 ---
-*Last updated: 2026-01-25 after initialization*
+*Last updated: 2026-01-26 after milestone v1.0 started*
