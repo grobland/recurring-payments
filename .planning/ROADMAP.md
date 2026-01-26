@@ -10,7 +10,7 @@ This roadmap delivers milestone v1.0 "Get It Running" — configuring all servic
 - Integer phases (1, 2, 3, 4): Planned milestone work
 - Decimal phases (e.g., 2.1): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Service Configuration** - Configure all external service integrations
+- [x] **Phase 1: Service Configuration** - Configure all external service integrations
 - [ ] **Phase 2: PDF Import Verification** - Verify AI-powered bank statement import works
 - [ ] **Phase 3: Core CRUD Verification** - Verify subscription add/edit/delete works
 - [ ] **Phase 4: Email Reminders Verification** - Verify reminder emails are sent
@@ -29,8 +29,8 @@ This roadmap delivers milestone v1.0 "Get It Running" — configuring all servic
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Configure API keys (OpenAI, Stripe, Resend) and verify they work
-- [ ] 01-02-PLAN.md — Deploy to Vercel and verify preview URL is accessible
+- [x] 01-01-PLAN.md — Configure API keys (OpenAI, Stripe, Resend) and verify they work
+- [x] 01-02-PLAN.md — Deploy to Vercel and verify preview URL is accessible
 
 ### Phase 2: PDF Import Verification
 **Goal**: User can upload a bank statement PDF and see extracted subscriptions in the dashboard
@@ -81,7 +81,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Service Configuration | 0/2 | Ready to execute | - |
+| 1. Service Configuration | 2/2 | Complete ✓ | 2026-01-26 |
 | 2. PDF Import Verification | 0/TBD | Not started | - |
 | 3. Core CRUD Verification | 0/TBD | Not started | - |
 | 4. Email Reminders Verification | 0/TBD | Not started | - |

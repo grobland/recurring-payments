@@ -9,10 +9,10 @@ Requirements for milestone v1.0 "Get It Running". Each maps to roadmap phases.
 
 ### Service Configuration
 
-- [ ] **CONF-01**: OpenAI API key configured and working in environment
-- [ ] **CONF-02**: Stripe account created with test mode API keys configured
-- [ ] **CONF-03**: Resend account created with API key configured
-- [ ] **CONF-04**: Vercel project configured and app deployed to preview environment
+- [x] **CONF-01**: OpenAI API key configured and working in environment
+- [x] **CONF-02**: Stripe account created with test mode API keys configured
+- [x] **CONF-03**: Resend account created with API key configured
+- [x] **CONF-04**: Vercel project configured and app deployed to preview environment
 
 ### Feature Verification
 
@@ -55,10 +55,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONF-01 | Phase 1 | Pending |
-| CONF-02 | Phase 1 | Pending |
-| CONF-03 | Phase 1 | Pending |
-| CONF-04 | Phase 1 | Pending |
+| CONF-01 | Phase 1 | Complete |
+| CONF-02 | Phase 1 | Complete |
+| CONF-03 | Phase 1 | Complete |
+| CONF-04 | Phase 1 | Complete |
 | TEST-01 | Phase 2 | Pending |
 | TEST-02 | Phase 3 | Pending |
 | TEST-03 | Phase 3 | Pending |
