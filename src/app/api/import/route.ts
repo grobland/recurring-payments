@@ -5,6 +5,7 @@ import { subscriptions } from "@/lib/db/schema";
 import { eq, isNull } from "drizzle-orm";
 import { parseDocumentForSubscriptions, detectDuplicates } from "@/lib/openai/pdf-parser";
 import { isUserActive } from "@/lib/auth/helpers";
+import OpenAI from "openai";
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -115,6 +116,23 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Import error:", error);
+
+    // Handle specific OpenAI API errors
+    if (error instanceof OpenAI.APIError) {
+      if (error.status === 429) {
+        return NextResponse.json(
+          { error: "Service temporarily busy. Please try again in a moment." },
+          { status: 429 }
+        );
+      }
+      if (error.status === 408 || error.message?.includes('timeout')) {
+        return NextResponse.json(
+          { error: "Processing took too long. Please try with a smaller file." },
+          { status: 408 }
+        );
+      }
+    }
+
     return NextResponse.json(
       { error: "Failed to process documents. Please try again." },
       { status: 500 }
