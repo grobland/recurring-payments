@@ -42,10 +42,11 @@ Plans:
   3. System processes PDF with OpenAI GPT-4 Vision and extracts subscription data
   4. User can see extracted subscriptions listed in the import results
   5. User can confirm import and see subscriptions in dashboard
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md — Add OpenAI timeout config + manual verification with real bank statement
+- [ ] 02-02-PLAN.md — Create E2E test for PDF import flow
 
 ### Phase 3: Core CRUD Verification
 **Goal**: User can manually manage subscriptions (add, edit, delete)
@@ -81,8 +82,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Service Configuration | 2/2 | Complete ✓ | 2026-01-26 |
-| 2. PDF Import Verification | 0/TBD | Not started | - |
+| 1. Service Configuration | 2/2 | Complete | 2026-01-26 |
+| 2. PDF Import Verification | 0/2 | Not started | - |
 | 3. Core CRUD Verification | 0/TBD | Not started | - |
 | 4. Email Reminders Verification | 0/TBD | Not started | - |
 
