@@ -7,19 +7,22 @@ import { parseDocumentForSubscriptions, detectDuplicates } from "@/lib/openai/pd
 import { isUserActive } from "@/lib/auth/helpers";
 import OpenAI from "openai";
 
-// Helper to convert PDF to images using dynamic import
+// Helper to convert PDF to images using unpdf (serverless-compatible)
 async function convertPdfToImages(pdfBuffer: Buffer): Promise<Buffer[]> {
   try {
-    const { pdf } = await import("pdf-to-img");
+    const { getDocumentProxy, renderPageAsImage } = await import("unpdf");
+    const pdf = await getDocumentProxy(new Uint8Array(pdfBuffer));
     const images: Buffer[] = [];
-    const document = await pdf(pdfBuffer, { scale: 2.0 });
-    for await (const page of document) {
-      images.push(page);
+
+    // Render each page as PNG
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const imageData = await renderPageAsImage(pdf, i, { scale: 2.0 });
+      images.push(Buffer.from(imageData));
     }
+
     return images;
   } catch (error) {
     console.error("PDF conversion error:", error);
-    // If pdf-to-img fails, return null to signal we should try direct PDF upload
     throw new Error(`PDF conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
