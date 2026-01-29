@@ -6,6 +6,7 @@ import { eq, isNull } from "drizzle-orm";
 import { parseDocumentForSubscriptions, detectDuplicates } from "@/lib/openai/pdf-parser";
 import { isUserActive } from "@/lib/auth/helpers";
 import OpenAI from "openai";
+import { pdf } from "pdf-to-img";
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -53,29 +54,34 @@ export async function POST(request: Request) {
       }
     }
 
-    // Convert files to base64
+    // Convert files to base64 images (converting PDFs to images)
     const base64Images: string[] = [];
     let totalPages = 0;
 
     for (const file of files) {
       const arrayBuffer = await file.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString("base64");
 
       if (file.type === "application/pdf") {
-        // For PDFs, we'd need to convert to images first
-        // For now, we'll just pass the first page as an image
-        // In production, use a PDF-to-image library like pdf-lib or pdfjs
-        // For MVP, we'll treat the PDF as a single page
-        base64Images.push(base64);
-        totalPages += 1;
+        // Convert PDF pages to PNG images
+        const pdfBuffer = Buffer.from(arrayBuffer);
+        const document = await pdf(pdfBuffer, { scale: 2.0 });
+
+        for await (const page of document) {
+          // page is a Buffer containing PNG data
+          const base64 = page.toString("base64");
+          base64Images.push(base64);
+          totalPages += 1;
+        }
       } else {
+        // Image files - use directly
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
         base64Images.push(base64);
         totalPages += 1;
       }
     }
 
-    // Parse documents using AI
-    const mimeType = files[0].type === "application/pdf" ? "application/pdf" : files[0].type;
+    // Parse documents using AI - always use PNG for converted PDFs
+    const mimeType = "image/png";
     const parseResult = await parseDocumentForSubscriptions(base64Images, mimeType);
 
     // Get existing subscriptions for duplicate detection
