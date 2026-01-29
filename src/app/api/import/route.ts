@@ -3,31 +3,39 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { subscriptions } from "@/lib/db/schema";
 import { eq, isNull } from "drizzle-orm";
-import { parseDocumentForSubscriptions, detectDuplicates } from "@/lib/openai/pdf-parser";
+import { parseDocumentForSubscriptions, parseTextForSubscriptions, detectDuplicates } from "@/lib/openai/pdf-parser";
 import { isUserActive } from "@/lib/auth/helpers";
 import OpenAI from "openai";
 
-// Helper to convert PDF to images using unpdf (serverless-compatible)
-async function convertPdfToImages(pdfBuffer: Buffer): Promise<Buffer[]> {
+// Helper to extract text from PDF using pdfjs-dist (serverless-compatible)
+async function extractTextFromPdf(pdfBuffer: Buffer): Promise<string> {
   try {
-    const { getDocumentProxy, renderPageAsImage } = await import("unpdf");
+    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
-    const pdf = await getDocumentProxy(new Uint8Array(pdfBuffer));
-    const images: Buffer[] = [];
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(pdfBuffer),
+      useSystemFonts: true,
+    });
+    const pdf = await loadingTask.promise;
 
-    // Render each page as PNG, providing canvas import for Node.js
+    let fullText = "";
+
     for (let i = 1; i <= pdf.numPages; i++) {
-      const imageData = await renderPageAsImage(pdf, i, {
-        scale: 2.0,
-        canvasImport: () => import("@napi-rs/canvas"),
-      });
-      images.push(Buffer.from(imageData));
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: unknown) => {
+          const textItem = item as { str?: string };
+          return textItem.str || "";
+        })
+        .join(" ");
+      fullText += pageText + "\n";
     }
 
-    return images;
+    return fullText;
   } catch (error) {
-    console.error("PDF conversion error:", error);
-    throw new Error(`PDF conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("PDF text extraction error:", error);
+    throw new Error(`PDF text extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -77,23 +85,22 @@ export async function POST(request: Request) {
       }
     }
 
-    // Convert files to base64 images (converting PDFs to images)
+    // Process files - extract text from PDFs, use images directly for image files
     const base64Images: string[] = [];
+    let extractedText = "";
     let totalPages = 0;
+    let hasPdf = false;
 
     for (const file of files) {
       const arrayBuffer = await file.arrayBuffer();
 
       if (file.type === "application/pdf") {
-        // Convert PDF pages to PNG images
+        // Extract text from PDF
+        hasPdf = true;
         const pdfBuffer = Buffer.from(arrayBuffer);
-        const pages = await convertPdfToImages(pdfBuffer);
-
-        for (const page of pages) {
-          const base64 = page.toString("base64");
-          base64Images.push(base64);
-          totalPages += 1;
-        }
+        const text = await extractTextFromPdf(pdfBuffer);
+        extractedText += text + "\n";
+        totalPages += 1;
       } else {
         // Image files - use directly
         const base64 = Buffer.from(arrayBuffer).toString("base64");
@@ -102,9 +109,16 @@ export async function POST(request: Request) {
       }
     }
 
-    // Parse documents using AI - always use PNG for converted PDFs
-    const mimeType = "image/png";
-    const parseResult = await parseDocumentForSubscriptions(base64Images, mimeType);
+    // Parse documents using AI
+    let parseResult;
+    if (hasPdf && extractedText.trim()) {
+      // For PDFs, use text-based parsing
+      parseResult = await parseTextForSubscriptions(extractedText);
+    } else {
+      // For images, use vision-based parsing
+      const mimeType = files[0].type;
+      parseResult = await parseDocumentForSubscriptions(base64Images, mimeType);
+    }
 
     // Get existing subscriptions for duplicate detection
     const existingSubscriptions = await db.query.subscriptions.findMany({

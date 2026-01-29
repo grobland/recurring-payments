@@ -17,7 +17,7 @@ export interface ParseResult {
 
 const SYSTEM_PROMPT = `You are an expert at analyzing bank statements and financial documents to identify recurring subscriptions and payments.
 
-Your task is to analyze the provided document image(s) and identify any recurring subscription payments.
+Your task is to analyze the provided document and identify any recurring subscription payments.
 
 For each subscription found, extract:
 1. Name of the service/company
@@ -144,6 +144,81 @@ export async function parseDocumentForSubscriptions(
     };
   } catch (error) {
     console.error("PDF parsing error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Parses extracted text from a PDF to detect recurring subscriptions using GPT-4
+ */
+export async function parseTextForSubscriptions(text: string): Promise<ParseResult> {
+  const startTime = Date.now();
+  const openai = getOpenAIClient();
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT,
+        },
+        {
+          role: "user",
+          content: `Please analyze this bank statement text and identify any recurring subscription payments. Return the results as a JSON array.\n\n--- BANK STATEMENT TEXT ---\n${text}\n--- END OF TEXT ---`,
+        },
+      ],
+      max_tokens: 4096,
+      temperature: 0.1,
+    });
+
+    const content = response.choices[0]?.message?.content;
+
+    if (!content) {
+      return {
+        subscriptions: [],
+        pageCount: 1,
+        processingTime: Date.now() - startTime,
+      };
+    }
+
+    // Parse the JSON response
+    let subscriptions: DetectedSubscription[] = [];
+    try {
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        subscriptions = JSON.parse(jsonMatch[0]);
+      }
+    } catch (parseError) {
+      console.error("Failed to parse AI response:", parseError);
+      console.error("Raw response:", content);
+    }
+
+    // Validate and clean the subscriptions
+    subscriptions = subscriptions
+      .filter((sub) => {
+        return (
+          typeof sub.name === "string" &&
+          typeof sub.amount === "number" &&
+          sub.amount > 0 &&
+          typeof sub.currency === "string" &&
+          (sub.frequency === "monthly" || sub.frequency === "yearly")
+        );
+      })
+      .map((sub) => ({
+        ...sub,
+        name: sub.name.trim(),
+        currency: sub.currency.toUpperCase(),
+        confidence: Math.min(100, Math.max(0, sub.confidence || 50)),
+      }));
+
+    return {
+      subscriptions,
+      pageCount: 1,
+      processingTime: Date.now() - startTime,
+    };
+  } catch (error) {
+    console.error("Text parsing error:", error);
     throw error;
   }
 }
