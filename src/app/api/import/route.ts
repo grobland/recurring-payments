@@ -11,12 +11,16 @@ import OpenAI from "openai";
 async function convertPdfToImages(pdfBuffer: Buffer): Promise<Buffer[]> {
   try {
     const { getDocumentProxy, renderPageAsImage } = await import("unpdf");
+
     const pdf = await getDocumentProxy(new Uint8Array(pdfBuffer));
     const images: Buffer[] = [];
 
-    // Render each page as PNG
+    // Render each page as PNG, providing canvas import for Node.js
     for (let i = 1; i <= pdf.numPages; i++) {
-      const imageData = await renderPageAsImage(pdf, i, { scale: 2.0 });
+      const imageData = await renderPageAsImage(pdf, i, {
+        scale: 2.0,
+        canvasImport: () => import("@napi-rs/canvas"),
+      });
       images.push(Buffer.from(imageData));
     }
 
