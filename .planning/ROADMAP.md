@@ -11,7 +11,7 @@ This roadmap delivers milestone v1.0 "Get It Running" — configuring all servic
 - Decimal phases (e.g., 2.1): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Service Configuration** - Configure all external service integrations
-- [ ] **Phase 2: PDF Import Verification** - Verify AI-powered bank statement import works
+- [x] **Phase 2: PDF Import Verification** - Verify AI-powered bank statement import works
 - [ ] **Phase 3: Core CRUD Verification** - Verify subscription add/edit/delete works
 - [ ] **Phase 4: Email Reminders Verification** - Verify reminder emails are sent
 
@@ -45,8 +45,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Add OpenAI timeout config + manual verification with real bank statement
-- [ ] 02-02-PLAN.md — Create E2E test for PDF import flow
+- [x] 02-01-PLAN.md — Add OpenAI timeout config + manual verification with real bank statement
+- [x] 02-02-PLAN.md — Create E2E test for PDF import flow
 
 ### Phase 3: Core CRUD Verification
 **Goal**: User can manually manage subscriptions (add, edit, delete)
@@ -83,7 +83,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Service Configuration | 2/2 | Complete | 2026-01-26 |
-| 2. PDF Import Verification | 0/2 | Not started | - |
+| 2. PDF Import Verification | 2/2 | Complete | 2026-01-29 |
 | 3. Core CRUD Verification | 0/TBD | Not started | - |
 | 4. Email Reminders Verification | 0/TBD | Not started | - |
 
