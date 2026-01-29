@@ -9,13 +9,19 @@ import OpenAI from "openai";
 
 // Helper to convert PDF to images using dynamic import
 async function convertPdfToImages(pdfBuffer: Buffer): Promise<Buffer[]> {
-  const { pdf } = await import("pdf-to-img");
-  const images: Buffer[] = [];
-  const document = await pdf(pdfBuffer, { scale: 2.0 });
-  for await (const page of document) {
-    images.push(page);
+  try {
+    const { pdf } = await import("pdf-to-img");
+    const images: Buffer[] = [];
+    const document = await pdf(pdfBuffer, { scale: 2.0 });
+    for await (const page of document) {
+      images.push(page);
+    }
+    return images;
+  } catch (error) {
+    console.error("PDF conversion error:", error);
+    // If pdf-to-img fails, return null to signal we should try direct PDF upload
+    throw new Error(`PDF conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-  return images;
 }
 
 // Maximum file size: 10MB
@@ -148,8 +154,10 @@ export async function POST(request: Request) {
       }
     }
 
+    // Return more specific error message for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Failed to process documents. Please try again." },
+      { error: `Failed to process documents: ${errorMessage}` },
       { status: 500 }
     );
   }
