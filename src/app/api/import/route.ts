@@ -6,7 +6,17 @@ import { eq, isNull } from "drizzle-orm";
 import { parseDocumentForSubscriptions, detectDuplicates } from "@/lib/openai/pdf-parser";
 import { isUserActive } from "@/lib/auth/helpers";
 import OpenAI from "openai";
-import { pdf } from "pdf-to-img";
+
+// Helper to convert PDF to images using dynamic import
+async function convertPdfToImages(pdfBuffer: Buffer): Promise<Buffer[]> {
+  const { pdf } = await import("pdf-to-img");
+  const images: Buffer[] = [];
+  const document = await pdf(pdfBuffer, { scale: 2.0 });
+  for await (const page of document) {
+    images.push(page);
+  }
+  return images;
+}
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -64,10 +74,9 @@ export async function POST(request: Request) {
       if (file.type === "application/pdf") {
         // Convert PDF pages to PNG images
         const pdfBuffer = Buffer.from(arrayBuffer);
-        const document = await pdf(pdfBuffer, { scale: 2.0 });
+        const pages = await convertPdfToImages(pdfBuffer);
 
-        for await (const page of document) {
-          // page is a Buffer containing PNG data
+        for (const page of pages) {
           const base64 = page.toString("base64");
           base64Images.push(base64);
           totalPages += 1;
