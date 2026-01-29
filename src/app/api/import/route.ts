@@ -7,36 +7,46 @@ import { parseDocumentForSubscriptions, parseTextForSubscriptions, detectDuplica
 import { isUserActive } from "@/lib/auth/helpers";
 import OpenAI from "openai";
 
-// Helper to extract text from PDF using pdfjs-dist (serverless-compatible)
+// Helper to extract text from PDF using pdf2json (serverless-compatible)
 async function extractTextFromPdf(pdfBuffer: Buffer): Promise<string> {
-  try {
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  return new Promise((resolve, reject) => {
+    try {
+      // Dynamic import for pdf2json
+      import("pdf2json").then(({ default: PDFParser }) => {
+        const pdfParser = new PDFParser();
 
-    const loadingTask = pdfjsLib.getDocument({
-      data: new Uint8Array(pdfBuffer),
-      useSystemFonts: true,
-    });
-    const pdf = await loadingTask.promise;
+        pdfParser.on("pdfParser_dataError", (errData: unknown) => {
+          const error = errData as { parserError?: Error } | Error;
+          const message = 'parserError' in error ? error.parserError?.message : (error as Error).message;
+          console.error("PDF parsing error:", message);
+          reject(new Error(`PDF text extraction failed: ${message || 'Unknown error'}`));
+        });
 
-    let fullText = "";
+        pdfParser.on("pdfParser_dataReady", (pdfData: { Pages: Array<{ Texts: Array<{ R: Array<{ T: string }> }> }> }) => {
+          try {
+            // Extract text from all pages
+            let fullText = "";
+            for (const page of pdfData.Pages) {
+              for (const textItem of page.Texts) {
+                for (const r of textItem.R) {
+                  fullText += decodeURIComponent(r.T) + " ";
+                }
+              }
+              fullText += "\n";
+            }
+            resolve(fullText.trim());
+          } catch (error) {
+            reject(new Error(`PDF text extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
+          }
+        });
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: unknown) => {
-          const textItem = item as { str?: string };
-          return textItem.str || "";
-        })
-        .join(" ");
-      fullText += pageText + "\n";
+        pdfParser.parseBuffer(pdfBuffer);
+      }).catch(reject);
+    } catch (error) {
+      console.error("PDF text extraction error:", error);
+      reject(new Error(`PDF text extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
     }
-
-    return fullText;
-  } catch (error) {
-    console.error("PDF text extraction error:", error);
-    throw new Error(`PDF text extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
+  });
 }
 
 // Maximum file size: 10MB
