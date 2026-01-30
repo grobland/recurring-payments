@@ -71,10 +71,10 @@ Plans:
   1. System can identify subscriptions with upcoming renewals
   2. Email reminder is sent via Resend to user's email address
   3. User receives email with subscription renewal details
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md — Create E2E test for email reminder trigger and verification
 
 ## Progress
 
@@ -86,7 +86,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Service Configuration | 2/2 | Complete | 2026-01-26 |
 | 2. PDF Import Verification | 2/2 | Complete | 2026-01-29 |
 | 3. Core CRUD Verification | 2/2 | Complete | 2026-01-30 |
-| 4. Email Reminders Verification | 0/TBD | Not started | - |
+| 4. Email Reminders Verification | 0/1 | Planned | - |
 
 ---
 *Roadmap created: 2026-01-26*
