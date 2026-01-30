@@ -20,7 +20,7 @@ Requirements for milestone v1.0 "Get It Running". Each maps to roadmap phases.
 - [x] **TEST-02**: User can manually add a new subscription with all fields
 - [x] **TEST-03**: User can edit an existing subscription
 - [x] **TEST-04**: User can delete a subscription
-- [ ] **TEST-05**: Email reminder is sent when triggered (manual or cron)
+- [x] **TEST-05**: Email reminder is sent when triggered (manual or cron)
 
 ## Future Requirements
 
@@ -63,7 +63,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TEST-02 | Phase 3 | Complete |
 | TEST-03 | Phase 3 | Complete |
 | TEST-04 | Phase 3 | Complete |
-| TEST-05 | Phase 4 | Pending |
+| TEST-05 | Phase 4 | Complete |
 
 **Coverage:**
 - v1.0 requirements: 9 total
@@ -72,4 +72,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-26*
-*Last updated: 2026-01-26 after roadmap creation*
+*Last updated: 2026-01-30 after Phase 4 completion*
