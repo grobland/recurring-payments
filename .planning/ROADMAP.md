@@ -57,10 +57,11 @@ Plans:
   2. User can view the newly added subscription in the dashboard
   3. User can edit an existing subscription and see changes reflected
   4. User can delete a subscription and see it removed from the dashboard
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md — Set up Playwright authentication for E2E tests
+- [ ] 03-02-PLAN.md — Create CRUD E2E tests for subscriptions
 
 ### Phase 4: Email Reminders Verification
 **Goal**: Email reminders are sent when subscriptions are due for renewal
@@ -84,7 +85,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Service Configuration | 2/2 | Complete | 2026-01-26 |
 | 2. PDF Import Verification | 2/2 | Complete | 2026-01-29 |
-| 3. Core CRUD Verification | 0/TBD | Not started | - |
+| 3. Core CRUD Verification | 0/2 | Not started | - |
 | 4. Email Reminders Verification | 0/TBD | Not started | - |
 
 ---
