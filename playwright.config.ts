@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const authFile = "playwright/.auth/user.json";
+
 export default defineConfig({
-  testDir: "./tests/e2e",
+  testDir: "./tests",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -13,21 +15,47 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
+    // Setup project - runs auth.setup.ts to authenticate once
+    {
+      name: "setup",
+      testMatch: "**/auth.setup.ts",
+    },
+    // Browser projects depend on setup and use saved auth state
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: authFile,
+      },
+      dependencies: ["setup"],
+      testMatch: "**/*.spec.ts",
     },
     {
       name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
+      use: {
+        ...devices["Desktop Firefox"],
+        storageState: authFile,
+      },
+      dependencies: ["setup"],
+      testMatch: "**/*.spec.ts",
     },
     {
       name: "webkit",
-      use: { ...devices["Desktop Safari"] },
+      use: {
+        ...devices["Desktop Safari"],
+        storageState: authFile,
+      },
+      dependencies: ["setup"],
+      testMatch: "**/*.spec.ts",
     },
     {
       name: "Mobile Chrome",
-      use: { ...devices["Pixel 5"] },
+      use: {
+        ...devices["Pixel 5"],
+        storageState: authFile,
+      },
+      dependencies: ["setup"],
+      testMatch: "**/*.spec.ts",
     },
   ],
   webServer: {
