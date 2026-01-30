@@ -13,7 +13,7 @@ This roadmap delivers milestone v1.0 "Get It Running" — configuring all servic
 - [x] **Phase 1: Service Configuration** - Configure all external service integrations
 - [x] **Phase 2: PDF Import Verification** - Verify AI-powered bank statement import works
 - [x] **Phase 3: Core CRUD Verification** - Verify subscription add/edit/delete works
-- [ ] **Phase 4: Email Reminders Verification** - Verify reminder emails are sent
+- [x] **Phase 4: Email Reminders Verification** - Verify reminder emails are sent
 
 ## Phase Details
 
@@ -74,7 +74,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04-01-PLAN.md — Create E2E test for email reminder trigger and verification
+- [x] 04-01-PLAN.md — Create E2E test for email reminder trigger and verification
 
 ## Progress
 
@@ -86,7 +86,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Service Configuration | 2/2 | Complete | 2026-01-26 |
 | 2. PDF Import Verification | 2/2 | Complete | 2026-01-29 |
 | 3. Core CRUD Verification | 2/2 | Complete | 2026-01-30 |
-| 4. Email Reminders Verification | 0/1 | Planned | - |
+| 4. Email Reminders Verification | 1/1 | Complete | 2026-01-30 |
+
+**MILESTONE v1.0 "Get It Running" - COMPLETE**
 
 ---
 *Roadmap created: 2026-01-26*
