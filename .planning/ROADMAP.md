@@ -12,7 +12,7 @@ This roadmap delivers milestone v1.0 "Get It Running" — configuring all servic
 
 - [x] **Phase 1: Service Configuration** - Configure all external service integrations
 - [x] **Phase 2: PDF Import Verification** - Verify AI-powered bank statement import works
-- [ ] **Phase 3: Core CRUD Verification** - Verify subscription add/edit/delete works
+- [x] **Phase 3: Core CRUD Verification** - Verify subscription add/edit/delete works
 - [ ] **Phase 4: Email Reminders Verification** - Verify reminder emails are sent
 
 ## Phase Details
@@ -60,8 +60,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Set up Playwright authentication for E2E tests
-- [ ] 03-02-PLAN.md — Create CRUD E2E tests for subscriptions
+- [x] 03-01-PLAN.md — Set up Playwright authentication for E2E tests
+- [x] 03-02-PLAN.md — Create CRUD E2E tests for subscriptions
 
 ### Phase 4: Email Reminders Verification
 **Goal**: Email reminders are sent when subscriptions are due for renewal
@@ -85,7 +85,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Service Configuration | 2/2 | Complete | 2026-01-26 |
 | 2. PDF Import Verification | 2/2 | Complete | 2026-01-29 |
-| 3. Core CRUD Verification | 0/2 | Not started | - |
+| 3. Core CRUD Verification | 2/2 | Complete | 2026-01-30 |
 | 4. Email Reminders Verification | 0/TBD | Not started | - |
 
 ---

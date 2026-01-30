@@ -16,10 +16,10 @@ Requirements for milestone v1.0 "Get It Running". Each maps to roadmap phases.
 
 ### Feature Verification
 
-- [ ] **TEST-01**: User can upload a bank statement PDF and see extracted subscriptions
-- [ ] **TEST-02**: User can manually add a new subscription with all fields
-- [ ] **TEST-03**: User can edit an existing subscription
-- [ ] **TEST-04**: User can delete a subscription
+- [x] **TEST-01**: User can upload a bank statement PDF and see extracted subscriptions
+- [x] **TEST-02**: User can manually add a new subscription with all fields
+- [x] **TEST-03**: User can edit an existing subscription
+- [x] **TEST-04**: User can delete a subscription
 - [ ] **TEST-05**: Email reminder is sent when triggered (manual or cron)
 
 ## Future Requirements
@@ -59,10 +59,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONF-02 | Phase 1 | Complete |
 | CONF-03 | Phase 1 | Complete |
 | CONF-04 | Phase 1 | Complete |
-| TEST-01 | Phase 2 | Pending |
-| TEST-02 | Phase 3 | Pending |
-| TEST-03 | Phase 3 | Pending |
-| TEST-04 | Phase 3 | Pending |
+| TEST-01 | Phase 2 | Complete |
+| TEST-02 | Phase 3 | Complete |
+| TEST-03 | Phase 3 | Complete |
+| TEST-04 | Phase 3 | Complete |
 | TEST-05 | Phase 4 | Pending |
 
 **Coverage:**
