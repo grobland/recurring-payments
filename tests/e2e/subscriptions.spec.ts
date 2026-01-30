@@ -15,24 +15,21 @@ test.describe("Subscription CRUD", () => {
     await page.getByLabel("Name").fill(uniqueName);
     await page.getByLabel("Amount").fill("15.99");
 
-    // Select Currency (USD is default, but explicitly select it)
-    await page.getByRole("combobox", { name: "Currency" }).click();
-    await page.getByRole("option", { name: /USD/ }).click();
+    // Currency defaults to USD and frequency defaults to monthly, so no need to change them
 
-    // Select Frequency
-    await page.getByRole("combobox", { name: "Frequency" }).click();
-    await page.getByRole("option", { name: "Monthly" }).click();
-
-    // Select Next Renewal Date (pick tomorrow's date)
+    // Select Next Renewal Date (pick a future date)
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Click the date picker button
-    await page.getByRole("button", { name: "Pick a date" }).first().click();
+    // Click the date picker button (the button with "Pick a date" text or formatted date)
+    // Use more specific locator for Next Renewal Date popover trigger
+    const datePickerButton = page.locator('button:has-text("Pick a date")').first();
+    await datePickerButton.click();
 
     // Wait for calendar to appear and select tomorrow
     // The calendar shows current month by default
-    await page.getByRole("button", { name: tomorrow.getDate().toString(), exact: true }).click();
+    // Click on the calendar date button
+    await page.getByRole("button", { name: new RegExp(`^${tomorrow.getDate()}$`) }).click();
 
     // Wait for the API response before submitting
     const responsePromise = page.waitForResponse((response) =>
@@ -103,8 +100,9 @@ test.describe("Subscription CRUD", () => {
     // Select date
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    await page.getByRole("button", { name: "Pick a date" }).first().click();
-    await page.getByRole("button", { name: tomorrow.getDate().toString(), exact: true }).click();
+    const datePickerButton = page.locator('button:has-text("Pick a date")').first();
+    await datePickerButton.click();
+    await page.getByRole("button", { name: new RegExp(`^${tomorrow.getDate()}$`) }).click();
 
     const createResponsePromise = page.waitForResponse((response) =>
       response.url().includes("/api/subscriptions") && response.request().method() === "POST"
@@ -117,7 +115,8 @@ test.describe("Subscription CRUD", () => {
     // Now edit the subscription
     // Find the subscription row and click the actions menu
     const subscriptionRow = page.locator("tr", { has: page.getByText(uniqueName) });
-    await subscriptionRow.getByRole("button", { name: "" }).click(); // MoreHorizontal button
+    // Click the MoreHorizontal actions button
+    await subscriptionRow.locator('button[role="button"]').last().click();
 
     // Click Edit from the dropdown
     await page.getByRole("menuitem", { name: "Edit" }).click();
@@ -167,8 +166,9 @@ test.describe("Subscription CRUD", () => {
     // Select date
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    await page.getByRole("button", { name: "Pick a date" }).first().click();
-    await page.getByRole("button", { name: tomorrow.getDate().toString(), exact: true }).click();
+    const datePickerButton = page.locator('button:has-text("Pick a date")').first();
+    await datePickerButton.click();
+    await page.getByRole("button", { name: new RegExp(`^${tomorrow.getDate()}$`) }).click();
 
     const createResponsePromise = page.waitForResponse((response) =>
       response.url().includes("/api/subscriptions") && response.request().method() === "POST"
@@ -214,8 +214,9 @@ test.describe("Subscription CRUD", () => {
     // Select date
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    await page.getByRole("button", { name: "Pick a date" }).first().click();
-    await page.getByRole("button", { name: tomorrow.getDate().toString(), exact: true }).click();
+    const datePickerButton = page.locator('button:has-text("Pick a date")').first();
+    await datePickerButton.click();
+    await page.getByRole("button", { name: new RegExp(`^${tomorrow.getDate()}$`) }).click();
 
     const responsePromise = page.waitForResponse((response) =>
       response.url().includes("/api/subscriptions") && response.request().method() === "POST"
