@@ -81,7 +81,7 @@ Plans:
 - Integer phases (5, 6, 7, 8): Planned milestone work
 - Decimal phases (e.g., 5.1): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 5: Category Management** - Fix duplicates bug and add full CRUD for categories
+- [x] **Phase 5: Category Management** - Fix duplicates bug and add full CRUD for categories
 - [ ] **Phase 6: Statement Source Tracking** - Track and reuse bank/credit card names
 - [ ] **Phase 7: Smart Import UX** - Show all detected items with confidence-based selection
 - [ ] **Phase 8: Renewal Date Intelligence** - Calculate renewal dates from transaction dates
@@ -101,9 +101,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Fix duplicate validation bug in POST /api/categories
-- [ ] 05-02-PLAN.md — Create CategoryCombobox component and integrate into subscription form
-- [ ] 05-03-PLAN.md — Build category CRUD UI (form, delete dialog, manager)
+- [x] 05-01-PLAN.md — Fix duplicate validation bug in POST /api/categories
+- [x] 05-02-PLAN.md — Create CategoryCombobox component and integrate into subscription form
+- [x] 05-03-PLAN.md — Build category CRUD UI (form, delete dialog, manager)
 
 ### Phase 6: Statement Source Tracking
 **Goal**: Users can track which bank or credit card each statement came from
@@ -159,7 +159,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 2. PDF Import Verification | v1.0 | 2/2 | Complete | 2026-01-29 |
 | 3. Core CRUD Verification | v1.0 | 2/2 | Complete | 2026-01-30 |
 | 4. Email Reminders Verification | v1.0 | 1/1 | Complete | 2026-01-30 |
-| 5. Category Management | v1.1 | 0/3 | Ready | - |
+| 5. Category Management | v1.1 | 3/3 | Complete | 2026-01-31 |
 | 6. Statement Source Tracking | v1.1 | 0/TBD | Not started | - |
 | 7. Smart Import UX | v1.1 | 0/TBD | Not started | - |
 | 8. Renewal Date Intelligence | v1.1 | 0/TBD | Not started | - |

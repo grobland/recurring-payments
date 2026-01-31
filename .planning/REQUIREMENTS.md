@@ -31,11 +31,11 @@ Requirements for milestone v1.1 "Import Improvements". Each maps to roadmap phas
 
 ### Category Management
 
-- [ ] **CAT-01**: Category dropdown shows no duplicates (bug fix)
-- [ ] **CAT-02**: User can create a new category with name, icon, and color
-- [ ] **CAT-03**: User can edit an existing category
-- [ ] **CAT-04**: User can delete a category (subscriptions become uncategorized)
-- [ ] **CAT-05**: Category dropdown is searchable (Combobox pattern)
+- [x] **CAT-01**: Category dropdown shows no duplicates (bug fix)
+- [x] **CAT-02**: User can create a new category with name, icon, and color
+- [x] **CAT-03**: User can edit an existing category
+- [x] **CAT-04**: User can delete a category (subscriptions become uncategorized)
+- [x] **CAT-05**: Category dropdown is searchable (Combobox pattern)
 
 ## Future Requirements
 
@@ -89,11 +89,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CAT-01 | Phase 5 | Pending |
-| CAT-02 | Phase 5 | Pending |
-| CAT-03 | Phase 5 | Pending |
-| CAT-04 | Phase 5 | Pending |
-| CAT-05 | Phase 5 | Pending |
+| CAT-01 | Phase 5 | Complete |
+| CAT-02 | Phase 5 | Complete |
+| CAT-03 | Phase 5 | Complete |
+| CAT-04 | Phase 5 | Complete |
+| CAT-05 | Phase 5 | Complete |
 | SOURCE-01 | Phase 6 | Pending |
 | SOURCE-02 | Phase 6 | Pending |
 | SOURCE-03 | Phase 6 | Pending |

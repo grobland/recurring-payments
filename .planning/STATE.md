@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-31)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Phase 5 - Category Management
+**Current focus:** Phase 6 - Statement Source Tracking
 
 ## Current Position
 
-Phase: 5 of 8 (Category Management)
-Plan: 3 of 3 (complete)
-Status: Phase complete
-Last activity: 2026-01-31 — Completed 05-03-PLAN.md (Category CRUD UI)
+Phase: 6 of 8 (Statement Source Tracking)
+Plan: —
+Status: Ready to plan
+Last activity: 2026-01-31 — Phase 5 complete (Category Management verified)
 
-Progress: [████████░░] 50% (v1.0 complete, v1.1 in progress - 3 plans done)
+Progress: [████████░░] 56% (v1.0 complete, v1.1: 1/4 phases done)
 
 ## Performance Metrics
 
@@ -65,6 +65,6 @@ None - fresh milestone start.
 ## Session Continuity
 
 Last session: 2026-01-31
-Stopped at: Completed 05-03-PLAN.md (Category CRUD UI)
+Stopped at: Phase 5 complete, verified
 Resume file: None
-Next: Plan Phase 6 (Statement Sources) via /gsd:plan-phase 6
+Next: Plan Phase 6 (Statement Source Tracking) via /gsd:discuss-phase 6
