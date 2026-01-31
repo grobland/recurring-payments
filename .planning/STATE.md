@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-31)
 ## Current Position
 
 Phase: 5 of 8 (Category Management)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-01-31 — v1.1 roadmap created with 4 phases
+Plan: 1 of 1 (complete)
+Status: Phase complete
+Last activity: 2026-01-31 — Completed 05-01-PLAN.md (Category Duplicate Bug Fix)
 
-Progress: [████████░░] 50% (v1.0 complete, v1.1 starting)
+Progress: [████████░░] 50% (v1.0 complete, v1.1 in progress - 1 plan done)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████████░░] 50% (v1.0 complete, v1.1 starting)
 - Total execution time: ~57 min
 
 **Current Milestone (v1.1):**
-- Total plans completed: 0
-- Average duration: TBD
-- Total execution time: 0 min
+- Total plans completed: 1
+- Average duration: ~3 min
+- Total execution time: 3 min
 
 *Updated after each plan completion*
 
@@ -39,6 +39,7 @@ Recent decisions affecting current work:
 
 | When | Decision | Rationale | Impact |
 |------|----------|-----------|--------|
+| 05-01 | Use query-level validation instead of post-query ownership check | Original code queried any category then checked ownership in JS - incorrect isolation | Proper duplicate prevention with user isolation |
 | v1.1 | Category Management first | Fix blocking duplicate bug before other features | Phase 5 independent of other phases |
 | v1.1 | Statement Sources before Smart Import | Schema foundation needed before AI enhancements | Phase 6 → Phase 7 dependency |
 | v1.1 | Renewal Date last | Builds on AI prompt improvements from Smart Import | Phase 7 → Phase 8 dependency |
@@ -54,13 +55,13 @@ None - fresh milestone start.
 - Current default (noreply@example.com) is rejected by Resend
 
 **From v1.1 planning:**
-- Category duplicate bug must be fixed BEFORE enabling category creation (Phase 5 priority)
+- ~~Category duplicate bug must be fixed BEFORE enabling category creation (Phase 5 priority)~~ ✓ Fixed in 05-01
 - Statement source schema migration needs multi-step deployment strategy (Phase 6)
 - AI confidence threshold changes affect user trust - requires careful UX design (Phase 7)
 
 ## Session Continuity
 
 Last session: 2026-01-31
-Stopped at: v1.1 roadmap created - 4 phases (5-8) mapped to 18 requirements
+Stopped at: Completed 05-01-PLAN.md (Category Duplicate Bug Fix)
 Resume file: None
-Next: Plan Phase 5 (Category Management) via /gsd:plan-phase 5
+Next: Plan Phase 6 (Statement Sources) via /gsd:plan-phase 6
