@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-31)
 ## Current Position
 
 Phase: 5 of 8 (Category Management)
-Plan: 1 of 1 (complete)
+Plan: 2 of 2 (complete)
 Status: Phase complete
-Last activity: 2026-01-31 — Completed 05-01-PLAN.md (Category Duplicate Bug Fix)
+Last activity: 2026-01-31 — Completed 05-02-PLAN.md (Searchable Category Selector)
 
-Progress: [████████░░] 50% (v1.0 complete, v1.1 in progress - 1 plan done)
+Progress: [████████░░] 50% (v1.0 complete, v1.1 in progress - 2 plans done)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████████░░] 50% (v1.0 complete, v1.1 in progress 
 - Total execution time: ~57 min
 
 **Current Milestone (v1.1):**
-- Total plans completed: 1
-- Average duration: ~3 min
-- Total execution time: 3 min
+- Total plans completed: 2
+- Average duration: ~5 min
+- Total execution time: 9 min
 
 *Updated after each plan completion*
 
@@ -39,6 +39,7 @@ Recent decisions affecting current work:
 
 | When | Decision | Rationale | Impact |
 |------|----------|-----------|--------|
+| 05-02 | Use shadcn Command/Popover for searchable category dropdown | Better UX than standard Select, provides built-in search filtering and keyboard navigation | Reusable combobox pattern for future searchable dropdowns |
 | 05-01 | Use query-level validation instead of post-query ownership check | Original code queried any category then checked ownership in JS - incorrect isolation | Proper duplicate prevention with user isolation |
 | v1.1 | Category Management first | Fix blocking duplicate bug before other features | Phase 5 independent of other phases |
 | v1.1 | Statement Sources before Smart Import | Schema foundation needed before AI enhancements | Phase 6 → Phase 7 dependency |
@@ -62,6 +63,6 @@ None - fresh milestone start.
 ## Session Continuity
 
 Last session: 2026-01-31
-Stopped at: Completed 05-01-PLAN.md (Category Duplicate Bug Fix)
+Stopped at: Completed 05-02-PLAN.md (Searchable Category Selector)
 Resume file: None
 Next: Plan Phase 6 (Statement Sources) via /gsd:plan-phase 6
