@@ -98,10 +98,12 @@ Plans:
   3. User can edit an existing category and see changes reflected immediately
   4. User can delete a category and affected subscriptions become uncategorized
   5. Category dropdown supports search/filter for finding categories quickly
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (planned during phase planning)
+- [ ] 05-01-PLAN.md — Fix duplicate validation bug in POST /api/categories
+- [ ] 05-02-PLAN.md — Create CategoryCombobox component and integrate into subscription form
+- [ ] 05-03-PLAN.md — Build category CRUD UI (form, delete dialog, manager)
 
 ### Phase 6: Statement Source Tracking
 **Goal**: Users can track which bank or credit card each statement came from
@@ -157,7 +159,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 2. PDF Import Verification | v1.0 | 2/2 | Complete | 2026-01-29 |
 | 3. Core CRUD Verification | v1.0 | 2/2 | Complete | 2026-01-30 |
 | 4. Email Reminders Verification | v1.0 | 1/1 | Complete | 2026-01-30 |
-| 5. Category Management | v1.1 | 0/TBD | Not started | - |
+| 5. Category Management | v1.1 | 0/3 | Ready | - |
 | 6. Statement Source Tracking | v1.1 | 0/TBD | Not started | - |
 | 7. Smart Import UX | v1.1 | 0/TBD | Not started | - |
 | 8. Renewal Date Intelligence | v1.1 | 0/TBD | Not started | - |
