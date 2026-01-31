@@ -1,21 +1,14 @@
 # Roadmap: Subscription Manager
 
-## Overview
+## Milestones
 
-This roadmap delivers milestone v1.0 "Get It Running" — configuring all service integrations and verifying that PDF import, subscription CRUD, and email reminders work end-to-end. The codebase is feature-complete but untested with real services. We start by configuring all external services (OpenAI, Stripe, Resend, Vercel), then verify each core feature in priority order.
+- ✅ **v1.0 Get It Running** - Phases 1-4 (shipped 2026-01-30)
+- 🚧 **v1.1 Import Improvements** - Phases 5-8 (in progress)
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3, 4): Planned milestone work
-- Decimal phases (e.g., 2.1): Urgent insertions (marked with INSERTED)
-
-- [x] **Phase 1: Service Configuration** - Configure all external service integrations
-- [x] **Phase 2: PDF Import Verification** - Verify AI-powered bank statement import works
-- [x] **Phase 3: Core CRUD Verification** - Verify subscription add/edit/delete works
-- [x] **Phase 4: Email Reminders Verification** - Verify reminder emails are sent
-
-## Phase Details
+<details>
+<summary>✅ v1.0 Get It Running (Phases 1-4) - SHIPPED 2026-01-30</summary>
 
 ### Phase 1: Service Configuration
 **Goal**: All external services are configured and the app is deployed to a preview environment
@@ -76,20 +69,99 @@ Plans:
 Plans:
 - [x] 04-01-PLAN.md — Create E2E test for email reminder trigger and verification
 
+</details>
+
+---
+
+### 🚧 v1.1 Import Improvements (In Progress)
+
+**Milestone Goal:** Improve PDF import accuracy and user control, fix data quality issues discovered during testing.
+
+**Phase Numbering:**
+- Integer phases (5, 6, 7, 8): Planned milestone work
+- Decimal phases (e.g., 5.1): Urgent insertions (marked with INSERTED)
+
+- [ ] **Phase 5: Category Management** - Fix duplicates bug and add full CRUD for categories
+- [ ] **Phase 6: Statement Source Tracking** - Track and reuse bank/credit card names
+- [ ] **Phase 7: Smart Import UX** - Show all detected items with confidence-based selection
+- [ ] **Phase 8: Renewal Date Intelligence** - Calculate renewal dates from transaction dates
+
+## Phase Details
+
+### Phase 5: Category Management
+**Goal**: Users can manage categories without duplicates and with full CRUD operations
+**Depends on**: Nothing (first phase of v1.1, independent of other phases)
+**Requirements**: CAT-01, CAT-02, CAT-03, CAT-04, CAT-05
+**Success Criteria** (what must be TRUE):
+  1. Category dropdown shows no duplicate entries when editing subscriptions
+  2. User can create a new category with custom name, icon, and color
+  3. User can edit an existing category and see changes reflected immediately
+  4. User can delete a category and affected subscriptions become uncategorized
+  5. Category dropdown supports search/filter for finding categories quickly
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during phase planning)
+
+### Phase 6: Statement Source Tracking
+**Goal**: Users can track which bank or credit card each statement came from
+**Depends on**: Phase 5 (independent work, but sequenced for organized delivery)
+**Requirements**: SOURCE-01, SOURCE-02, SOURCE-03, SOURCE-04
+**Success Criteria** (what must be TRUE):
+  1. User can enter bank/credit card name when importing a PDF statement
+  2. Bank/card name field shows autocomplete suggestions from previous imports
+  3. Subscription detail page displays which statement source it was imported from
+  4. Import audit records persist the statement source for historical tracking
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during phase planning)
+
+### Phase 7: Smart Import UX
+**Goal**: Users see all detected statement items and can choose which ones to import
+**Depends on**: Phase 6 (builds on statement source tracking foundation)
+**Requirements**: IMPORT-01, IMPORT-02, IMPORT-03, IMPORT-04, IMPORT-05, IMPORT-06
+**Success Criteria** (what must be TRUE):
+  1. User sees complete list of all items detected from PDF with confidence scores (0-100)
+  2. Items display visual confidence indicators (green for high, yellow for medium, red for low confidence)
+  3. User can select/deselect individual items via checkboxes before importing
+  4. High-confidence items (70%+) are automatically pre-selected but user can override
+  5. User can click "Select all high confidence" button to reset to default selections
+  6. System persists raw extraction data for each import for future audit and reprocessing
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during phase planning)
+
+### Phase 8: Renewal Date Intelligence
+**Goal**: Renewal dates are calculated from actual transaction dates on statements
+**Depends on**: Phase 7 (builds on AI extraction enhancements)
+**Requirements**: RENEW-01, RENEW-02, RENEW-03
+**Success Criteria** (what must be TRUE):
+  1. System extracts transaction date from statement text using AI analysis
+  2. Next renewal date is calculated from the statement transaction date (not import date)
+  3. User can review and manually override the calculated renewal date during import if needed
+**Plans**: TBD
+
+Plans:
+- [ ] TBD (planned during phase planning)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
+Phases execute in numeric order: 5 → 6 → 7 → 8
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Service Configuration | 2/2 | Complete | 2026-01-26 |
-| 2. PDF Import Verification | 2/2 | Complete | 2026-01-29 |
-| 3. Core CRUD Verification | 2/2 | Complete | 2026-01-30 |
-| 4. Email Reminders Verification | 1/1 | Complete | 2026-01-30 |
-
-**MILESTONE v1.0 "Get It Running" - COMPLETE**
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Service Configuration | v1.0 | 2/2 | Complete | 2026-01-26 |
+| 2. PDF Import Verification | v1.0 | 2/2 | Complete | 2026-01-29 |
+| 3. Core CRUD Verification | v1.0 | 2/2 | Complete | 2026-01-30 |
+| 4. Email Reminders Verification | v1.0 | 1/1 | Complete | 2026-01-30 |
+| 5. Category Management | v1.1 | 0/TBD | Not started | - |
+| 6. Statement Source Tracking | v1.1 | 0/TBD | Not started | - |
+| 7. Smart Import UX | v1.1 | 0/TBD | Not started | - |
+| 8. Renewal Date Intelligence | v1.1 | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
-*Milestone: v1.0 Get It Running*
+*Updated for v1.1 milestone: 2026-01-31*

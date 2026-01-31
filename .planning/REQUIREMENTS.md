@@ -89,30 +89,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| IMPORT-01 | TBD | Pending |
-| IMPORT-02 | TBD | Pending |
-| IMPORT-03 | TBD | Pending |
-| IMPORT-04 | TBD | Pending |
-| IMPORT-05 | TBD | Pending |
-| IMPORT-06 | TBD | Pending |
-| SOURCE-01 | TBD | Pending |
-| SOURCE-02 | TBD | Pending |
-| SOURCE-03 | TBD | Pending |
-| SOURCE-04 | TBD | Pending |
-| RENEW-01 | TBD | Pending |
-| RENEW-02 | TBD | Pending |
-| RENEW-03 | TBD | Pending |
-| CAT-01 | TBD | Pending |
-| CAT-02 | TBD | Pending |
-| CAT-03 | TBD | Pending |
-| CAT-04 | TBD | Pending |
-| CAT-05 | TBD | Pending |
+| CAT-01 | Phase 5 | Pending |
+| CAT-02 | Phase 5 | Pending |
+| CAT-03 | Phase 5 | Pending |
+| CAT-04 | Phase 5 | Pending |
+| CAT-05 | Phase 5 | Pending |
+| SOURCE-01 | Phase 6 | Pending |
+| SOURCE-02 | Phase 6 | Pending |
+| SOURCE-03 | Phase 6 | Pending |
+| SOURCE-04 | Phase 6 | Pending |
+| IMPORT-01 | Phase 7 | Pending |
+| IMPORT-02 | Phase 7 | Pending |
+| IMPORT-03 | Phase 7 | Pending |
+| IMPORT-04 | Phase 7 | Pending |
+| IMPORT-05 | Phase 7 | Pending |
+| IMPORT-06 | Phase 7 | Pending |
+| RENEW-01 | Phase 8 | Pending |
+| RENEW-02 | Phase 8 | Pending |
+| RENEW-03 | Phase 8 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18 (pending roadmap creation)
+- Mapped to phases: 18
+- Unmapped: 0
+
+**Coverage validation:** ✓ 100% - All v1.1 requirements mapped to phases
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-01-31 after initial definition*
+*Last updated: 2026-01-31 after roadmap creation*
