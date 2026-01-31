@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-31)
 ## Current Position
 
 Phase: 5 of 8 (Category Management)
-Plan: 2 of 2 (complete)
+Plan: 3 of 3 (complete)
 Status: Phase complete
-Last activity: 2026-01-31 — Completed 05-02-PLAN.md (Searchable Category Selector)
+Last activity: 2026-01-31 — Completed 05-03-PLAN.md (Category CRUD UI)
 
-Progress: [████████░░] 50% (v1.0 complete, v1.1 in progress - 2 plans done)
+Progress: [████████░░] 50% (v1.0 complete, v1.1 in progress - 3 plans done)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████████░░] 50% (v1.0 complete, v1.1 in progress 
 - Total execution time: ~57 min
 
 **Current Milestone (v1.1):**
-- Total plans completed: 2
-- Average duration: ~5 min
-- Total execution time: 9 min
+- Total plans completed: 3
+- Average duration: ~6 min
+- Total execution time: 17 min
 
 *Updated after each plan completion*
 
@@ -39,6 +39,8 @@ Recent decisions affecting current work:
 
 | When | Decision | Rationale | Impact |
 |------|----------|-----------|--------|
+| 05-03 | Use 'any' cast for dynamic Lucide icon lookup | TypeScript strict typing incompatible with dynamic icon loading pattern | Enables runtime icon selection without massive switch statement |
+| 05-03 | Show 50 curated popular icons by default in picker | Better UX than showing all 1000+ Lucide icons immediately | Faster initial load, full search available when needed |
 | 05-02 | Use shadcn Command/Popover for searchable category dropdown | Better UX than standard Select, provides built-in search filtering and keyboard navigation | Reusable combobox pattern for future searchable dropdowns |
 | 05-01 | Use query-level validation instead of post-query ownership check | Original code queried any category then checked ownership in JS - incorrect isolation | Proper duplicate prevention with user isolation |
 | v1.1 | Category Management first | Fix blocking duplicate bug before other features | Phase 5 independent of other phases |
@@ -63,6 +65,6 @@ None - fresh milestone start.
 ## Session Continuity
 
 Last session: 2026-01-31
-Stopped at: Completed 05-02-PLAN.md (Searchable Category Selector)
+Stopped at: Completed 05-03-PLAN.md (Category CRUD UI)
 Resume file: None
 Next: Plan Phase 6 (Statement Sources) via /gsd:plan-phase 6
