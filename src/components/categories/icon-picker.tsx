@@ -65,7 +65,7 @@ export function IconPicker({ value, onChange, disabled = false }: IconPickerProp
       .split("-")
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join("");
-    return (LucideIcons as Record<string, React.ComponentType<{ className?: string }>>)[pascalName];
+    return (LucideIcons as any)[pascalName];
   };
 
   const SelectedIcon = getIconComponent(value);

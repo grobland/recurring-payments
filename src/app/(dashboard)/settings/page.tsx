@@ -27,6 +27,7 @@ import {
 import { useUser, useUpdateUser } from "@/lib/hooks";
 import { SUPPORTED_CURRENCIES } from "@/lib/constants/currencies";
 import { toast } from "sonner";
+import { CategoryManager } from "@/components/categories/category-manager";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
@@ -155,6 +156,8 @@ export default function SettingsPage() {
           </Form>
         </CardContent>
       </Card>
+
+      <CategoryManager />
     </div>
   );
 }

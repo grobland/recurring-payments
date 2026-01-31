@@ -25,10 +25,9 @@ import { CategoryForm } from "./category-form";
 import { CategoryDeleteDialog } from "./category-delete-dialog";
 import type { Category } from "@/lib/db/schema";
 import type { CreateCategoryInput } from "@/lib/validations/category";
-import { useToast } from "@/lib/hooks/use-toast";
+import { toast } from "sonner";
 
 export function CategoryManager() {
-  const { toast } = useToast();
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
   const { data: subscriptionsData } = useSubscriptions({ status: "all" });
   const createMutation = useCreateCategory();
@@ -55,23 +54,16 @@ export function CategoryManager() {
       .split("-")
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join("");
-    return (LucideIcons as Record<string, React.ComponentType<{ className?: string }>>)[pascalName];
+    return (LucideIcons as any)[pascalName];
   };
 
   const handleCreate = async (data: CreateCategoryInput) => {
     try {
       await createMutation.mutateAsync(data);
-      toast({
-        title: "Category created",
-        description: `${data.name} has been created.`,
-      });
+      toast.success(`Category "${data.name}" created`);
       setCreateDialogOpen(false);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create category",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : "Failed to create category");
     }
   };
 
@@ -79,18 +71,11 @@ export function CategoryManager() {
     if (!selectedCategory) return;
     try {
       await updateMutation.mutateAsync({ id: selectedCategory.id, data });
-      toast({
-        title: "Category updated",
-        description: `${data.name} has been updated.`,
-      });
+      toast.success(`Category "${data.name}" updated`);
       setEditDialogOpen(false);
       setSelectedCategory(null);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update category",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : "Failed to update category");
     }
   };
 
@@ -98,18 +83,11 @@ export function CategoryManager() {
     if (!selectedCategory) return;
     try {
       await deleteMutation.mutateAsync(selectedCategory.id);
-      toast({
-        title: "Category deleted",
-        description: `${selectedCategory.name} has been deleted.`,
-      });
+      toast.success(`Category "${selectedCategory.name}" deleted`);
       setDeleteDialogOpen(false);
       setSelectedCategory(null);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete category",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : "Failed to delete category");
     }
   };
 
