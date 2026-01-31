@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { categories } from "@/lib/db/schema";
 import { createCategorySchema } from "@/lib/validations/category";
-import { eq, or, isNull, asc } from "drizzle-orm";
+import { eq, or, isNull, asc, and } from "drizzle-orm";
 import { isUserActive } from "@/lib/auth/helpers";
 
 // Helper to generate slug from name
@@ -69,12 +69,18 @@ export async function POST(request: Request) {
     const data = result.data;
     const slug = generateSlug(data.name);
 
-    // Check for duplicate slug for this user
+    // Check if slug conflicts with default categories OR user's own custom categories
     const existing = await db.query.categories.findFirst({
-      where: eq(categories.slug, slug),
+      where: and(
+        eq(categories.slug, slug),
+        or(
+          isNull(categories.userId),              // Would conflict with default category
+          eq(categories.userId, session.user.id)  // Would conflict with own custom category
+        )
+      )
     });
 
-    if (existing && (existing.userId === session.user.id || existing.userId === null)) {
+    if (existing) {
       return NextResponse.json(
         { error: "A category with this name already exists" },
         { status: 409 }
