@@ -39,6 +39,7 @@ import {
 import { SUPPORTED_CURRENCIES } from "@/lib/constants/currencies";
 import { FREQUENCIES } from "@/lib/constants/frequencies";
 import { useCategoryOptions } from "@/lib/hooks";
+import { CategoryCombobox } from "@/components/categories/category-combobox";
 
 interface SubscriptionFormProps {
   defaultValues?: Partial<CreateSubscriptionInput>;
@@ -146,33 +147,15 @@ export function SubscriptionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select
-                  onValueChange={(value) =>
-                    field.onChange(value === "none" ? null : value)
-                  }
-                  value={field.value ?? "none"}
-                  disabled={categoriesLoading}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">No Category</SelectItem>
-                    {categoryOptions.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="h-3 w-3 rounded-full"
-                            style={{ backgroundColor: cat.color }}
-                          />
-                          {cat.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <CategoryCombobox
+                    value={field.value ?? null}
+                    onChange={field.onChange}
+                    options={categoryOptions}
+                    disabled={categoriesLoading}
+                    placeholder="Select a category"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
