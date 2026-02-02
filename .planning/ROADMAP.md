@@ -2,13 +2,13 @@
 
 ## Milestones
 
-- ✅ **v1.0 Get It Running** - Phases 1-4 (shipped 2026-01-30)
-- 🚧 **v1.1 Import Improvements** - Phases 5-8 (in progress)
+- **v1.0 Get It Running** - Phases 1-4 (shipped 2026-01-30)
+- **v1.1 Import Improvements** - Phases 5-8 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 Get It Running (Phases 1-4) - SHIPPED 2026-01-30</summary>
+<summary>v1.0 Get It Running (Phases 1-4) - SHIPPED 2026-01-30</summary>
 
 ### Phase 1: Service Configuration
 **Goal**: All external services are configured and the app is deployed to a preview environment
@@ -73,7 +73,7 @@ Plans:
 
 ---
 
-### 🚧 v1.1 Import Improvements (In Progress)
+### v1.1 Import Improvements (In Progress)
 
 **Milestone Goal:** Improve PDF import accuracy and user control, fix data quality issues discovered during testing.
 
@@ -132,10 +132,12 @@ Plans:
   4. High-confidence items (70%+) are automatically pre-selected but user can override
   5. User can click "Select all high confidence" button to reset to default selections
   6. System persists raw extraction data for each import for future audit and reprocessing
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (planned during phase planning)
+- [ ] 07-01-PLAN.md — Schema and API for raw extraction data persistence
+- [ ] 07-02-PLAN.md — Badge component success/warning variants
+- [ ] 07-03-PLAN.md — Import page UI with confidence badges, bulk selection, inline editing
 
 ### Phase 8: Renewal Date Intelligence
 **Goal**: Renewal dates are calculated from actual transaction dates on statements
@@ -153,7 +155,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 5 → 6 → 7 → 8
+Phases execute in numeric order: 5 -> 6 -> 7 -> 8
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -163,9 +165,10 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 4. Email Reminders Verification | v1.0 | 1/1 | Complete | 2026-01-30 |
 | 5. Category Management | v1.1 | 3/3 | Complete | 2026-01-31 |
 | 6. Statement Source Tracking | v1.1 | 3/3 | Complete | 2026-02-02 |
-| 7. Smart Import UX | v1.1 | 0/TBD | Not started | - |
+| 7. Smart Import UX | v1.1 | 0/3 | Planned | - |
 | 8. Renewal Date Intelligence | v1.1 | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
 *Updated for v1.1 milestone: 2026-01-31*
+*Phase 7 planned: 2026-02-02*
