@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { subscriptions } from "@/lib/db/schema";
-import { eq, isNull } from "drizzle-orm";
+// eq, isNull used via query builder helpers
 import { parseDocumentForSubscriptions, parseTextForSubscriptions, detectDuplicates } from "@/lib/openai/pdf-parser";
 import { isUserActive } from "@/lib/auth/helpers";
 import OpenAI from "openai";
@@ -132,8 +132,8 @@ export async function POST(request: Request) {
 
     // Get existing subscriptions for duplicate detection
     const existingSubscriptions = await db.query.subscriptions.findMany({
-      where: (table) =>
-        eq(table.userId, session.user!.id) && isNull(table.deletedAt),
+      where: (table, { and, eq, isNull }) =>
+        and(eq(table.userId, session.user!.id), isNull(table.deletedAt)),
       columns: {
         id: true,
         name: true,
