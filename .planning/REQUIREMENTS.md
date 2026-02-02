@@ -9,12 +9,12 @@ Requirements for milestone v1.1 "Import Improvements". Each maps to roadmap phas
 
 ### Smart Import
 
-- [ ] **IMPORT-01**: User sees all detected items from statement with confidence scores (0-100)
-- [ ] **IMPORT-02**: User sees visual confidence indicators (green ≥70%, yellow 40-69%, red <40%)
-- [ ] **IMPORT-03**: User can select which items to import via checkboxes
-- [ ] **IMPORT-04**: High-confidence items (≥70%) are pre-selected by default
-- [ ] **IMPORT-05**: System persists raw extraction data for audit and reprocessing
-- [ ] **IMPORT-06**: User can click "Select all high confidence" to reset selection
+- [x] **IMPORT-01**: User sees all detected items from statement with confidence scores (0-100)
+- [x] **IMPORT-02**: User sees visual confidence indicators (green ≥80%, yellow 50-79%, red <50%)
+- [x] **IMPORT-03**: User can select which items to import via checkboxes
+- [x] **IMPORT-04**: High-confidence items (≥80%) are pre-selected by default
+- [x] **IMPORT-05**: System persists raw extraction data for audit and reprocessing
+- [x] **IMPORT-06**: User can click "Select all high confidence" to reset selection
 
 ### Statement Sources
 
@@ -98,12 +98,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SOURCE-02 | Phase 6 | Complete |
 | SOURCE-03 | Phase 6 | Complete |
 | SOURCE-04 | Phase 6 | Complete |
-| IMPORT-01 | Phase 7 | Pending |
-| IMPORT-02 | Phase 7 | Pending |
-| IMPORT-03 | Phase 7 | Pending |
-| IMPORT-04 | Phase 7 | Pending |
-| IMPORT-05 | Phase 7 | Pending |
-| IMPORT-06 | Phase 7 | Pending |
+| IMPORT-01 | Phase 7 | Complete |
+| IMPORT-02 | Phase 7 | Complete |
+| IMPORT-03 | Phase 7 | Complete |
+| IMPORT-04 | Phase 7 | Complete |
+| IMPORT-05 | Phase 7 | Complete |
+| IMPORT-06 | Phase 7 | Complete |
 | RENEW-01 | Phase 8 | Pending |
 | RENEW-02 | Phase 8 | Pending |
 | RENEW-03 | Phase 8 | Pending |
@@ -117,4 +117,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-01-31 after roadmap creation*
+*Last updated: 2026-02-02 after Phase 7 completion*

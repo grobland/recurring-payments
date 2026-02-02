@@ -83,7 +83,7 @@ Plans:
 
 - [x] **Phase 5: Category Management** - Fix duplicates bug and add full CRUD for categories
 - [x] **Phase 6: Statement Source Tracking** - Track and reuse bank/credit card names
-- [ ] **Phase 7: Smart Import UX** - Show all detected items with confidence-based selection
+- [x] **Phase 7: Smart Import UX** - Show all detected items with confidence-based selection
 - [ ] **Phase 8: Renewal Date Intelligence** - Calculate renewal dates from transaction dates
 
 ## Phase Details
@@ -135,9 +135,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Schema and API for raw extraction data persistence
-- [ ] 07-02-PLAN.md — Badge component success/warning variants
-- [ ] 07-03-PLAN.md — Import page UI with confidence badges, bulk selection, inline editing
+- [x] 07-01-PLAN.md — Schema and API for raw extraction data persistence
+- [x] 07-02-PLAN.md — Badge component success/warning variants
+- [x] 07-03-PLAN.md — Import page UI with confidence badges, bulk selection, inline editing
 
 ### Phase 8: Renewal Date Intelligence
 **Goal**: Renewal dates are calculated from actual transaction dates on statements
@@ -165,10 +165,10 @@ Phases execute in numeric order: 5 -> 6 -> 7 -> 8
 | 4. Email Reminders Verification | v1.0 | 1/1 | Complete | 2026-01-30 |
 | 5. Category Management | v1.1 | 3/3 | Complete | 2026-01-31 |
 | 6. Statement Source Tracking | v1.1 | 3/3 | Complete | 2026-02-02 |
-| 7. Smart Import UX | v1.1 | 0/3 | Planned | - |
+| 7. Smart Import UX | v1.1 | 3/3 | Complete | 2026-02-02 |
 | 8. Renewal Date Intelligence | v1.1 | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
 *Updated for v1.1 milestone: 2026-01-31*
-*Phase 7 planned: 2026-02-02*
+*Phase 7 complete: 2026-02-02*
