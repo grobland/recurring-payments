@@ -33,7 +33,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const { subscriptions: toImport } = result.data;
+    const { subscriptions: toImport, statementSource } = result.data;
+
+    // Create audit record FIRST to get the ID for linking subscriptions
+    const [audit] = await db
+      .insert(importAudits)
+      .values({
+        userId: session.user.id,
+        statementSource,
+        fileCount: 1, // We don't track this precisely in this flow
+        totalPageCount: 1,
+        detectedCount: toImport.length,
+        confirmedCount: 0, // Will update after processing
+        rejectedCount: 0,
+        mergedCount: 0,
+      })
+      .returning();
 
     let createdCount = 0;
     let skippedCount = 0;
@@ -59,6 +74,7 @@ export async function POST(request: Request) {
               sub.amount,
               sub.frequency
             ),
+            importAuditId: audit.id, // Link merged subscription to this audit
             updatedAt: new Date(),
           })
           .where(eq(subscriptions.id, sub.mergeWithId));
@@ -66,7 +82,7 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // Create new subscription
+      // Create new subscription linked to audit
       const [created] = await db
         .insert(subscriptions)
         .values({
@@ -84,6 +100,7 @@ export async function POST(request: Request) {
           status: "active",
           reminderEnabled: true,
           reminderDaysBefore: [7, 1],
+          importAuditId: audit.id, // Link to audit record
         })
         .returning();
 
@@ -91,17 +108,16 @@ export async function POST(request: Request) {
       createdCount++;
     }
 
-    // Create audit record
-    await db.insert(importAudits).values({
-      userId: session.user.id,
-      fileCount: 1, // We don't track this precisely in this flow
-      totalPageCount: 1,
-      detectedCount: toImport.length,
-      confirmedCount: createdCount,
-      rejectedCount: skippedCount,
-      mergedCount,
-      completedAt: new Date(),
-    });
+    // Update audit record with final counts
+    await db
+      .update(importAudits)
+      .set({
+        confirmedCount: createdCount,
+        rejectedCount: skippedCount,
+        mergedCount,
+        completedAt: new Date(),
+      })
+      .where(eq(importAudits.id, audit.id));
 
     return NextResponse.json({
       created: createdCount,

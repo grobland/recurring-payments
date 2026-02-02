@@ -22,6 +22,11 @@ export const confirmImportSchema = z.object({
       mergeWithId: z.string().uuid().optional(), // If action is "merge"
     })
   ),
+  statementSource: z
+    .string()
+    .min(1, "Account name is required")
+    .max(50, "Account name must be 50 characters or less")
+    .trim(),
 });
 
 export type DetectedSubscription = z.infer<typeof detectedSubscriptionSchema>;
