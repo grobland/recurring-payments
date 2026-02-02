@@ -147,10 +147,11 @@ Plans:
   1. System extracts transaction date from statement text using AI analysis
   2. Next renewal date is calculated from the statement transaction date (not import date)
   3. User can review and manually override the calculated renewal date during import if needed
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD (planned during phase planning)
+- [ ] 08-01-PLAN.md — Extend AI extraction for transaction dates and add renewal calculation utility
+- [ ] 08-02-PLAN.md — Import UI with date display, inline editing, and visual diff
 
 ## Progress
 
@@ -166,9 +167,9 @@ Phases execute in numeric order: 5 -> 6 -> 7 -> 8
 | 5. Category Management | v1.1 | 3/3 | Complete | 2026-01-31 |
 | 6. Statement Source Tracking | v1.1 | 3/3 | Complete | 2026-02-02 |
 | 7. Smart Import UX | v1.1 | 3/3 | Complete | 2026-02-02 |
-| 8. Renewal Date Intelligence | v1.1 | 0/TBD | Not started | - |
+| 8. Renewal Date Intelligence | v1.1 | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26*
 *Updated for v1.1 milestone: 2026-01-31*
-*Phase 7 complete: 2026-02-02*
+*Phase 8 planned: 2026-02-02*
