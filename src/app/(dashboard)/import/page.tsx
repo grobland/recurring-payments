@@ -32,6 +32,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { AccountCombobox } from "@/components/import/account-combobox";
@@ -59,6 +64,22 @@ interface ImportItem extends DetectedSubscription {
 
 type Step = "upload" | "processing" | "review" | "complete";
 
+function ConfidenceBadge({ score }: { score: number }) {
+  const safeScore = typeof score === "number" && !isNaN(score) ? score : 50;
+  const variant = safeScore >= 70 ? "success" : safeScore >= 40 ? "warning" : "destructive";
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge variant={variant}>{safeScore}%</Badge>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>AI confidence this is a recurring subscription</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export default function ImportPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("upload");
@@ -68,6 +89,13 @@ export default function ImportPage() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [result, setResult] = useState<{ created: number; skipped: number; merged: number } | null>(null);
   const [statementSource, setStatementSource] = useState("");
+  const [rawExtractionData, setRawExtractionData] = useState<{
+    subscriptions: DetectedSubscription[];
+    model: string;
+    processingTime: number;
+    pageCount: number;
+    extractedAt: string;
+  } | null>(null);
 
   const { options: categoryOptions } = useCategoryOptions();
   const { data: importSources = [] } = useImportSources();
@@ -113,6 +141,9 @@ export default function ImportPage() {
 
       const data = await response.json();
 
+      // Store raw extraction data for confirm step
+      setRawExtractionData(data.rawExtractionData);
+
       // Transform detected subscriptions to import items
       const importItems: ImportItem[] = data.subscriptions.map(
         (sub: DetectedSubscription) => ({
@@ -154,6 +185,26 @@ export default function ImportPage() {
     );
   };
 
+  const highConfidenceCount = items.filter((item) => item.confidence >= 70).length;
+
+  const selectAll = () => {
+    setItems((prev) => prev.map((item) => ({ ...item, selected: true, action: "create" as const })));
+  };
+
+  const selectNone = () => {
+    setItems((prev) => prev.map((item) => ({ ...item, selected: false, action: "skip" as const })));
+  };
+
+  const selectHighConfidence = () => {
+    setItems((prev) =>
+      prev.map((item) => ({
+        ...item,
+        selected: !item.isDuplicate && item.confidence >= 70,
+        action: (!item.isDuplicate && item.confidence >= 70) ? "create" as const : "skip" as const,
+      }))
+    );
+  };
+
   const confirmImport = async () => {
     const toImport = items.map((item) => ({
       name: item.name,
@@ -171,7 +222,11 @@ export default function ImportPage() {
       const response = await fetch("/api/import/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscriptions: toImport, statementSource }),
+        body: JSON.stringify({
+          subscriptions: toImport,
+          statementSource,
+          rawExtractionData,
+        }),
       });
 
       if (!response.ok) {
