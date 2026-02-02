@@ -114,10 +114,12 @@ Plans:
   2. Bank/card name field shows autocomplete suggestions from previous imports
   3. Subscription detail page displays which statement source it was imported from
   4. Import audit records persist the statement source for historical tracking
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (planned during phase planning)
+- [ ] 06-01-PLAN.md — Schema and API foundation (statementSource column, sources endpoint)
+- [ ] 06-02-PLAN.md — Import UI integration (AccountCombobox, useImportSources hook)
+- [ ] 06-03-PLAN.md — Display source in subscription detail page
 
 ### Phase 7: Smart Import UX
 **Goal**: Users see all detected statement items and can choose which ones to import
@@ -160,7 +162,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 3. Core CRUD Verification | v1.0 | 2/2 | Complete | 2026-01-30 |
 | 4. Email Reminders Verification | v1.0 | 1/1 | Complete | 2026-01-30 |
 | 5. Category Management | v1.1 | 3/3 | Complete | 2026-01-31 |
-| 6. Statement Source Tracking | v1.1 | 0/TBD | Not started | - |
+| 6. Statement Source Tracking | v1.1 | 0/3 | Not started | - |
 | 7. Smart Import UX | v1.1 | 0/TBD | Not started | - |
 | 8. Renewal Date Intelligence | v1.1 | 0/TBD | Not started | - |
 
