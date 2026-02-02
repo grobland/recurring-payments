@@ -165,6 +165,14 @@ export async function POST(request: Request) {
       processingTime: parseResult.processingTime,
       detectedCount: parseResult.subscriptions.length,
       duplicateCount: duplicates.size,
+      // Include raw extraction data for persistence
+      rawExtractionData: {
+        subscriptions: parseResult.subscriptions,
+        model: "gpt-4o",
+        processingTime: parseResult.processingTime,
+        pageCount: parseResult.pageCount,
+        extractedAt: new Date().toISOString(),
+      },
     });
   } catch (error) {
     console.error("Import error:", error);

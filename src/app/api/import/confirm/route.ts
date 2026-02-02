@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { subscriptions: toImport, statementSource } = result.data;
+    const { subscriptions: toImport, statementSource, rawExtractionData } = result.data;
 
     // Create audit record FIRST to get the ID for linking subscriptions
     const [audit] = await db
@@ -42,11 +42,12 @@ export async function POST(request: Request) {
         userId: session.user.id,
         statementSource,
         fileCount: 1, // We don't track this precisely in this flow
-        totalPageCount: 1,
+        totalPageCount: rawExtractionData?.pageCount ?? 1,
         detectedCount: toImport.length,
         confirmedCount: 0, // Will update after processing
         rejectedCount: 0,
         mergedCount: 0,
+        rawExtractionData, // Persist raw AI response
       })
       .returning();
 
