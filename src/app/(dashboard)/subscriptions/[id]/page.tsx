@@ -334,6 +334,17 @@ export default function SubscriptionDetailPage({ params }: PageProps) {
                   <p className="whitespace-pre-wrap">{subscription.notes}</p>
                 </div>
               )}
+              {/* Import Source */}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Source
+                </p>
+                {subscription.importAudit?.statementSource ? (
+                  <p>{subscription.importAudit.statementSource}</p>
+                ) : (
+                  <p className="text-muted-foreground">Manual entry</p>
+                )}
+              </div>
 
               <Separator />
 

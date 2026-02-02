@@ -34,7 +34,8 @@ import {
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { useCategoryOptions } from "@/lib/hooks";
+import { AccountCombobox } from "@/components/import/account-combobox";
+import { useCategoryOptions, useImportSources } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -66,8 +67,10 @@ export default function ImportPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [result, setResult] = useState<{ created: number; skipped: number; merged: number } | null>(null);
+  const [statementSource, setStatementSource] = useState("");
 
   const { options: categoryOptions } = useCategoryOptions();
+  const { data: importSources = [] } = useImportSources();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles((prev) => [...prev, ...acceptedFiles]);
@@ -168,7 +171,7 @@ export default function ImportPage() {
       const response = await fetch("/api/import/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscriptions: toImport }),
+        body: JSON.stringify({ subscriptions: toImport, statementSource }),
       });
 
       if (!response.ok) {
@@ -206,7 +209,7 @@ export default function ImportPage() {
               Import from Bank Statement
             </h2>
             <p className="text-muted-foreground">
-              Upload your bank statement and we'll automatically detect your
+              Upload your bank statement and we&apos;ll automatically detect your
               subscriptions using AI.
             </p>
           </div>
@@ -218,13 +221,30 @@ export default function ImportPage() {
                 <CardTitle>Upload Documents</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Account field - required before upload */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Account <span className="text-destructive">*</span>
+                  </label>
+                  <AccountCombobox
+                    value={statementSource}
+                    onChange={setStatementSource}
+                    previousAccounts={importSources}
+                    disabled={isProcessing}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    e.g., &quot;Chase Visa&quot; or &quot;Wells Fargo Checking&quot;
+                  </p>
+                </div>
+
                 <div
                   {...getRootProps()}
                   className={cn(
                     "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
                     isDragActive
                       ? "border-primary bg-primary/5"
-                      : "border-muted-foreground/25 hover:border-primary/50"
+                      : "border-muted-foreground/25 hover:border-primary/50",
+                    !statementSource && "opacity-50 pointer-events-none"
                   )}
                 >
                   <input {...getInputProps()} />
@@ -269,7 +289,7 @@ export default function ImportPage() {
 
                 <Button
                   onClick={processFiles}
-                  disabled={files.length === 0}
+                  disabled={files.length === 0 || !statementSource || isProcessing}
                   className="w-full"
                 >
                   Process Files
@@ -318,6 +338,7 @@ export default function ImportPage() {
                         onClick={() => {
                           setStep("upload");
                           setFiles([]);
+                          setStatementSource("");
                         }}
                       >
                         Try Again
@@ -453,6 +474,7 @@ export default function ImportPage() {
                         setStep("upload");
                         setFiles([]);
                         setItems([]);
+                        setStatementSource("");
                       }}
                     >
                       Cancel
@@ -504,6 +526,7 @@ export default function ImportPage() {
                       setFiles([]);
                       setItems([]);
                       setResult(null);
+                      setStatementSource("");
                     }}
                   >
                     Import More

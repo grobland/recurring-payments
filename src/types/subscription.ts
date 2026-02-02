@@ -1,7 +1,8 @@
-import type { Subscription, Category } from "@/lib/db/schema";
+import type { Subscription, Category, ImportAudit } from "@/lib/db/schema";
 
 export type SubscriptionWithCategory = Subscription & {
   category: Pick<Category, "id" | "name" | "slug" | "icon" | "color"> | null;
+  importAudit?: Pick<ImportAudit, "id" | "statementSource" | "createdAt"> | null;
 };
 
 export type SubscriptionListItem = {
