@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { importAudits } from "@/lib/db/schema";
-import { eq, isNotNull, desc, and } from "drizzle-orm";
+import { eq, isNotNull, and } from "drizzle-orm";
 
 export async function GET() {
   try {
@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch distinct sources ordered by most recent import
+    // Fetch distinct sources (order doesn't matter for dropdown, dedup happens in JS)
     const sources = await db
       .selectDistinct({ source: importAudits.statementSource })
       .from(importAudits)
@@ -21,7 +21,6 @@ export async function GET() {
           isNotNull(importAudits.statementSource)
         )
       )
-      .orderBy(desc(importAudits.createdAt))
       .limit(50);
 
     // Normalize to lowercase for deduplication, keep original casing
