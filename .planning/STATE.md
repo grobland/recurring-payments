@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-31)
 ## Current Position
 
 Phase: 6 of 8 (Statement Source Tracking)
-Plan: 1 of 3 complete
+Plan: 2 of 3 complete
 Status: In progress
-Last activity: 2026-02-02 — Completed 06-01-PLAN.md (Schema & API Foundation)
+Last activity: 2026-02-02 - Completed 06-02-PLAN.md (UI Combobox Component)
 
-Progress: [████████░░] 60% (v1.0 complete, v1.1: 1/4 phases in progress)
+Progress: [████████░░] 62% (v1.0 complete, v1.1: 2/4 phases in progress)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████████░░] 60% (v1.0 complete, v1.1: 1/4 phases 
 - Total execution time: ~57 min
 
 **Current Milestone (v1.1):**
-- Total plans completed: 4
-- Average duration: ~6 min
-- Total execution time: 24 min
+- Total plans completed: 5
+- Average duration: ~7 min
+- Total execution time: 32 min
 
 *Updated after each plan completion*
 
@@ -39,6 +39,9 @@ Recent decisions affecting current work:
 
 | When | Decision | Rationale | Impact |
 |------|----------|-----------|--------|
+| 06-02 | shouldFilter={false} for custom combobox filtering | Needed contains-match instead of default starts-with | Custom filter logic in component |
+| 06-02 | Disable dropzone via opacity + pointer-events | Visual indication that upload disabled until account selected | Better UX for required field |
+| 06-02 | 5-minute stale time for import sources | Sources change infrequently | Reduced API calls |
 | 06-01 | statementSource nullable in schema | Support existing imports without source | No migration issues with existing data |
 | 06-01 | Create audit first, link subscriptions | Need audit ID before inserting subscriptions | Proper foreign key linking |
 | 06-01 | Case-normalized source deduplication | Prevent "Chase" vs "chase" duplicates in autocomplete | Better UX |
@@ -68,6 +71,6 @@ None - fresh milestone start.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 06-01-PLAN.md
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
-Next: Execute 06-02-PLAN.md (UI Combobox Component)
+Next: Execute 06-03-PLAN.md (Display Integration)
