@@ -113,6 +113,133 @@ function DateConfidenceBadge({ dateFound }: { dateFound: boolean }) {
   );
 }
 
+interface EditableDateFieldProps {
+  value: Date | null;
+  originalValue: Date | null;
+  wasEdited: boolean;
+  dateNotFound?: boolean;
+  onSave: (date: Date | null) => void;
+  onRevert?: () => void;
+  label: string;
+}
+
+function EditableDateField({
+  value,
+  originalValue,
+  wasEdited,
+  dateNotFound,
+  onSave,
+  onRevert,
+  label,
+}: EditableDateFieldProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  // Initialize input value when starting to edit
+  const startEditing = () => {
+    setInputValue(value ? format(value, "MM/dd/yyyy") : "");
+    setError(null);
+    setIsEditing(true);
+  };
+
+  // Validate and save on blur or Enter
+  const handleSave = () => {
+    if (!inputValue.trim()) {
+      onSave(null);
+      setIsEditing(false);
+      return;
+    }
+
+    // Parse the input
+    const parsed = parse(inputValue, "MM/dd/yyyy", new Date());
+
+    if (!isValid(parsed)) {
+      setError("Invalid date format (MM/DD/YYYY)");
+      return;
+    }
+
+    // Validate year range (2020-2030)
+    const year = parsed.getFullYear();
+    if (year < 2020 || year > 2030) {
+      setError("Year must be between 2020 and 2030");
+      return;
+    }
+
+    onSave(parsed);
+    setIsEditing(false);
+    setError(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      setIsEditing(false);
+      setError(null);
+    }
+  };
+
+  // Display mode
+  if (!isEditing) {
+    return (
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">{label}</label>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={startEditing}
+            className="text-sm text-left hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded"
+          >
+            {wasEdited && originalValue ? (
+              <span>
+                <span className="line-through text-muted-foreground mr-2">
+                  {format(originalValue, "MMM d, yyyy")}
+                </span>
+                <span>{value ? format(value, "MMM d, yyyy") : "Not set"}</span>
+              </span>
+            ) : value ? (
+              <span>{format(value, "MMM d, yyyy")}</span>
+            ) : (
+              <span className="text-yellow-600">Not set</span>
+            )}
+          </button>
+          {wasEdited && onRevert && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={onRevert}
+            >
+              Restore
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Edit mode
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <div className="flex items-center gap-2">
+        <Input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          placeholder="MM/DD/YYYY"
+          className="h-8 w-32"
+          autoFocus
+        />
+      </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
+
 export default function ImportPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("upload");
@@ -229,6 +356,80 @@ export default function ImportPage() {
   const updateItem = (index: number, updates: Partial<ImportItem>) => {
     setItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, ...updates } : item))
+    );
+  };
+
+  const updateTransactionDate = (index: number, newDate: Date | null) => {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+
+        // Calculate new renewal date from transaction date
+        const newRenewal = newDate
+          ? calculateRenewalFromTransaction(newDate, item.frequency)
+          : addMonths(new Date(), 1);
+
+        return {
+          ...item,
+          transactionDateValue: newDate,
+          transactionDateEdited: true,
+          // Auto-recalculate renewal (per CONTEXT.md decision)
+          renewalDateValue: newRenewal,
+          originalRenewalDate: item.originalRenewalDate, // Keep original for diff
+          renewalDateEdited: false, // Clear manual renewal edit when transaction changes
+          nextRenewalDate: newRenewal, // Update the actual import value
+        };
+      })
+    );
+  };
+
+  const updateRenewalDate = (index: number, newDate: Date | null) => {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+        return {
+          ...item,
+          renewalDateValue: newDate,
+          renewalDateEdited: true,
+          nextRenewalDate: newDate || item.nextRenewalDate,
+        };
+      })
+    );
+  };
+
+  const revertTransactionDate = (index: number) => {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+
+        // Recalculate renewal from original transaction date
+        const newRenewal = item.originalTransactionDate
+          ? calculateRenewalFromTransaction(item.originalTransactionDate, item.frequency)
+          : addMonths(new Date(), 1);
+
+        return {
+          ...item,
+          transactionDateValue: item.originalTransactionDate,
+          transactionDateEdited: false,
+          renewalDateValue: newRenewal,
+          renewalDateEdited: false,
+          nextRenewalDate: newRenewal,
+        };
+      })
+    );
+  };
+
+  const revertRenewalDate = (index: number) => {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+        return {
+          ...item,
+          renewalDateValue: item.originalRenewalDate,
+          renewalDateEdited: false,
+          nextRenewalDate: item.originalRenewalDate || item.nextRenewalDate,
+        };
+      })
     );
   };
 
@@ -601,37 +802,37 @@ export default function ImportPage() {
                                     </Select>
                                   </div>
 
-                                  {/* Next Renewal */}
+                                  {/* Transaction Date */}
                                   <div>
-                                    <label className="text-xs font-medium text-muted-foreground">
-                                      Next Renewal
-                                    </label>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          className="mt-1 w-full justify-start text-left font-normal"
-                                        >
-                                          {format(item.nextRenewalDate, "PPP")}
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent
-                                        className="w-auto p-0"
-                                        align="start"
-                                      >
-                                        <Calendar
-                                          mode="single"
-                                          selected={item.nextRenewalDate}
-                                          onSelect={(date) =>
-                                            date &&
-                                            updateItem(index, {
-                                              nextRenewalDate: date,
-                                            })
-                                          }
-                                          initialFocus
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <DateConfidenceBadge dateFound={item.dateFound ?? !!item.transactionDateValue} />
+                                    </div>
+                                    <EditableDateField
+                                      value={item.transactionDateValue}
+                                      originalValue={item.originalTransactionDate}
+                                      wasEdited={item.transactionDateEdited}
+                                      dateNotFound={!item.dateFound && !item.transactionDateValue}
+                                      onSave={(date) => updateTransactionDate(index, date)}
+                                      onRevert={() => revertTransactionDate(index)}
+                                      label="Transaction Date"
+                                    />
+                                  </div>
+
+                                  {/* Renewal Date */}
+                                  <div>
+                                    <EditableDateField
+                                      value={item.renewalDateValue}
+                                      originalValue={item.originalRenewalDate}
+                                      wasEdited={item.renewalDateEdited}
+                                      onSave={(date) => updateRenewalDate(index, date)}
+                                      onRevert={item.renewalDateEdited ? () => revertRenewalDate(index) : undefined}
+                                      label="Next Renewal"
+                                    />
+                                    {item.renewalDateValue && (
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {formatDistanceToNow(item.renewalDateValue, { addSuffix: true })}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                               )}
