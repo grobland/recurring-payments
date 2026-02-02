@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-31)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Phase 6 - Statement Source Tracking
+**Current focus:** Phase 6 - Statement Source Tracking (COMPLETE)
 
 ## Current Position
 
 Phase: 6 of 8 (Statement Source Tracking)
-Plan: 2 of 3 complete
-Status: In progress
-Last activity: 2026-02-02 - Completed 06-02-PLAN.md (UI Combobox Component)
+Plan: 3 of 3 complete
+Status: Phase complete
+Last activity: 2026-02-02 - Completed 06-03-PLAN.md (Subscription Detail Display)
 
-Progress: [████████░░] 62% (v1.0 complete, v1.1: 2/4 phases in progress)
+Progress: [████████░░] 65% (v1.0 complete, v1.1: 2/4 phases complete)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████████░░] 62% (v1.0 complete, v1.1: 2/4 phases 
 - Total execution time: ~57 min
 
 **Current Milestone (v1.1):**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: ~7 min
-- Total execution time: 32 min
+- Total execution time: 40 min
 
 *Updated after each plan completion*
 
@@ -39,6 +39,8 @@ Recent decisions affecting current work:
 
 | When | Decision | Rationale | Impact |
 |------|----------|-----------|--------|
+| 06-03 | Always show Source field (not conditional) | Manual entry is a valid source, not an empty state | Consistent UI |
+| 06-03 | importAudit type optional with nullable | Handle both missing relation and null statementSource | Type-safe handling |
 | 06-02 | shouldFilter={false} for custom combobox filtering | Needed contains-match instead of default starts-with | Custom filter logic in component |
 | 06-02 | Disable dropzone via opacity + pointer-events | Visual indication that upload disabled until account selected | Better UX for required field |
 | 06-02 | 5-minute stale time for import sources | Sources change infrequently | Reduced API calls |
@@ -71,6 +73,6 @@ None - fresh milestone start.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 06-02-PLAN.md
+Stopped at: Completed 06-03-PLAN.md (Phase 6 complete)
 Resume file: None
-Next: Execute 06-03-PLAN.md (Display Integration)
+Next: Phase 7 - Smart Import Improvements
