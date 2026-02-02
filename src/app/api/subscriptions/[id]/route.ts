@@ -35,6 +35,13 @@ export async function GET(request: Request, { params }: RouteParams) {
             color: true,
           },
         },
+        importAudit: {
+          columns: {
+            id: true,
+            statementSource: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
