@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-31)
 ## Current Position
 
 Phase: 7 of 8 (Smart Import UX)
-Plan: 02 of 03
+Plan: 01 of 03
 Status: In progress
-Last activity: 2026-02-02 — Completed 07-02-PLAN.md (Badge variants)
+Last activity: 2026-02-02 — Completed 07-01-PLAN.md (Raw extraction data persistence)
 
-Progress: [████████░░] 69% (v1.0 complete, v1.1: 2/4 phases in progress)
+Progress: [████████░░] 71% (v1.0 complete, v1.1: 2/4 phases in progress, phase 7: 1/3 plans done)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████████░░] 69% (v1.0 complete, v1.1: 2/4 phases 
 - Total execution time: ~57 min
 
 **Current Milestone (v1.1):**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: ~6 min
-- Total execution time: 41 min
+- Total execution time: 43 min
 
 *Updated after each plan completion*
 
@@ -39,6 +39,9 @@ Recent decisions affecting current work:
 
 | When | Decision | Rationale | Impact |
 |------|----------|-----------|--------|
+| 07-01 | Store complete extraction metadata | Include model, timing, page count for comprehensive audit trail | Future debugging and reprocessing |
+| 07-01 | Optional rawExtractionData validation | Backward compatibility and graceful degradation | No breaking changes |
+| 07-01 | Use typed JSONB columns | Leverage Drizzle's $type<> for type-safe structured data | Better TypeScript support |
 | 06-03 | Always show Source field (not conditional) | Manual entry is a valid source, not an empty state | Consistent UI |
 | 06-03 | importAudit type optional with nullable | Handle both missing relation and null statementSource | Type-safe handling |
 | 06-02 | shouldFilter={false} for custom combobox filtering | Needed contains-match instead of default starts-with | Custom filter logic in component |
@@ -72,7 +75,7 @@ None - fresh milestone start.
 
 ## Session Continuity
 
-Last session: 2026-02-02 15:43 UTC
-Stopped at: Completed 07-02-PLAN.md (Badge variants)
+Last session: 2026-02-02 19:11 UTC
+Stopped at: Completed 07-01-PLAN.md (Raw extraction data persistence)
 Resume file: None
-Next: Execute 07-03-PLAN.md (Import UI with confidence badges)
+Next: Execute 07-02-PLAN.md (Badge variants) or 07-03-PLAN.md (Import UI with confidence badges)
