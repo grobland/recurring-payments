@@ -25,9 +25,9 @@ Requirements for milestone v1.1 "Import Improvements". Each maps to roadmap phas
 
 ### Renewal Date
 
-- [ ] **RENEW-01**: System extracts transaction date from statement text via AI
-- [ ] **RENEW-02**: Next renewal date is calculated from transaction date (not import date)
-- [ ] **RENEW-03**: User can override the calculated renewal date during import
+- [x] **RENEW-01**: System extracts transaction date from statement text via AI
+- [x] **RENEW-02**: Next renewal date is calculated from transaction date (not import date)
+- [x] **RENEW-03**: User can override the calculated renewal date during import
 
 ### Category Management
 
@@ -104,9 +104,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | IMPORT-04 | Phase 7 | Complete |
 | IMPORT-05 | Phase 7 | Complete |
 | IMPORT-06 | Phase 7 | Complete |
-| RENEW-01 | Phase 8 | Pending |
-| RENEW-02 | Phase 8 | Pending |
-| RENEW-03 | Phase 8 | Pending |
+| RENEW-01 | Phase 8 | Complete |
+| RENEW-02 | Phase 8 | Complete |
+| RENEW-03 | Phase 8 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 18 total
@@ -117,4 +117,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-02-02 after Phase 7 completion*
+*Last updated: 2026-02-02 after Phase 8 completion (v1.1 complete)*

@@ -3,7 +3,7 @@
 ## Milestones
 
 - **v1.0 Get It Running** - Phases 1-4 (shipped 2026-01-30)
-- **v1.1 Import Improvements** - Phases 5-8 (in progress)
+- **v1.1 Import Improvements** - Phases 5-8 (complete 2026-02-02)
 
 ## Phases
 
@@ -73,7 +73,7 @@ Plans:
 
 ---
 
-### v1.1 Import Improvements (In Progress)
+### v1.1 Import Improvements (Complete)
 
 **Milestone Goal:** Improve PDF import accuracy and user control, fix data quality issues discovered during testing.
 
@@ -84,7 +84,7 @@ Plans:
 - [x] **Phase 5: Category Management** - Fix duplicates bug and add full CRUD for categories
 - [x] **Phase 6: Statement Source Tracking** - Track and reuse bank/credit card names
 - [x] **Phase 7: Smart Import UX** - Show all detected items with confidence-based selection
-- [ ] **Phase 8: Renewal Date Intelligence** - Calculate renewal dates from transaction dates
+- [x] **Phase 8: Renewal Date Intelligence** - Calculate renewal dates from transaction dates
 
 ## Phase Details
 
@@ -150,8 +150,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Extend AI extraction for transaction dates and add renewal calculation utility
-- [ ] 08-02-PLAN.md — Import UI with date display, inline editing, and visual diff
+- [x] 08-01-PLAN.md — Extend AI extraction for transaction dates and add renewal calculation utility
+- [x] 08-02-PLAN.md — Import UI with date display, inline editing, and visual diff
 
 ## Progress
 
@@ -167,7 +167,7 @@ Phases execute in numeric order: 5 -> 6 -> 7 -> 8
 | 5. Category Management | v1.1 | 3/3 | Complete | 2026-01-31 |
 | 6. Statement Source Tracking | v1.1 | 3/3 | Complete | 2026-02-02 |
 | 7. Smart Import UX | v1.1 | 3/3 | Complete | 2026-02-02 |
-| 8. Renewal Date Intelligence | v1.1 | 0/2 | Not started | - |
+| 8. Renewal Date Intelligence | v1.1 | 2/2 | Complete | 2026-02-02 |
 
 ---
 *Roadmap created: 2026-01-26*
