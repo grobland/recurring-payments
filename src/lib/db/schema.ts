@@ -319,6 +319,9 @@ export const importAudits = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
 
+    // Statement source (bank/credit card account name)
+    statementSource: varchar("statement_source", { length: 50 }),
+
     // File info (metadata only, no actual file stored)
     fileCount: integer("file_count").notNull(),
     totalPageCount: integer("total_page_count"),
