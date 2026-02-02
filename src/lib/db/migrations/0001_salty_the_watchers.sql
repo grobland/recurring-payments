@@ -1,0 +1,1 @@
+ALTER TABLE "import_audits" ADD COLUMN "raw_extraction_data" jsonb;

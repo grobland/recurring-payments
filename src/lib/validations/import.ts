@@ -27,6 +27,13 @@ export const confirmImportSchema = z.object({
     .min(1, "Account name is required")
     .max(50, "Account name must be 50 characters or less")
     .trim(),
+  rawExtractionData: z.object({
+    subscriptions: z.array(detectedSubscriptionSchema),
+    model: z.string(),
+    processingTime: z.number(),
+    pageCount: z.number(),
+    extractedAt: z.string(),
+  }).optional(),
 });
 
 export type DetectedSubscription = z.infer<typeof detectedSubscriptionSchema>;

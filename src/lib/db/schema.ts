@@ -332,6 +332,22 @@ export const importAudits = pgTable(
     rejectedCount: integer("rejected_count").default(0).notNull(),
     mergedCount: integer("merged_count").default(0).notNull(),
 
+    // Raw AI extraction data (for audit/debugging)
+    rawExtractionData: jsonb("raw_extraction_data").$type<{
+      subscriptions: Array<{
+        name: string;
+        amount: number;
+        currency: string;
+        frequency: "monthly" | "yearly";
+        confidence: number;
+        rawText?: string;
+      }>;
+      model: string;
+      processingTime: number;
+      pageCount: number;
+      extractedAt: string;
+    }>(),
+
     // Status
     completedAt: timestamp("completed_at", { withTimezone: true }),
 
