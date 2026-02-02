@@ -378,6 +378,24 @@ export default function ImportPage() {
                   <CardTitle>Review Detected Subscriptions</CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {items.length > 0 && (
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={selectAll}>
+                          Select all
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={selectNone}>
+                          Select none
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={selectHighConfidence}>
+                          Select high confidence ({highConfidenceCount})
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedCount} of {items.length} selected
+                      </p>
+                    </div>
+                  )}
                   {items.length === 0 ? (
                     <div className="py-8 text-center">
                       <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -387,21 +405,41 @@ export default function ImportPage() {
                       <p className="mt-1 text-sm text-muted-foreground">
                         Try uploading a clearer image or a different statement
                       </p>
-                      <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={() => {
-                          setStep("upload");
-                          setFiles([]);
-                          setStatementSource("");
-                        }}
-                      >
-                        Try Again
-                      </Button>
+                      <div className="mt-4 flex justify-center gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setStep("upload");
+                            setFiles([]);
+                            setStatementSource("");
+                          }}
+                        >
+                          Try Again
+                        </Button>
+                        <Button onClick={() => router.push("/subscriptions/new")}>
+                          Add Manually
+                        </Button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {items.map((item, index) => (
+                    <>
+                      {highConfidenceCount === 0 && items.length > 0 && (
+                        <div className="mb-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4">
+                          <div className="flex items-start gap-3">
+                            <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                                No clear subscriptions found
+                              </p>
+                              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                                The AI had low confidence in these detections. Please review carefully before importing.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <div className="space-y-4">
+                        {items.map((item, index) => (
                         <div
                           key={index}
                           className={cn(
@@ -424,17 +462,7 @@ export default function ImportPage() {
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Badge
-                                    variant={
-                                      item.confidence >= 80
-                                        ? "default"
-                                        : item.confidence >= 60
-                                        ? "secondary"
-                                        : "outline"
-                                    }
-                                  >
-                                    {item.confidence}% confident
-                                  </Badge>
+                                  <ConfidenceBadge score={item.confidence} />
                                   {item.isDuplicate && (
                                     <Badge variant="destructive">
                                       Duplicate of {item.duplicateOf}
@@ -445,6 +473,56 @@ export default function ImportPage() {
 
                               {item.selected && (
                                 <div className="grid gap-3 sm:grid-cols-2">
+                                  {/* Name */}
+                                  <div>
+                                    <label className="text-xs font-medium text-muted-foreground">
+                                      Name
+                                    </label>
+                                    <Input
+                                      value={item.name}
+                                      onChange={(e) => updateItem(index, { name: e.target.value })}
+                                      className="mt-1"
+                                    />
+                                  </div>
+
+                                  {/* Amount */}
+                                  <div>
+                                    <label className="text-xs font-medium text-muted-foreground">
+                                      Amount
+                                    </label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.amount}
+                                      onChange={(e) =>
+                                        updateItem(index, { amount: parseFloat(e.target.value) || 0 })
+                                      }
+                                      className="mt-1"
+                                    />
+                                  </div>
+
+                                  {/* Cycle */}
+                                  <div>
+                                    <label className="text-xs font-medium text-muted-foreground">
+                                      Cycle
+                                    </label>
+                                    <Select
+                                      value={item.frequency}
+                                      onValueChange={(v) =>
+                                        updateItem(index, { frequency: v as "monthly" | "yearly" })
+                                      }
+                                    >
+                                      <SelectTrigger className="mt-1">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                        <SelectItem value="yearly">Yearly</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  {/* Category */}
                                   <div>
                                     <label className="text-xs font-medium text-muted-foreground">
                                       Category
@@ -475,6 +553,8 @@ export default function ImportPage() {
                                       </SelectContent>
                                     </Select>
                                   </div>
+
+                                  {/* Next Renewal */}
                                   <div>
                                     <label className="text-xs font-medium text-muted-foreground">
                                       Next Renewal
@@ -512,7 +592,8 @@ export default function ImportPage() {
                           </div>
                         </div>
                       ))}
-                    </div>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
