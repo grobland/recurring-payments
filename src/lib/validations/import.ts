@@ -7,6 +7,8 @@ export const detectedSubscriptionSchema = z.object({
   frequency: z.enum(["monthly", "yearly"]),
   confidence: z.number().min(0).max(100),
   rawText: z.string().optional(),
+  transactionDate: z.string().nullable().optional(),
+  dateFound: z.boolean().default(false),
 });
 
 export const confirmImportSchema = z.object({

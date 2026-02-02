@@ -7,6 +7,8 @@ export interface DetectedSubscription {
   frequency: "monthly" | "yearly";
   confidence: number; // 0-100
   rawText?: string;
+  transactionDate?: string; // ISO 8601 format, e.g., "2026-01-15"
+  dateFound: boolean; // Binary: found or not found
 }
 
 export interface ParseResult {
@@ -25,6 +27,7 @@ For each subscription found, extract:
 3. Currency (use ISO 4217 codes like USD, EUR, GBP)
 4. Frequency (monthly or yearly) - infer from the pattern if not explicit
 5. Your confidence level (0-100) in this being a recurring subscription
+6. Transaction date (if visible in the statement) - the date the charge occurred
 
 Look for patterns like:
 - Streaming services (Netflix, Spotify, Disney+, etc.)
@@ -43,8 +46,12 @@ Respond ONLY with a JSON array of objects. Each object should have:
   "currency": "USD",
   "frequency": "monthly",
   "confidence": 85,
-  "rawText": "The exact text from the statement (optional)"
+  "rawText": "The exact text from the statement (optional)",
+  "transactionDate": "2026-01-15",
+  "dateFound": true
 }
+
+If a transaction date is visible near the charge, include it in ISO 8601 format (YYYY-MM-DD). If no date is visible or you cannot determine the date with reasonable certainty, set dateFound to false and transactionDate to null.
 
 If no subscriptions are found, return an empty array: []
 
@@ -54,7 +61,8 @@ Important:
 - Include items that MIGHT be subscriptions but you're unsure about - give them a lower confidence score
 - Normalize company names (e.g., "NETFLIX.COM" -> "Netflix")
 - Convert amounts to numbers (remove currency symbols)
-- Default to "monthly" if frequency is unclear but appears to be a subscription`;
+- Default to "monthly" if frequency is unclear but appears to be a subscription
+- Always use ISO 8601 date format (YYYY-MM-DD) for transactionDate`;
 
 /**
  * Parses a PDF/image to detect recurring subscriptions using GPT-4 Vision
@@ -137,6 +145,10 @@ export async function parseDocumentForSubscriptions(
         name: sub.name.trim(),
         currency: sub.currency.toUpperCase(),
         confidence: Math.min(100, Math.max(0, sub.confidence || 50)),
+        transactionDate: sub.transactionDate && typeof sub.transactionDate === "string"
+          ? sub.transactionDate
+          : undefined,
+        dateFound: Boolean(sub.transactionDate && typeof sub.transactionDate === "string"),
       }));
 
     return {
@@ -212,6 +224,10 @@ export async function parseTextForSubscriptions(text: string): Promise<ParseResu
         name: sub.name.trim(),
         currency: sub.currency.toUpperCase(),
         confidence: Math.min(100, Math.max(0, sub.confidence || 50)),
+        transactionDate: sub.transactionDate && typeof sub.transactionDate === "string"
+          ? sub.transactionDate
+          : undefined,
+        dateFound: Boolean(sub.transactionDate && typeof sub.transactionDate === "string"),
       }));
 
     return {
