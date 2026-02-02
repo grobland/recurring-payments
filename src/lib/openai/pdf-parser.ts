@@ -49,7 +49,9 @@ Respond ONLY with a JSON array of objects. Each object should have:
 If no subscriptions are found, return an empty array: []
 
 Important:
-- Be conservative - only include items you're reasonably confident are recurring subscriptions
+- Include ALL potential subscriptions, even if you have low confidence - let the user decide what to import
+- Use confidence scores to indicate your certainty: 80-100 (high confidence), 50-79 (medium confidence), 0-49 (low confidence)
+- Include items that MIGHT be subscriptions but you're unsure about - give them a lower confidence score
 - Normalize company names (e.g., "NETFLIX.COM" -> "Netflix")
 - Convert amounts to numbers (remove currency symbols)
 - Default to "monthly" if frequency is unclear but appears to be a subscription`;
