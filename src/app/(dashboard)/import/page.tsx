@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
-import { format, addMonths } from "date-fns";
+import { format, addMonths, formatDistanceToNow, parse, isValid } from "date-fns";
 import {
   Upload,
   FileText,
@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   ArrowRight,
 } from "lucide-react";
+
+import { calculateRenewalFromTransaction, parseDateFromAI } from "@/lib/utils/dates";
 
 import { DashboardHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -53,6 +55,8 @@ interface DetectedSubscription {
   confidence: number;
   isDuplicate?: boolean;
   duplicateOf?: string;
+  transactionDate?: string | null;  // ISO string from AI
+  dateFound?: boolean;
 }
 
 interface ImportItem extends DetectedSubscription {
@@ -60,6 +64,14 @@ interface ImportItem extends DetectedSubscription {
   categoryId: string | null;
   nextRenewalDate: Date;
   action: "create" | "skip" | "merge";
+  // Transaction date state
+  transactionDateValue: Date | null;      // Current value (edited or original)
+  originalTransactionDate: Date | null;   // Original AI value for diff
+  transactionDateEdited: boolean;         // Was it manually edited?
+  // Renewal date state
+  renewalDateValue: Date | null;          // Current value (edited or original)
+  originalRenewalDate: Date | null;       // Original calculated value for diff
+  renewalDateEdited: boolean;             // Was it manually edited?
 }
 
 type Step = "upload" | "processing" | "review" | "complete";
@@ -76,6 +88,26 @@ function ConfidenceBadge({ score }: { score: number }) {
       </TooltipTrigger>
       <TooltipContent>
         <p>AI confidence this is a recurring subscription</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function DateConfidenceBadge({ dateFound }: { dateFound: boolean }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {dateFound ? (
+          <Badge variant="success" className="text-xs">Date found</Badge>
+        ) : (
+          <Badge variant="warning" className="text-xs">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            Date not found
+          </Badge>
+        )}
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{dateFound ? "Transaction date extracted from statement" : "Date not found in statement - using today as basis"}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -147,13 +179,27 @@ export default function ImportPage() {
 
       // Transform detected subscriptions to import items
       const importItems: ImportItem[] = data.subscriptions.map(
-        (sub: DetectedSubscription) => ({
-          ...sub,
-          selected: !sub.isDuplicate && sub.confidence >= 80,
-          categoryId: null,
-          nextRenewalDate: addMonths(new Date(), 1),
-          action: sub.isDuplicate ? "skip" : "create",
-        })
+        (sub: DetectedSubscription) => {
+          const parsedTransactionDate = parseDateFromAI(sub.transactionDate);
+          const calculatedRenewal = parsedTransactionDate
+            ? calculateRenewalFromTransaction(parsedTransactionDate, sub.frequency)
+            : addMonths(new Date(), 1);
+
+          return {
+            ...sub,
+            selected: !sub.isDuplicate && sub.confidence >= 80,
+            categoryId: null,
+            nextRenewalDate: calculatedRenewal,
+            action: sub.isDuplicate ? "skip" : "create",
+            // Date state
+            transactionDateValue: parsedTransactionDate,
+            originalTransactionDate: parsedTransactionDate,
+            transactionDateEdited: false,
+            renewalDateValue: calculatedRenewal,
+            originalRenewalDate: calculatedRenewal,
+            renewalDateEdited: false,
+          };
+        }
       );
 
       setItems(importItems);
