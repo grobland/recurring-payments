@@ -18,10 +18,10 @@ Requirements for milestone v1.1 "Import Improvements". Each maps to roadmap phas
 
 ### Statement Sources
 
-- [ ] **SOURCE-01**: User can enter bank/credit card name during import
-- [ ] **SOURCE-02**: Statement source is stored with import audit record
-- [ ] **SOURCE-03**: Subscription detail page displays which source it came from
-- [ ] **SOURCE-04**: Bank/card name field autocompletes from previous sources
+- [x] **SOURCE-01**: User can enter bank/credit card name during import
+- [x] **SOURCE-02**: Statement source is stored with import audit record
+- [x] **SOURCE-03**: Subscription detail page displays which source it came from
+- [x] **SOURCE-04**: Bank/card name field autocompletes from previous sources
 
 ### Renewal Date
 
@@ -94,10 +94,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAT-03 | Phase 5 | Complete |
 | CAT-04 | Phase 5 | Complete |
 | CAT-05 | Phase 5 | Complete |
-| SOURCE-01 | Phase 6 | Pending |
-| SOURCE-02 | Phase 6 | Pending |
-| SOURCE-03 | Phase 6 | Pending |
-| SOURCE-04 | Phase 6 | Pending |
+| SOURCE-01 | Phase 6 | Complete |
+| SOURCE-02 | Phase 6 | Complete |
+| SOURCE-03 | Phase 6 | Complete |
+| SOURCE-04 | Phase 6 | Complete |
 | IMPORT-01 | Phase 7 | Pending |
 | IMPORT-02 | Phase 7 | Pending |
 | IMPORT-03 | Phase 7 | Pending |
