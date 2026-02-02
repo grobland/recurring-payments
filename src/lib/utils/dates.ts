@@ -11,6 +11,9 @@ import {
   startOfDay,
   endOfDay,
   addDays,
+  parseISO,
+  parse,
+  isValid,
 } from "date-fns";
 import type { Frequency } from "@/lib/validations/subscription";
 
@@ -124,4 +127,52 @@ export function filterUpcomingRenewals<
   return subscriptions.filter(
     (sub) => sub.status === "active" && isWithinDays(sub.nextRenewalDate, days)
   );
+}
+
+/**
+ * Calculate next renewal date from a transaction date
+ * Advances the date by billing cycle until it's in the future
+ */
+export function calculateRenewalFromTransaction(
+  transactionDate: Date,
+  frequency: Frequency
+): Date {
+  const today = startOfDay(new Date());
+  let nextRenewal = transactionDate;
+
+  // Advance until we get a future date
+  while (startOfDay(nextRenewal) <= today) {
+    nextRenewal = frequency === "monthly"
+      ? addMonths(nextRenewal, 1)
+      : addYears(nextRenewal, 1);
+  }
+
+  return nextRenewal;
+}
+
+/**
+ * Parse a date string from AI extraction, handling multiple formats
+ * Returns null if parsing fails
+ */
+export function parseDateFromAI(dateString: string | null | undefined): Date | null {
+  if (!dateString) return null;
+
+  // Try ISO format first (requested in prompt)
+  let parsed = parseISO(dateString);
+  if (isValid(parsed)) return parsed;
+
+  // Fallback formats the AI might use
+  const fallbackFormats = [
+    "MM/dd/yyyy",
+    "M/d/yyyy",
+    "MMM d, yyyy",
+    "MMMM d, yyyy",
+  ];
+
+  for (const fmt of fallbackFormats) {
+    parsed = parse(dateString, fmt, new Date());
+    if (isValid(parsed)) return parsed;
+  }
+
+  return null;
 }
