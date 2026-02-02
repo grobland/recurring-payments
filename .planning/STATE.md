@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-31)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Phase 7 - Smart Import UX
+**Current focus:** Phase 8 - Renewal Date Intelligence
 
 ## Current Position
 
-Phase: 7 of 8 (Smart Import UX)
-Plan: 03 of 03
-Status: Phase complete
-Last activity: 2026-02-02 — Completed 07-03-PLAN.md (Smart Import UX with confidence badges and bulk controls)
+Phase: 8 of 8 (Renewal Date Intelligence)
+Plan: 01 of 03
+Status: In progress
+Last activity: 2026-02-02 — Completed 08-01-PLAN.md (Transaction Date Extraction)
 
-Progress: [█████████░] 78% (v1.0 complete, v1.1: 3/4 phases complete, phase 7: 3/3 plans done)
+Progress: [█████████▓] 81% (v1.0 complete, v1.1: 4/4 phases in progress, phase 8: 1/3 plans done)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [█████████░] 78% (v1.0 complete, v1.1: 3/4 phases 
 - Total execution time: ~57 min
 
 **Current Milestone (v1.1):**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: ~6 min
-- Total execution time: 58 min
+- Total execution time: 61.6 min
 
 *Updated after each plan completion*
 
@@ -39,6 +39,9 @@ Recent decisions affecting current work:
 
 | When | Decision | Rationale | Impact |
 |------|----------|-----------|--------|
+| 08-01 | ISO 8601 format for AI-extracted dates | Unambiguous parsing, international standard | Reduced date parsing errors |
+| 08-01 | Binary date confidence (dateFound boolean) | Dates are either found or not, no gray area | Simpler logic, clearer UI indicators |
+| 08-01 | Multi-format date parsing with fallbacks | AI outputs not 100% deterministic | More robust extraction, handles AI format variations |
 | 07-03 | AI prompt returns ALL confidence levels | Changed from 'be conservative' to 'include ALL items with confidence scores' | Users see complete extraction results, can review uncertain detections |
 | 07-03 | Aligned confidence thresholds to 80/50 | More conservative than original 70/40 to reduce false positives | Auto-selects only high-confidence items, users manually review medium/low |
 | 07-01 | Store complete extraction metadata | Include model, timing, page count for comprehensive audit trail | Future debugging and reprocessing |
@@ -77,7 +80,7 @@ None - fresh milestone start.
 
 ## Session Continuity
 
-Last session: 2026-02-02 16:12 UTC
-Stopped at: Completed 07-03-PLAN.md (Smart Import UX) - Phase 7 complete
+Last session: 2026-02-02 21:24 UTC
+Stopped at: Completed 08-01-PLAN.md (Transaction Date Extraction)
 Resume file: None
-Next: Begin Phase 8 (Renewal Date Inference) - final phase of v1.1 milestone
+Next: Continue Phase 8 - 08-02 (Import Review UI) and 08-03 (Inline Date Editing)
