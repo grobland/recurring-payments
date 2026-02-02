@@ -66,7 +66,8 @@ type Step = "upload" | "processing" | "review" | "complete";
 
 function ConfidenceBadge({ score }: { score: number }) {
   const safeScore = typeof score === "number" && !isNaN(score) ? score : 50;
-  const variant = safeScore >= 70 ? "success" : safeScore >= 40 ? "warning" : "destructive";
+  // Thresholds match AI prompt: 80-100 (high), 50-79 (medium), 0-49 (low)
+  const variant = safeScore >= 80 ? "success" : safeScore >= 50 ? "warning" : "destructive";
 
   return (
     <Tooltip>
@@ -148,7 +149,7 @@ export default function ImportPage() {
       const importItems: ImportItem[] = data.subscriptions.map(
         (sub: DetectedSubscription) => ({
           ...sub,
-          selected: !sub.isDuplicate && sub.confidence >= 70,
+          selected: !sub.isDuplicate && sub.confidence >= 80,
           categoryId: null,
           nextRenewalDate: addMonths(new Date(), 1),
           action: sub.isDuplicate ? "skip" : "create",
@@ -185,7 +186,7 @@ export default function ImportPage() {
     );
   };
 
-  const highConfidenceCount = items.filter((item) => item.confidence >= 70).length;
+  const highConfidenceCount = items.filter((item) => item.confidence >= 80).length;
 
   const selectAll = () => {
     setItems((prev) => prev.map((item) => ({ ...item, selected: true, action: "create" as const })));
@@ -199,8 +200,8 @@ export default function ImportPage() {
     setItems((prev) =>
       prev.map((item) => ({
         ...item,
-        selected: !item.isDuplicate && item.confidence >= 70,
-        action: (!item.isDuplicate && item.confidence >= 70) ? "create" as const : "skip" as const,
+        selected: !item.isDuplicate && item.confidence >= 80,
+        action: (!item.isDuplicate && item.confidence >= 80) ? "create" as const : "skip" as const,
       }))
     );
   };
