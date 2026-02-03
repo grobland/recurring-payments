@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Planning next milestone
+**Current focus:** v1.2 Production Polish
 
 ## Current Position
 
-Phase: Ready for next milestone
-Plan: Not started
-Status: v1.1 complete, awaiting v1.2 planning
-Last activity: 2026-02-03 — v1.1 milestone archived
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-03 — Milestone v1.2 started
 
-Progress: [██████████] 100% (v1.0 complete, v1.1 complete)
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -59,6 +59,6 @@ None — fresh milestone start.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: v1.1 Milestone Complete — archived to milestones/
+Stopped at: Milestone v1.2 started — defining requirements
 Resume file: None
-Next: Run `/gsd:new-milestone` to start v1.2 planning
+Next: Complete requirements and roadmap definition

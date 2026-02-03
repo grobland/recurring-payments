@@ -8,6 +8,17 @@ A web application for tracking and managing recurring subscriptions. Users can a
 
 Users can see all their subscriptions in one place and never get surprised by a renewal again.
 
+## Current Milestone: v1.2 Production Polish
+
+**Goal:** Make the app production-ready with comprehensive UX refinements, error handling, and reliability improvements.
+
+**Target features:**
+- Mobile responsiveness and visual polish
+- Loading states, skeleton loaders, and empty state messages
+- User-friendly error messages and form validation
+- API error handling with retry logic
+- Error tracking (Sentry), structured logging, and health checks
+
 ## Current State
 
 **Version:** v1.1 Import Improvements (shipped 2026-02-02)
@@ -42,15 +53,24 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ### Active
 
-(None — ready for next milestone planning)
+- [ ] Mobile responsiveness across all pages
+- [ ] Visual polish (typography, spacing, consistency)
+- [ ] Loading states and skeleton loaders
+- [ ] Empty state messages
+- [ ] User-friendly error messages
+- [ ] Form validation improvements
+- [ ] API error handling with retry logic
+- [ ] Error tracking integration (Sentry)
+- [ ] Structured logging
+- [ ] Health check endpoints
 
 ### Out of Scope
 
 - Stripe billing flows — deferred to future milestone
 - Production domain setup — deferred
-- Mobile app — web-first approach
+- Mobile app — web-first approach (web responsiveness is in scope)
 - AI confidence calibration dashboard — complexity; defer until usage data collected
-- Multi-statement pattern detection — requires historical data; defer to v1.2+
+- Multi-statement pattern detection — requires historical data; defer to v1.3+
 
 ## Context
 
@@ -81,4 +101,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | Command palette for searchable selectors | Better UX than standard Select, reusable pattern | ✓ Good |
 
 ---
-*Last updated: 2026-02-02 after v1.1 milestone*
+*Last updated: 2026-02-03 after v1.2 milestone start*
