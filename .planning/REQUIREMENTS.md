@@ -69,31 +69,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
-| UX-04 | — | Pending |
-| UX-05 | — | Pending |
-| UX-06 | — | Pending |
-| UX-07 | — | Pending |
-| UX-08 | — | Pending |
-| ERR-01 | — | Pending |
-| ERR-02 | — | Pending |
-| ERR-03 | — | Pending |
-| ERR-04 | — | Pending |
-| ERR-05 | — | Pending |
-| ERR-06 | — | Pending |
-| MON-01 | — | Pending |
-| MON-02 | — | Pending |
-| MON-03 | — | Pending |
-| MON-04 | — | Pending |
-| MON-05 | — | Pending |
+| UX-01 | Phase 12 | Pending |
+| UX-02 | Phase 11 | Pending |
+| UX-03 | Phase 11 | Pending |
+| UX-04 | Phase 11 | Pending |
+| UX-05 | Phase 11 | Pending |
+| UX-06 | Phase 12 | Pending |
+| UX-07 | Phase 12 | Pending |
+| UX-08 | Phase 12 | Pending |
+| ERR-01 | Phase 10 | Pending |
+| ERR-02 | Phase 10 | Pending |
+| ERR-03 | Phase 10 | Pending |
+| ERR-04 | Phase 10 | Pending |
+| ERR-05 | Phase 10 | Pending |
+| ERR-06 | Phase 10 | Pending |
+| MON-01 | Phase 9 | Pending |
+| MON-02 | Phase 9 | Pending |
+| MON-03 | Phase 9 | Pending |
+| MON-04 | Phase 9 | Pending |
+| MON-05 | Phase 9 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19
+- Mapped to phases: 19
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-03*
-*Last updated: 2026-02-03 after initial definition*
+*Last updated: 2026-02-03 after roadmap creation*
