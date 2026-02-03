@@ -2,21 +2,17 @@
 
 ## What This Is
 
-A web application for tracking and managing recurring subscriptions. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include a dashboard with spending analytics, email reminders before renewals, and Stripe-powered billing for the app itself.
+A web application for tracking and managing recurring subscriptions. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction with confidence scoring. Features include a dashboard with spending analytics, email reminders before renewals, smart import with transaction date intelligence, and full category management.
 
 ## Core Value
 
 Users can see all their subscriptions in one place and never get surprised by a renewal again.
 
-## Current Milestone: v1.1 Import Improvements
+## Current State
 
-**Goal:** Improve PDF import accuracy and user control, fix data quality issues discovered during testing.
-
-**Target features:**
-- Smart import: Show all statement items with confidence scores, user selects which to import
-- Statement sources: Track bank/credit card name, reuse for future imports
-- Renewal date fix: Calculate from actual transaction dates on statements
-- Category management: Fix duplicates, add full CRUD for categories
+**Version:** v1.1 Import Improvements (shipped 2026-02-02)
+**Codebase:** ~17,700 lines TypeScript, Next.js 16 + Supabase + OpenAI
+**Production URL:** https://recurring-payments.vercel.app
 
 ## Requirements
 
@@ -34,42 +30,35 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Trial system (14-day) — v1.0
 - Service configuration (OpenAI, Stripe, Resend, Vercel) — v1.0
 - E2E test coverage for CRUD and email reminders — v1.0
+- ✓ Show all statement items with confidence scores during import — v1.1
+- ✓ Allow user to select which items to import (not just high-confidence) — v1.1
+- ✓ Store full statement data for reference (rawExtractionData) — v1.1
+- ✓ Capture bank/credit card name as statement source — v1.1
+- ✓ Reuse statement source for future imports from same bank — v1.1
+- ✓ Calculate renewal date from transaction date on statement — v1.1
+- ✓ Fix duplicate categories in edit dropdown — v1.1
+- ✓ Add category CRUD (create, update, delete) — v1.1
+- ✓ Handle category deletion gracefully (subscriptions become uncategorized) — v1.1
 
 ### Active
 
-- [ ] Show all statement items with confidence scores during import
-- [ ] Allow user to select which items to import (not just high-confidence)
-- [ ] Store full statement data for reference
-- [ ] Capture bank/credit card name as statement source
-- [ ] Reuse statement source for future imports from same bank
-- [ ] Calculate renewal date from transaction date on statement
-- [ ] Fix duplicate categories in edit dropdown
-- [ ] Add category CRUD (create, update, delete)
-- [ ] Handle category deletion gracefully (subscriptions become uncategorized)
+(None — ready for next milestone planning)
 
 ### Out of Scope
 
 - Stripe billing flows — deferred to future milestone
 - Production domain setup — deferred
 - Mobile app — web-first approach
+- AI confidence calibration dashboard — complexity; defer until usage data collected
+- Multi-statement pattern detection — requires historical data; defer to v1.2+
 
 ## Context
 
-**Codebase state:** v1.0 complete. All core features working end-to-end. User testing revealed data quality and UX issues with PDF import flow.
+**Codebase state:** v1.1 complete. Smart import with confidence-based selection, statement source tracking, renewal date intelligence, and full category CRUD all working. All 18 v1.1 requirements validated.
 
-**Issues from user testing (2026-01-31):**
-1. PDF import misses some subscriptions — AI only returns high-confidence matches
-2. No way to identify which bank/card a statement came from
-3. Renewal dates are calculated incorrectly — should use statement transaction dates
-4. Category dropdown shows duplicates in edit form
+**Known issues:**
+- Email delivery requires verified Resend domain (RESEND_FROM_EMAIL)
 
-**Priority order:**
-1. Smart import (core UX improvement)
-2. Category management (blocking bug fix)
-3. Statement sources (data organization)
-4. Renewal date fix (data accuracy)
-
-**Production URL:** https://recurring-payments.vercel.app
 **Codebase documentation:** See `.planning/codebase/` for detailed architecture, stack, conventions, and concerns analysis.
 
 ## Constraints
@@ -83,8 +72,13 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Configure Stripe now, build billing later | Focus on core features first, billing is secondary | — Pending |
-| Dev environment only | Reduce scope, validate features before production | — Pending |
-| PDF import as priority | Most unique/interesting feature, proves AI integration works | — Pending |
+| Dev environment only | Reduce scope, validate features before production | ✓ Good |
+| PDF import as priority | Most unique/interesting feature, proves AI integration works | ✓ Good |
+| AI returns ALL items with confidence scores | User reported missing items; "be conservative" prompt filtered too aggressively | ✓ Good |
+| Confidence thresholds 80/50 (not 70/40) | More conservative auto-selection reduces false positives | ✓ Good |
+| Transaction date as source of truth | Renewal dates derived from statement transaction dates, not import date | ✓ Good |
+| Click-to-edit date pattern | Cleaner UI than always-visible inputs | ✓ Good |
+| Command palette for searchable selectors | Better UX than standard Select, reusable pattern | ✓ Good |
 
 ---
-*Last updated: 2026-01-31 after milestone v1.1 started*
+*Last updated: 2026-02-02 after v1.1 milestone*

@@ -2,6 +2,42 @@
 
 ## Completed Milestones
 
+### v1.1 "Import Improvements" (2026-01-31 → 2026-02-02)
+
+**Goal:** Improve PDF import accuracy and user control, fix data quality issues discovered during testing.
+
+**What shipped:**
+- Category management with full CRUD, searchable dropdown, and duplicate prevention
+- Statement source tracking with autocomplete from previous imports
+- Smart import UX showing ALL detected items with confidence scores (green/yellow/red)
+- Renewal date intelligence extracting transaction dates and calculating renewals correctly
+- Inline date editing with visual diff and auto-recalculation
+
+**Phases completed:** 4 (Phases 5-8)
+- Phase 5: Category Management (3 plans)
+- Phase 6: Statement Source Tracking (3 plans)
+- Phase 7: Smart Import UX (3 plans)
+- Phase 8: Renewal Date Intelligence (2 plans)
+
+**Stats:**
+- 11 plans, 57 commits
+- 70 files modified
+- ~17,700 lines TypeScript
+- 3 days development
+
+**Requirements:** 18/18 complete (CAT-01 through CAT-05, SOURCE-01 through SOURCE-04, IMPORT-01 through IMPORT-06, RENEW-01 through RENEW-03)
+
+**Key decisions:**
+- AI prompt returns ALL items with confidence scores (not just high-confidence)
+- Confidence thresholds: 80+ (high/green), 50-79 (medium/yellow), 0-49 (low/red)
+- Transaction date is source of truth for renewal calculation
+- Click-to-edit pattern for inline date fields
+- Command palette pattern for searchable selectors
+
+**What's next:** v1.2 milestone (billing, production deployment, or additional features)
+
+---
+
 ### v1.0 "Get It Running" (2026-01-26 → 2026-01-30)
 
 **Goal:** Configure all service integrations and verify the three core features work end-to-end in a deployed environment.
