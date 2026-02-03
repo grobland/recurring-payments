@@ -1,0 +1,99 @@
+# Requirements: Subscription Manager
+
+**Defined:** 2026-02-03
+**Core Value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
+
+## v1.2 Requirements
+
+Requirements for Production Polish milestone. Each maps to roadmap phases.
+
+### UX Refinements
+
+- [ ] **UX-01**: All pages are mobile responsive (sidebar collapses, forms stack, dashboard adapts)
+- [ ] **UX-02**: Dashboard shows skeleton loaders while data loads
+- [ ] **UX-03**: Subscription list shows skeleton loaders while fetching
+- [ ] **UX-04**: Import page shows loading states during PDF processing
+- [ ] **UX-05**: Empty states show helpful messages (no subscriptions, no categories, no imports)
+- [ ] **UX-06**: Typography is consistent across all pages (font sizes, weights, line heights)
+- [ ] **UX-07**: Spacing is consistent across all pages (padding, margins, gaps)
+- [ ] **UX-08**: Color usage is consistent (primary, secondary, muted, destructive states)
+
+### Error Handling
+
+- [ ] **ERR-01**: API errors show user-friendly toast messages (not technical errors)
+- [ ] **ERR-02**: Form validation shows inline error messages below fields
+- [ ] **ERR-03**: Required field validation prevents submission with clear feedback
+- [ ] **ERR-04**: API calls retry on transient failures (network errors, 503s)
+- [ ] **ERR-05**: PDF import shows clear error messages for invalid files
+- [ ] **ERR-06**: App displays fallback UI when external services unavailable
+
+### Reliability & Monitoring
+
+- [ ] **MON-01**: Sentry integration captures errors with context
+- [ ] **MON-02**: Health check endpoint reports API and database status
+- [ ] **MON-03**: Structured logging for API requests (method, path, duration, status)
+- [ ] **MON-04**: Structured logging for user actions (login, import, CRUD)
+- [ ] **MON-05**: Performance metrics tracked (page load time, API latency)
+
+## Future Requirements
+
+Deferred to later milestones.
+
+### Billing & Monetization
+
+- **BILL-01**: Stripe checkout flow for subscription plans
+- **BILL-02**: Billing portal for managing payment methods
+- **BILL-03**: Usage-based limits for free tier
+
+### Production Deployment
+
+- **PROD-01**: Custom domain setup
+- **PROD-02**: SSL certificate configuration
+- **PROD-03**: CDN configuration for static assets
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Native mobile app | Web responsiveness is sufficient for v1.2 |
+| Offline support | Adds complexity; defer to future |
+| A/B testing infrastructure | Not enough traffic to justify |
+| Custom error pages (404, 500) | Low priority; default Next.js pages acceptable |
+| Internationalization | Single language (English) sufficient |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| UX-01 | — | Pending |
+| UX-02 | — | Pending |
+| UX-03 | — | Pending |
+| UX-04 | — | Pending |
+| UX-05 | — | Pending |
+| UX-06 | — | Pending |
+| UX-07 | — | Pending |
+| UX-08 | — | Pending |
+| ERR-01 | — | Pending |
+| ERR-02 | — | Pending |
+| ERR-03 | — | Pending |
+| ERR-04 | — | Pending |
+| ERR-05 | — | Pending |
+| ERR-06 | — | Pending |
+| MON-01 | — | Pending |
+| MON-02 | — | Pending |
+| MON-03 | — | Pending |
+| MON-04 | — | Pending |
+| MON-05 | — | Pending |
+
+**Coverage:**
+- v1.2 requirements: 19 total
+- Mapped to phases: 0
+- Unmapped: 19
+
+---
+*Requirements defined: 2026-02-03*
+*Last updated: 2026-02-03 after initial definition*
