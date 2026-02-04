@@ -54,11 +54,12 @@ Plans:
   4. Failed API calls retry automatically on network errors or 503 responses
   5. PDF import shows specific error messages ("File too large", "Invalid PDF", "Unable to process")
   6. External service outages display fallback UI with "Service temporarily unavailable"
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — Error utilities, Zod validation messages, form validation modes
-- [ ] 10-02-PLAN.md — Mutation retry logic, import error handling, fallback UI component
+- [x] 10-01-PLAN.md — Error utilities, Zod validation messages, form validation modes
+- [x] 10-02-PLAN.md — Mutation retry logic, import error handling, fallback UI component
+- [ ] 10-03-PLAN.md — Gap closure: Integrate ServiceUnavailable into dashboard pages
 
 ### Phase 11: Loading & Empty States
 
@@ -103,7 +104,7 @@ Phases execute in numeric order: 9 -> 9.1 -> 9.2 -> 10 -> ...
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 9. Reliability Foundation | v1.2 | 2/2 | ✓ Complete | 2026-02-04 |
-| 10. Error Handling | v1.2 | 0/2 | Not started | - |
+| 10. Error Handling | v1.2 | 2/3 | In progress | - |
 | 11. Loading & Empty States | v1.2 | 0/TBD | Not started | - |
 | 12. Mobile & Visual Polish | v1.2 | 0/TBD | Not started | - |
 
