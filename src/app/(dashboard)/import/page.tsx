@@ -46,6 +46,7 @@ import { useCategoryOptions, useImportSources } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils/errors";
 
 interface DetectedSubscription {
   name: string;
@@ -295,8 +296,34 @@ export default function ImportPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to process files");
+        const errorData = await response.json();
+        const errorMessage = errorData.error || "";
+
+        // Map to specific user-friendly messages
+        let userMessage = "Unable to process file. Please try again.";
+
+        if (errorMessage.includes("too large") || errorMessage.includes("10MB")) {
+          userMessage = "File too large (max 10MB). Please use a smaller file.";
+        } else if (errorMessage.includes("Invalid PDF") || errorMessage.includes("invalid format")) {
+          userMessage = "Invalid PDF format. Please upload a valid PDF file.";
+        } else if (errorMessage.includes("No transactions") || errorMessage.includes("no subscriptions")) {
+          userMessage = "No transactions found in this statement. Try a different file or add subscriptions manually.";
+        } else if (errorMessage.includes("OpenAI") || errorMessage.includes("AI")) {
+          userMessage = "AI service temporarily unavailable. Please try again in a moment.";
+        }
+
+        toast.error(userMessage, {
+          duration: Infinity,
+          action: {
+            label: "Try again",
+            onClick: () => {
+              setStep("upload");
+            },
+          },
+        });
+
+        setStep("upload");
+        return;
       }
 
       const data = await response.json();
@@ -332,7 +359,14 @@ export default function ImportPage() {
       setItems(importItems);
       setStep("review");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to process files");
+      // Network errors
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => processFiles(),
+        },
+      });
       setStep("upload");
     } finally {
       setIsProcessing(false);
@@ -487,7 +521,13 @@ export default function ImportPage() {
       setStep("complete");
       toast.success(`Successfully imported ${data.created} subscription(s)`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to import");
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => confirmImport(),
+        },
+      });
     } finally {
       setIsConfirming(false);
     }
