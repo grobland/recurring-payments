@@ -20,12 +20,12 @@ Requirements for Production Polish milestone. Each maps to roadmap phases.
 
 ### Error Handling
 
-- [ ] **ERR-01**: API errors show user-friendly toast messages (not technical errors)
-- [ ] **ERR-02**: Form validation shows inline error messages below fields
-- [ ] **ERR-03**: Required field validation prevents submission with clear feedback
-- [ ] **ERR-04**: API calls retry on transient failures (network errors, 503s)
-- [ ] **ERR-05**: PDF import shows clear error messages for invalid files
-- [ ] **ERR-06**: App displays fallback UI when external services unavailable
+- [x] **ERR-01**: API errors show user-friendly toast messages (not technical errors)
+- [x] **ERR-02**: Form validation shows inline error messages below fields
+- [x] **ERR-03**: Required field validation prevents submission with clear feedback
+- [x] **ERR-04**: API calls retry on transient failures (network errors, 503s)
+- [x] **ERR-05**: PDF import shows clear error messages for invalid files
+- [x] **ERR-06**: App displays fallback UI when external services unavailable
 
 ### Reliability & Monitoring
 
@@ -77,12 +77,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-06 | Phase 12 | Pending |
 | UX-07 | Phase 12 | Pending |
 | UX-08 | Phase 12 | Pending |
-| ERR-01 | Phase 10 | Pending |
-| ERR-02 | Phase 10 | Pending |
-| ERR-03 | Phase 10 | Pending |
-| ERR-04 | Phase 10 | Pending |
-| ERR-05 | Phase 10 | Pending |
-| ERR-06 | Phase 10 | Pending |
+| ERR-01 | Phase 10 | Complete |
+| ERR-02 | Phase 10 | Complete |
+| ERR-03 | Phase 10 | Complete |
+| ERR-04 | Phase 10 | Complete |
+| ERR-05 | Phase 10 | Complete |
+| ERR-06 | Phase 10 | Complete |
 | MON-01 | Phase 9 | Complete |
 | MON-02 | Phase 9 | Complete |
 | MON-03 | Phase 9 | Complete |
@@ -96,4 +96,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-03*
-*Last updated: 2026-02-04 after Phase 9 completion*
+*Last updated: 2026-02-04 after Phase 10 completion*
