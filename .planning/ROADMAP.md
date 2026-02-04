@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 9: Reliability Foundation** - Error tracking, structured logging, health checks
 - [x] **Phase 10: Error Handling** - User-friendly errors, form validation, retry logic
-- [ ] **Phase 11: Loading & Empty States** - Skeleton loaders, empty state messages
+- [x] **Phase 11: Loading & Empty States** - Skeleton loaders, empty state messages
 - [ ] **Phase 12: Mobile & Visual Polish** - Responsive layout, typography, spacing, colors
 
 ## Phase Details
@@ -75,8 +75,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — Shared loading infrastructure, Dashboard and Subscriptions skeletons, empty states
-- [ ] 11-02-PLAN.md — Import page staged processing status, cancel option, import history
+- [x] 11-01-PLAN.md — Shared loading infrastructure, Dashboard and Subscriptions skeletons, empty states
+- [x] 11-02-PLAN.md — Import page staged processing status, cancel option, import history
 
 ### Phase 12: Mobile & Visual Polish
 
@@ -105,7 +105,7 @@ Phases execute in numeric order: 9 -> 9.1 -> 9.2 -> 10 -> ...
 |-------|-----------|----------------|--------|-----------|
 | 9. Reliability Foundation | v1.2 | 2/2 | ✓ Complete | 2026-02-04 |
 | 10. Error Handling | v1.2 | 3/3 | ✓ Complete | 2026-02-04 |
-| 11. Loading & Empty States | v1.2 | 0/2 | Planned | - |
+| 11. Loading & Empty States | v1.2 | 2/2 | ✓ Complete | 2026-02-04 |
 | 12. Mobile & Visual Polish | v1.2 | 0/TBD | Not started | - |
 
 ---

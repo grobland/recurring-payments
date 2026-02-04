@@ -10,10 +10,10 @@ Requirements for Production Polish milestone. Each maps to roadmap phases.
 ### UX Refinements
 
 - [ ] **UX-01**: All pages are mobile responsive (sidebar collapses, forms stack, dashboard adapts)
-- [ ] **UX-02**: Dashboard shows skeleton loaders while data loads
-- [ ] **UX-03**: Subscription list shows skeleton loaders while fetching
-- [ ] **UX-04**: Import page shows loading states during PDF processing
-- [ ] **UX-05**: Empty states show helpful messages (no subscriptions, no categories, no imports)
+- [x] **UX-02**: Dashboard shows skeleton loaders while data loads
+- [x] **UX-03**: Subscription list shows skeleton loaders while fetching
+- [x] **UX-04**: Import page shows loading states during PDF processing
+- [x] **UX-05**: Empty states show helpful messages (no subscriptions, no categories, no imports)
 - [ ] **UX-06**: Typography is consistent across all pages (font sizes, weights, line heights)
 - [ ] **UX-07**: Spacing is consistent across all pages (padding, margins, gaps)
 - [ ] **UX-08**: Color usage is consistent (primary, secondary, muted, destructive states)
@@ -70,10 +70,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | UX-01 | Phase 12 | Pending |
-| UX-02 | Phase 11 | Pending |
-| UX-03 | Phase 11 | Pending |
-| UX-04 | Phase 11 | Pending |
-| UX-05 | Phase 11 | Pending |
+| UX-02 | Phase 11 | Complete |
+| UX-03 | Phase 11 | Complete |
+| UX-04 | Phase 11 | Complete |
+| UX-05 | Phase 11 | Complete |
 | UX-06 | Phase 12 | Pending |
 | UX-07 | Phase 12 | Pending |
 | UX-08 | Phase 12 | Pending |
@@ -96,4 +96,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-03*
-*Last updated: 2026-02-04 after Phase 10 completion*
+*Last updated: 2026-02-04 after Phase 11 completion*
