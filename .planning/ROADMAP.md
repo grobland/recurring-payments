@@ -72,11 +72,11 @@ Plans:
   3. Import page shows spinner with status text during PDF processing
   4. Empty subscription list displays "No subscriptions yet. Add your first subscription or import from a bank statement."
   5. Empty import history displays "No imports yet. Upload a PDF to get started."
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 11-01: TBD
-- [ ] 11-02: TBD
+- [ ] 11-01-PLAN.md — Shared loading infrastructure, Dashboard and Subscriptions skeletons, empty states
+- [ ] 11-02-PLAN.md — Import page staged processing status, cancel option, import history
 
 ### Phase 12: Mobile & Visual Polish
 
@@ -105,7 +105,7 @@ Phases execute in numeric order: 9 -> 9.1 -> 9.2 -> 10 -> ...
 |-------|-----------|----------------|--------|-----------|
 | 9. Reliability Foundation | v1.2 | 2/2 | ✓ Complete | 2026-02-04 |
 | 10. Error Handling | v1.2 | 3/3 | ✓ Complete | 2026-02-04 |
-| 11. Loading & Empty States | v1.2 | 0/TBD | Not started | - |
+| 11. Loading & Empty States | v1.2 | 0/2 | Planned | - |
 | 12. Mobile & Visual Polish | v1.2 | 0/TBD | Not started | - |
 
 ---
