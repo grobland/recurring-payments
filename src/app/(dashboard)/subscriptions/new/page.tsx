@@ -38,7 +38,7 @@ export default function NewSubscriptionPage() {
           { label: "New" },
         ]}
       />
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 md:p-6">
         <Card className="mx-auto max-w-2xl">
           <CardHeader>
             <CardTitle>Add New Subscription</CardTitle>

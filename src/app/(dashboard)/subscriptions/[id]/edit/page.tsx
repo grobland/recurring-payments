@@ -49,7 +49,7 @@ export default function EditSubscriptionPage({ params }: PageProps) {
             { label: "Loading..." },
           ]}
         />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6">
           <Card className="mx-auto max-w-2xl">
             <CardHeader>
               <Skeleton className="h-6 w-48" />
@@ -76,7 +76,7 @@ export default function EditSubscriptionPage({ params }: PageProps) {
             { label: "Not Found" },
           ]}
         />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-bold">Subscription not found</h2>
             <p className="mt-2 text-muted-foreground">
@@ -117,7 +117,7 @@ export default function EditSubscriptionPage({ params }: PageProps) {
           { label: "Edit" },
         ]}
       />
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 md:p-6">
         <Card className="mx-auto max-w-2xl">
           <CardHeader>
             <CardTitle>Edit Subscription</CardTitle>
