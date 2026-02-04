@@ -18,9 +18,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscriptions, useUserStatus } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatRelativeDate, getDaysUntil } from "@/lib/utils/dates";
+import { isRetryableError } from "@/lib/utils/errors";
+import { ServiceUnavailable } from "@/components/shared/service-unavailable";
 
 export default function DashboardPage() {
-  const { data, isLoading, error } = useSubscriptions({ status: "active" });
+  const { data, isLoading, error, refetch } = useSubscriptions({ status: "active" });
   const { user, isTrialActive, daysLeftInTrial } = useUserStatus();
 
   const summary = data?.summary;
@@ -43,6 +45,22 @@ export default function DashboardPage() {
   const needsAttention = subscriptions.filter((sub) => sub.needsUpdate);
 
   const displayCurrency = user?.displayCurrency ?? "USD";
+
+  // Handle service unavailable (503, network errors)
+  if (error && isRetryableError(error)) {
+    return (
+      <>
+        <DashboardHeader title="Dashboard" />
+        <main className="flex-1 p-6">
+          <ServiceUnavailable
+            serviceName="Dashboard"
+            onRetry={() => refetch()}
+            className="max-w-md mx-auto mt-8"
+          />
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

@@ -52,6 +52,8 @@ import {
 } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate, getDaysUntil } from "@/lib/utils/dates";
+import { isRetryableError } from "@/lib/utils/errors";
+import { ServiceUnavailable } from "@/components/shared/service-unavailable";
 import { toast } from "sonner";
 
 export default function SubscriptionsPage() {
@@ -78,7 +80,7 @@ export default function SubscriptionsPage() {
     includeDeleted: showDeleted,
   };
 
-  const { data, isLoading, error } = useSubscriptions(filters);
+  const { data, isLoading, error, refetch } = useSubscriptions(filters);
   const { options: categoryOptions } = useCategoryOptions();
   const deleteMutation = useDeleteSubscription();
   const restoreMutation = useRestoreSubscription();
@@ -259,6 +261,12 @@ export default function SubscriptionsPage() {
               <Skeleton key={i} className="h-16 w-full" />
             ))}
           </div>
+        ) : error && isRetryableError(error) ? (
+          <ServiceUnavailable
+            serviceName="Subscriptions"
+            onRetry={() => refetch()}
+            className="max-w-md mx-auto"
+          />
         ) : error ? (
           <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-destructive">
             Failed to load subscriptions. Please try again.
