@@ -52,7 +52,7 @@ export default function DashboardPage() {
     return (
       <>
         <DashboardHeader title="Dashboard" />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6">
           <ServiceUnavailable
             serviceName="Dashboard"
             onRetry={() => refetch()}
@@ -66,10 +66,10 @@ export default function DashboardPage() {
   return (
     <>
       <DashboardHeader title="Dashboard" />
-      <main className="flex-1 space-y-6 p-6">
+      <main className="flex-1 space-y-4 p-4 md:space-y-6 md:p-6">
         {/* Trial Banner */}
         {isTrialActive && daysLeftInTrial <= 7 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 md:p-4 dark:border-amber-900 dark:bg-amber-950">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
@@ -240,7 +240,7 @@ export default function DashboardPage() {
                       <Link
                         key={sub.id}
                         href={`/subscriptions/${sub.id}`}
-                        className="flex items-center gap-4 rounded-lg p-2 transition-colors hover:bg-muted"
+                        className="flex items-center gap-4 rounded-lg p-2 min-h-[44px] transition-colors hover:bg-muted"
                       >
                         <div
                           className="flex h-10 w-10 items-center justify-center rounded-full"
@@ -288,19 +288,19 @@ export default function DashboardPage() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button className="w-full justify-start" variant="outline" asChild>
+              <Button className="w-full justify-start h-11" variant="outline" asChild>
                 <Link href="/subscriptions/new">
                   <Plus className="mr-2 h-4 w-4" />
                   Add new subscription
                 </Link>
               </Button>
-              <Button className="w-full justify-start" variant="outline" asChild>
+              <Button className="w-full justify-start h-11" variant="outline" asChild>
                 <Link href="/import">
                   <CreditCard className="mr-2 h-4 w-4" />
                   Import from bank statement
                 </Link>
               </Button>
-              <Button className="w-full justify-start" variant="outline" asChild>
+              <Button className="w-full justify-start h-11" variant="outline" asChild>
                 <Link href="/analytics">
                   <TrendingUp className="mr-2 h-4 w-4" />
                   View spending analytics
