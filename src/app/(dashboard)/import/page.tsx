@@ -579,7 +579,7 @@ export default function ImportPage() {
           { label: "Import" },
         ]}
       />
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 md:p-6">
         <div className="mx-auto max-w-3xl space-y-6">
           {/* Header */}
           <div>
@@ -668,7 +668,7 @@ export default function ImportPage() {
                 <Button
                   onClick={processFiles}
                   disabled={files.length === 0 || !statementSource || isProcessing}
-                  className="w-full"
+                  className="w-full h-11"
                 >
                   Process Files
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -691,7 +691,7 @@ export default function ImportPage() {
                 <Button
                   variant="outline"
                   onClick={handleCancel}
-                  className="mt-6"
+                  className="mt-6 h-11"
                 >
                   Cancel
                 </Button>
@@ -810,7 +810,7 @@ export default function ImportPage() {
                                     <Input
                                       value={item.name}
                                       onChange={(e) => updateItem(index, { name: e.target.value })}
-                                      className="mt-1"
+                                      className="mt-1 h-11"
                                     />
                                   </div>
 
@@ -826,7 +826,7 @@ export default function ImportPage() {
                                       onChange={(e) =>
                                         updateItem(index, { amount: parseFloat(e.target.value) || 0 })
                                       }
-                                      className="mt-1"
+                                      className="mt-1 h-11"
                                     />
                                   </div>
 
@@ -841,7 +841,7 @@ export default function ImportPage() {
                                         updateItem(index, { frequency: v as "monthly" | "yearly" })
                                       }
                                     >
-                                      <SelectTrigger className="mt-1">
+                                      <SelectTrigger className="mt-1 h-11">
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -864,7 +864,7 @@ export default function ImportPage() {
                                         })
                                       }
                                     >
-                                      <SelectTrigger className="mt-1">
+                                      <SelectTrigger className="mt-1 h-11">
                                         <SelectValue placeholder="Select category" />
                                       </SelectTrigger>
                                       <SelectContent>
