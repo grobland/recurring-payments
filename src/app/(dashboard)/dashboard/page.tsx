@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSubscriptions, useUserStatus } from "@/lib/hooks";
+import { useSubscriptions, useUserStatus, useDelayedLoading } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatRelativeDate, getDaysUntil } from "@/lib/utils/dates";
 import { isRetryableError } from "@/lib/utils/errors";
@@ -24,6 +24,7 @@ import { ServiceUnavailable } from "@/components/shared/service-unavailable";
 export default function DashboardPage() {
   const { data, isLoading, error, refetch } = useSubscriptions({ status: "active" });
   const { user, isTrialActive, daysLeftInTrial } = useUserStatus();
+  const showSkeleton = useDelayedLoading(isLoading);
 
   const summary = data?.summary;
   const subscriptions = data?.subscriptions ?? [];
@@ -98,10 +99,13 @@ export default function DashboardPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
+              {showSkeleton ? (
                 <>
+                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="mt-2 h-3 w-20" />
+                </>
+              ) : (
+                <div className="animate-in fade-in duration-150">
                   <div className="text-2xl font-bold">
                     {formatCurrency(summary?.totalMonthly ?? 0, displayCurrency)}
                   </div>
@@ -112,7 +116,7 @@ export default function DashboardPage() {
                     )}{" "}
                     per year
                   </p>
-                </>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -125,10 +129,13 @@ export default function DashboardPage() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
+              {showSkeleton ? (
                 <>
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="mt-2 h-3 w-24" />
+                </>
+              ) : (
+                <div className="animate-in fade-in duration-150">
                   <div className="text-2xl font-bold">
                     {summary?.activeCount ?? 0}
                   </div>
@@ -136,7 +143,7 @@ export default function DashboardPage() {
                     {summary?.pausedCount ?? 0} paused,{" "}
                     {summary?.cancelledCount ?? 0} cancelled
                   </p>
-                </>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -149,10 +156,13 @@ export default function DashboardPage() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
+              {showSkeleton ? (
                 <>
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="mt-2 h-3 w-24" />
+                </>
+              ) : (
+                <div className="animate-in fade-in duration-150">
                   <div className="text-2xl font-bold">
                     {summary?.upcomingRenewals?.next7Days ?? 0}
                   </div>
@@ -160,7 +170,7 @@ export default function DashboardPage() {
                     {summary?.upcomingRenewals?.next30Days ?? 0} in the next 30
                     days
                   </p>
-                </>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -173,17 +183,20 @@ export default function DashboardPage() {
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
+              {showSkeleton ? (
                 <>
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="mt-2 h-3 w-24" />
+                </>
+              ) : (
+                <div className="animate-in fade-in duration-150">
                   <div className="text-2xl font-bold">
                     {needsAttention.length}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Subscriptions with outdated info
                   </p>
-                </>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -202,7 +215,7 @@ export default function DashboardPage() {
               </Button>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {showSkeleton ? (
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-4">
@@ -220,7 +233,7 @@ export default function DashboardPage() {
                   No upcoming renewals in the next 7 days
                 </p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 animate-in fade-in duration-150">
                   {upcomingRenewals.map((sub) => {
                     const daysUntil = getDaysUntil(sub.nextRenewalDate);
                     return (
