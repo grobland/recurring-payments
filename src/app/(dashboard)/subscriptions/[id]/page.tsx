@@ -70,7 +70,7 @@ export default function SubscriptionDetailPage({ params }: PageProps) {
             { label: "Loading..." },
           ]}
         />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6">
           <div className="mx-auto max-w-3xl space-y-6">
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-64 w-full" />
@@ -91,7 +91,7 @@ export default function SubscriptionDetailPage({ params }: PageProps) {
             { label: "Not Found" },
           ]}
         />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-2xl font-bold">Subscription not found</h2>
             <p className="mt-2 text-muted-foreground">
@@ -121,10 +121,10 @@ export default function SubscriptionDetailPage({ params }: PageProps) {
           { label: subscription.name },
         ]}
       />
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 md:p-6">
         <div className="mx-auto max-w-3xl space-y-6">
           {/* Header */}
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-4">
               <div
                 className="flex h-16 w-16 items-center justify-center rounded-full"
@@ -147,8 +147,8 @@ export default function SubscriptionDetailPage({ params }: PageProps) {
                 </div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" asChild>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button variant="outline" className="h-11" asChild>
                 <Link href={`/subscriptions/${id}/edit`}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Edit
@@ -156,7 +156,7 @@ export default function SubscriptionDetailPage({ params }: PageProps) {
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive">
+                  <Button variant="destructive" className="h-11">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete
                   </Button>

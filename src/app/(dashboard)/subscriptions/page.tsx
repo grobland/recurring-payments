@@ -136,7 +136,7 @@ export default function SubscriptionsPage() {
           { label: "Subscriptions" },
         ]}
       />
-      <main className="flex-1 space-y-6 p-6">
+      <main className="flex-1 space-y-4 p-4 md:space-y-6 md:p-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -145,7 +145,7 @@ export default function SubscriptionsPage() {
               Manage all your recurring payments
             </p>
           </div>
-          <Button asChild>
+          <Button asChild className="h-11">
             <Link href="/subscriptions/new">
               <Plus className="mr-2 h-4 w-4" />
               Add Subscription
@@ -200,7 +200,7 @@ export default function SubscriptionsPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-              <SelectTrigger className="w-[130px]">
+              <SelectTrigger className="w-full sm:w-[130px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -212,7 +212,7 @@ export default function SubscriptionsPage() {
             </Select>
 
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -229,7 +229,7 @@ export default function SubscriptionsPage() {
               value={frequency}
               onValueChange={(v) => setFrequency(v as typeof frequency)}
             >
-              <SelectTrigger className="w-[130px]">
+              <SelectTrigger className="w-full sm:w-[130px]">
                 <SelectValue placeholder="Frequency" />
               </SelectTrigger>
               <SelectContent>
@@ -243,7 +243,7 @@ export default function SubscriptionsPage() {
               value={sortBy}
               onValueChange={(v) => setSortBy(v as typeof sortBy)}
             >
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -352,7 +352,7 @@ export default function SubscriptionsPage() {
             />
           )
         ) : (
-          <div className="rounded-lg border animate-in fade-in duration-150">
+          <div className="rounded-lg border overflow-x-auto animate-in fade-in duration-150">
             <Table>
               <TableHeader>
                 <TableRow>
