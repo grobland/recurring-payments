@@ -29,11 +29,11 @@ Requirements for Production Polish milestone. Each maps to roadmap phases.
 
 ### Reliability & Monitoring
 
-- [ ] **MON-01**: Sentry integration captures errors with context
-- [ ] **MON-02**: Health check endpoint reports API and database status
-- [ ] **MON-03**: Structured logging for API requests (method, path, duration, status)
-- [ ] **MON-04**: Structured logging for user actions (login, import, CRUD)
-- [ ] **MON-05**: Performance metrics tracked (page load time, API latency)
+- [x] **MON-01**: Sentry integration captures errors with context
+- [x] **MON-02**: Health check endpoint reports API and database status
+- [x] **MON-03**: Structured logging for API requests (method, path, duration, status)
+- [x] **MON-04**: Structured logging for user actions (login, import, CRUD)
+- [x] **MON-05**: Performance metrics tracked (page load time, API latency)
 
 ## Future Requirements
 
@@ -83,11 +83,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ERR-04 | Phase 10 | Pending |
 | ERR-05 | Phase 10 | Pending |
 | ERR-06 | Phase 10 | Pending |
-| MON-01 | Phase 9 | Pending |
-| MON-02 | Phase 9 | Pending |
-| MON-03 | Phase 9 | Pending |
-| MON-04 | Phase 9 | Pending |
-| MON-05 | Phase 9 | Pending |
+| MON-01 | Phase 9 | Complete |
+| MON-02 | Phase 9 | Complete |
+| MON-03 | Phase 9 | Complete |
+| MON-04 | Phase 9 | Complete |
+| MON-05 | Phase 9 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 19 total
@@ -96,4 +96,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-03*
-*Last updated: 2026-02-03 after roadmap creation*
+*Last updated: 2026-02-04 after Phase 9 completion*
