@@ -708,15 +708,15 @@ export default function ImportPage() {
                 </CardHeader>
                 <CardContent>
                   {items.length > 0 && (
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={selectAll}>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={selectAll} className="h-11">
                           Select all
                         </Button>
-                        <Button variant="outline" size="sm" onClick={selectNone}>
+                        <Button variant="outline" size="sm" onClick={selectNone} className="h-11">
                           Select none
                         </Button>
-                        <Button variant="outline" size="sm" onClick={selectHighConfidence}>
+                        <Button variant="outline" size="sm" onClick={selectHighConfidence} className="h-11">
                           Select high confidence ({highConfidenceCount})
                         </Button>
                       </div>
@@ -928,11 +928,11 @@ export default function ImportPage() {
               </Card>
 
               {items.length > 0 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-muted-foreground">
                     {selectedCount} of {items.length} subscriptions selected
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-2">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -941,12 +941,14 @@ export default function ImportPage() {
                         setItems([]);
                         setStatementSource("");
                       }}
+                      className="w-full sm:w-auto h-11"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={confirmImport}
                       disabled={selectedCount === 0 || isConfirming}
+                      className="w-full sm:w-auto h-11"
                     >
                       {isConfirming ? (
                         <>
@@ -983,7 +985,7 @@ export default function ImportPage() {
                     {result.skipped} skipped
                   </p>
                 )}
-                <div className="mt-6 flex justify-center gap-2">
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center sm:gap-2">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -993,10 +995,11 @@ export default function ImportPage() {
                       setResult(null);
                       setStatementSource("");
                     }}
+                    className="w-full sm:w-auto h-11"
                   >
                     Import More
                   </Button>
-                  <Button onClick={() => router.push("/subscriptions")}>
+                  <Button onClick={() => router.push("/subscriptions")} className="w-full sm:w-auto h-11">
                     View Subscriptions
                   </Button>
                 </div>
