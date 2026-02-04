@@ -61,6 +61,8 @@ export function SubscriptionForm({
 
   const form = useForm<CreateSubscriptionInput>({
     resolver: zodResolver(createSubscriptionFormSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
     defaultValues: {
       name: "",
       description: "",
