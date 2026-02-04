@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscriptions, useUserStatus } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
+import { isRetryableError } from "@/lib/utils/errors";
+import { ServiceUnavailable } from "@/components/shared/service-unavailable";
 
 export default function AnalyticsPage() {
-  const { data, isLoading } = useSubscriptions({ status: "active" });
+  const { data, isLoading, error, refetch } = useSubscriptions({ status: "active" });
   const { user } = useUserStatus();
 
   const subscriptions = data?.subscriptions ?? [];
@@ -113,6 +115,28 @@ export default function AnalyticsPage() {
   const handleExport = () => {
     window.location.href = "/api/subscriptions/export";
   };
+
+  // Handle service unavailable (503, network errors)
+  if (error && isRetryableError(error)) {
+    return (
+      <>
+        <DashboardHeader
+          title="Analytics"
+          breadcrumbs={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Analytics" },
+          ]}
+        />
+        <main className="flex-1 p-6">
+          <ServiceUnavailable
+            serviceName="Analytics"
+            onRetry={() => refetch()}
+            className="max-w-md mx-auto mt-8"
+          />
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
