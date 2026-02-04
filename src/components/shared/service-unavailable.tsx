@@ -25,14 +25,14 @@ export function ServiceUnavailable({
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
           <AlertTriangle className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
         </div>
-        <CardTitle>Service Temporarily Unavailable</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-lg md:text-xl">Service Temporarily Unavailable</CardTitle>
+        <CardDescription className="text-sm md:text-base">
           {serviceName} is currently unavailable. Please try again in a moment.
         </CardDescription>
       </CardHeader>
       {onRetry && (
         <CardContent className="text-center">
-          <Button onClick={onRetry} variant="outline">
+          <Button onClick={onRetry} variant="outline" className="h-11 w-full sm:w-auto">
             Try Again
           </Button>
           <p className="mt-4 text-sm text-muted-foreground">
