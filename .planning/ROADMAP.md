@@ -36,11 +36,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. API requests log method, path, duration, and status code in structured format
   4. User actions (login, import, subscription CRUD) are logged with user context
   5. Page load times and API latency are measured and reported
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
+- [ ] 09-01-PLAN.md — Sentry error tracking and performance monitoring
+- [ ] 09-02-PLAN.md — Structured logging with Pino and health check endpoint
 
 ### Phase 10: Error Handling
 
@@ -102,11 +102,11 @@ Phases execute in numeric order: 9 -> 9.1 -> 9.2 -> 10 -> ...
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 9. Reliability Foundation | v1.2 | 0/TBD | Not started | - |
+| 9. Reliability Foundation | v1.2 | 0/2 | Planned | - |
 | 10. Error Handling | v1.2 | 0/TBD | Not started | - |
 | 11. Loading & Empty States | v1.2 | 0/TBD | Not started | - |
 | 12. Mobile & Visual Polish | v1.2 | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-03*
-*Last updated: 2026-02-03*
+*Last updated: 2026-02-04*
