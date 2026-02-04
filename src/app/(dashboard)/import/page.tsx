@@ -42,7 +42,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { AccountCombobox } from "@/components/import/account-combobox";
-import { useCategoryOptions, useImportSources } from "@/lib/hooks";
+import { EmptyState } from "@/components/shared/empty-state";
+import { useCategoryOptions, useImportSources, useImportHistory } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -76,6 +77,7 @@ interface ImportItem extends DetectedSubscription {
 }
 
 type Step = "upload" | "processing" | "review" | "complete";
+type ProcessingStatus = "uploading" | "analyzing" | "extracting" | null;
 
 function ConfidenceBadge({ score }: { score: number }) {
   const safeScore = typeof score === "number" && !isNaN(score) ? score : 50;
@@ -257,9 +259,17 @@ export default function ImportPage() {
     pageCount: number;
     extractedAt: string;
   } | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>(null);
 
   const { options: categoryOptions } = useCategoryOptions();
   const { data: importSources = [] } = useImportSources();
+  const { data: importHistoryData, isLoading: isLoadingHistory } = useImportHistory();
+
+  const statusMessages: Record<Exclude<ProcessingStatus, null>, string> = {
+    uploading: "Uploading...",
+    analyzing: "Analyzing document...",
+    extracting: "Extracting subscriptions...",
+  };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles((prev) => [...prev, ...acceptedFiles]);
@@ -280,11 +290,27 @@ export default function ImportPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleCancel = () => {
+    // Clear any status
+    setProcessingStatus(null);
+    setIsProcessing(false);
+    setStep("upload");
+  };
+
   const processFiles = async () => {
     if (files.length === 0) return;
 
     setIsProcessing(true);
     setStep("processing");
+
+    // Set staged status with simulated progress
+    setProcessingStatus("uploading");
+    const analyzingTimeout = setTimeout(() => {
+      setProcessingStatus("analyzing");
+    }, 500);
+    const extractingTimeout = setTimeout(() => {
+      setProcessingStatus("extracting");
+    }, 1500);
 
     try {
       const formData = new FormData();
@@ -296,6 +322,8 @@ export default function ImportPage() {
       });
 
       if (!response.ok) {
+        clearTimeout(analyzingTimeout);
+        clearTimeout(extractingTimeout);
         const errorData = await response.json();
         const errorMessage = errorData.error || "";
 
@@ -322,11 +350,14 @@ export default function ImportPage() {
           },
         });
 
+        setProcessingStatus(null);
         setStep("upload");
         return;
       }
 
       const data = await response.json();
+      clearTimeout(analyzingTimeout);
+      clearTimeout(extractingTimeout);
 
       // Store raw extraction data for confirm step
       setRawExtractionData(data.rawExtractionData);
@@ -357,9 +388,12 @@ export default function ImportPage() {
       );
 
       setItems(importItems);
+      setProcessingStatus(null);
       setStep("review");
     } catch (error) {
       // Network errors
+      clearTimeout(analyzingTimeout);
+      clearTimeout(extractingTimeout);
       toast.error(getErrorMessage(error), {
         duration: Infinity,
         action: {
@@ -367,6 +401,7 @@ export default function ImportPage() {
           onClick: () => processFiles(),
         },
       });
+      setProcessingStatus(null);
       setStep("upload");
     } finally {
       setIsProcessing(false);
@@ -648,12 +683,18 @@ export default function ImportPage() {
               <CardContent className="py-12 text-center">
                 <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
                 <p className="mt-4 text-lg font-medium">
-                  Analyzing your documents...
+                  {processingStatus ? statusMessages[processingStatus] : "Processing..."}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   This may take a moment
                 </p>
-                <Progress value={33} className="mt-6 mx-auto max-w-xs" />
+                <Button
+                  variant="outline"
+                  onClick={handleCancel}
+                  className="mt-6"
+                >
+                  Cancel
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -962,6 +1003,60 @@ export default function ImportPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Import History */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Import History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingHistory ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="space-y-2 flex-1">
+                        <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                        <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+                      </div>
+                      <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                    </div>
+                  ))}
+                </div>
+              ) : importHistoryData?.imports && importHistoryData.imports.length > 0 ? (
+                <div className="space-y-2">
+                  {importHistoryData.imports.map((importItem) => (
+                    <div
+                      key={importItem.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div>
+                        <p className="font-medium">{importItem.statementSource}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(importItem.createdAt), "MMM d, yyyy")}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">
+                          {importItem.subscriptionsCreated} imported
+                        </p>
+                        {importItem.subscriptionsSkipped > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {importItem.subscriptionsSkipped} skipped
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={FileText}
+                  title="No imports yet"
+                  description="Upload a PDF bank statement to automatically detect your subscriptions."
+                />
+              )}
+            </CardContent>
+          </Card>
         </div>
       </main>
     </>
