@@ -11,14 +11,16 @@ export const updateUserSchema = z.object({
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required"),
+    currentPassword: z
+      .string({ error: "This field is required" })
+      .min(1, "This field is required"),
     newPassword: z
-      .string()
+      .string({ error: "This field is required" })
       .min(8, "Password must be at least 8 characters")
       .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
       .regex(/[a-z]/, "Password must contain at least one lowercase letter")
       .regex(/[0-9]/, "Password must contain at least one number"),
-    confirmPassword: z.string(),
+    confirmPassword: z.string({ error: "This field is required" }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Passwords do not match",
@@ -26,9 +28,11 @@ export const changePasswordSchema = z
   });
 
 export const deleteAccountSchema = z.object({
-  password: z.string().min(1, "Password is required to delete account"),
+  password: z
+    .string({ error: "This field is required" })
+    .min(1, "Password is required to delete account"),
   confirmation: z
-    .string()
+    .string({ error: "This field is required" })
     .refine((val) => val === "DELETE", {
       message: "Please type DELETE to confirm",
     }),

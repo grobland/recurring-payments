@@ -5,15 +5,27 @@ export const frequencyEnum = z.enum(["monthly", "yearly"]);
 
 // Form schema (for react-hook-form with type-safe fields)
 export const createSubscriptionFormSchema = z.object({
-  name: z.string().min(1, "Name is required").max(255),
+  name: z
+    .string({ error: "This field is required" })
+    .min(1, "This field is required")
+    .max(255, "Name must be 255 characters or less"),
   description: z.string().max(1000).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
   url: z.string().url("Please enter a valid URL").optional().nullable().or(z.literal("")),
   categoryId: z.string().uuid("Invalid category").optional().nullable(),
-  amount: z.number().positive("Amount must be positive").max(999999.99, "Amount is too large"),
-  currency: z.string().length(3, "Currency code must be 3 characters"),
-  frequency: frequencyEnum,
-  nextRenewalDate: z.date({ message: "Please select a valid date" }),
+  amount: z
+    .number({ error: "Please enter a valid amount" })
+    .positive("Amount must be positive")
+    .max(999999.99, "Amount is too large"),
+  currency: z
+    .string({ error: "Please select a currency" })
+    .length(3, "Currency code must be 3 characters"),
+  frequency: z.enum(["monthly", "yearly"], {
+    error: "Please select a frequency",
+  }),
+  nextRenewalDate: z.date({
+    error: "Please select a renewal date",
+  }),
   startDate: z.date().optional().nullable(),
   status: subscriptionStatusEnum,
   reminderEnabled: z.boolean(),
@@ -22,18 +34,27 @@ export const createSubscriptionFormSchema = z.object({
 
 // API schema (with coercion for form data)
 export const createSubscriptionSchema = z.object({
-  name: z.string().min(1, "Name is required").max(255),
+  name: z
+    .string({ error: "This field is required" })
+    .min(1, "This field is required")
+    .max(255, "Name must be 255 characters or less"),
   description: z.string().max(1000).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
   url: z.string().url("Please enter a valid URL").optional().nullable().or(z.literal("")),
   categoryId: z.string().uuid("Invalid category").optional().nullable(),
   amount: z.coerce
-    .number()
+    .number({ error: "Please enter a valid amount" })
     .positive("Amount must be positive")
     .max(999999.99, "Amount is too large"),
-  currency: z.string().length(3, "Currency code must be 3 characters"),
-  frequency: frequencyEnum,
-  nextRenewalDate: z.coerce.date({ message: "Please select a valid date" }),
+  currency: z
+    .string({ error: "Please select a currency" })
+    .length(3, "Currency code must be 3 characters"),
+  frequency: z.enum(["monthly", "yearly"], {
+    error: "Please select a frequency",
+  }),
+  nextRenewalDate: z.coerce.date({
+    error: "Please select a renewal date",
+  }),
   startDate: z.coerce.date().optional().nullable(),
   status: subscriptionStatusEnum.default("active"),
   reminderEnabled: z.boolean().default(true),

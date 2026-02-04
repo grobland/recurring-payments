@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 export const detectedSubscriptionSchema = z.object({
-  name: z.string().min(1),
-  amount: z.number().positive(),
+  name: z.string({ error: "This field is required" }).min(1),
+  amount: z
+    .number({ error: "Please enter a valid amount" })
+    .positive(),
   currency: z.string().length(3),
   frequency: z.enum(["monthly", "yearly"]),
   confidence: z.number().min(0).max(100),
@@ -14,18 +16,24 @@ export const detectedSubscriptionSchema = z.object({
 export const confirmImportSchema = z.object({
   subscriptions: z.array(
     z.object({
-      name: z.string().min(1, "Name is required"),
-      amount: z.number().positive("Amount must be positive"),
+      name: z
+        .string({ error: "This field is required" })
+        .min(1, "This field is required"),
+      amount: z
+        .number({ error: "Please enter a valid amount" })
+        .positive("Amount must be positive"),
       currency: z.string().length(3),
       frequency: z.enum(["monthly", "yearly"]),
       categoryId: z.string().uuid().optional().nullable(),
-      nextRenewalDate: z.coerce.date(),
+      nextRenewalDate: z.coerce.date({
+        error: "Please select a renewal date",
+      }),
       action: z.enum(["create", "skip", "merge"]),
       mergeWithId: z.string().uuid().optional(), // If action is "merge"
     })
   ),
   statementSource: z
-    .string()
+    .string({ error: "This field is required" })
     .min(1, "Account name is required")
     .max(50, "Account name must be 50 characters or less")
     .trim(),
