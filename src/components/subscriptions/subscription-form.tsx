@@ -90,7 +90,7 @@ export function SubscriptionForm({
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         {/* Basic Info */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Basic Information</h3>
+          <h3 className="text-base md:text-lg font-medium">Basic Information</h3>
 
           <FormField
             control={form.control}
@@ -99,7 +99,7 @@ export function SubscriptionForm({
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Netflix, Spotify, etc." {...field} />
+                  <Input placeholder="Netflix, Spotify, etc." className="h-11" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -115,6 +115,7 @@ export function SubscriptionForm({
                 <FormControl>
                   <Input
                     placeholder="Brief description"
+                    className="h-11"
                     {...field}
                     value={field.value ?? ""}
                   />
@@ -134,6 +135,7 @@ export function SubscriptionForm({
                   <Input
                     type="url"
                     placeholder="https://example.com"
+                    className="h-11"
                     {...field}
                     value={field.value ?? ""}
                   />
@@ -166,7 +168,7 @@ export function SubscriptionForm({
 
         {/* Cost */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Cost</h3>
+          <h3 className="text-base md:text-lg font-medium">Cost</h3>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <FormField
@@ -181,6 +183,7 @@ export function SubscriptionForm({
                       step="0.01"
                       min="0"
                       placeholder="9.99"
+                      className="h-11"
                       {...field}
                       onChange={(e) =>
                         field.onChange(parseFloat(e.target.value) || 0)
@@ -200,7 +203,7 @@ export function SubscriptionForm({
                   <FormLabel>Currency</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11">
                         <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
                     </FormControl>
@@ -225,7 +228,7 @@ export function SubscriptionForm({
                   <FormLabel>Frequency</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11">
                         <SelectValue placeholder="Select frequency" />
                       </SelectTrigger>
                     </FormControl>
@@ -246,7 +249,7 @@ export function SubscriptionForm({
 
         {/* Dates */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Dates</h3>
+          <h3 className="text-base md:text-lg font-medium">Dates</h3>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField
@@ -261,7 +264,7 @@ export function SubscriptionForm({
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full pl-3 text-left font-normal",
+                            "w-full pl-3 text-left font-normal h-11",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -300,7 +303,7 @@ export function SubscriptionForm({
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full pl-3 text-left font-normal",
+                            "w-full pl-3 text-left font-normal h-11",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -334,7 +337,7 @@ export function SubscriptionForm({
 
         {/* Status & Reminders */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Status & Reminders</h3>
+          <h3 className="text-base md:text-lg font-medium">Status & Reminders</h3>
 
           <FormField
             control={form.control}
@@ -344,7 +347,7 @@ export function SubscriptionForm({
                 <FormLabel>Status</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                   </FormControl>
@@ -402,12 +405,12 @@ export function SubscriptionForm({
         />
 
         {/* Actions */}
-        <div className="flex gap-4">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : submitLabel}
-          </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto h-11">
             Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto h-11">
+            {isSubmitting ? "Saving..." : submitLabel}
           </Button>
         </div>
       </form>
