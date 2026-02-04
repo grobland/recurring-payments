@@ -92,7 +92,7 @@ export default function SettingsPage() {
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your name" {...field} />
+                      <Input placeholder="Your name" className="h-11" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -104,7 +104,7 @@ export default function SettingsPage() {
                 <Input
                   value={data?.user?.email ?? ""}
                   disabled
-                  className="mt-2 bg-muted"
+                  className="mt-2 bg-muted h-11"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
                   Email cannot be changed
@@ -122,7 +122,7 @@ export default function SettingsPage() {
                       value={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-11">
                           <SelectValue placeholder="Select currency" />
                         </SelectTrigger>
                       </FormControl>
@@ -142,6 +142,7 @@ export default function SettingsPage() {
               <Button
                 type="submit"
                 disabled={updateUser.isPending || !form.formState.isDirty}
+                className="h-11"
               >
                 {updateUser.isPending ? (
                   <>

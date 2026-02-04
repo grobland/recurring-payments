@@ -46,7 +46,7 @@ export default function SettingsLayout({
           { label: "Settings" },
         ]}
       />
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 md:p-6">
         <div className="mx-auto max-w-4xl">
           <div className="flex flex-col gap-8 md:flex-row">
             {/* Sidebar Navigation */}
@@ -57,7 +57,7 @@ export default function SettingsLayout({
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors min-h-[44px]",
                         pathname === item.href
                           ? "bg-primary text-primary-foreground"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
