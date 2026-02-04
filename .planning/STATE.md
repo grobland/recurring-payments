@@ -60,7 +60,7 @@ Summary of established patterns:
 | Mutation retry pattern | 2 retries with exponential backoff (1s, 2s) on transient errors |
 | Toast error pattern | duration: Infinity with "Try again" action button |
 | Service outage fallback | isRetryableError(error) check -> ServiceUnavailable component with onRetry={refetch} |
-| Delayed loading pattern | useDelayedLoading hook with 300ms delay before showing skeletons |
+| Delayed loading pattern | useDelayedLoading hook with 200ms delay + 300ms minimum display to avoid flash |
 | Skeleton loading | Show varied-width skeletons (not uniform) for more natural appearance |
 | Empty states | Shared EmptyState component with Lucide icon, title, description, optional actions |
 | Staged status feedback | Simulate multi-stage progress with setTimeout for better perceived performance |
