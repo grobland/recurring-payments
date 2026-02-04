@@ -90,11 +90,12 @@ Plans:
   4. Typography follows consistent scale (headings, body, labels, captions)
   5. Spacing uses consistent values (padding, margins, gaps match design system)
   6. Colors are applied consistently (primary actions, secondary actions, muted text, destructive states)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md — Mobile-optimized spacing and touch targets for dashboard pages
+- [ ] 12-02-PLAN.md — Form mobile polish with touch targets and button layouts
+- [ ] 12-03-PLAN.md — Remaining pages, shared components, and human verification
 
 ## Progress
 
@@ -106,7 +107,7 @@ Phases execute in numeric order: 9 -> 9.1 -> 9.2 -> 10 -> ...
 | 9. Reliability Foundation | v1.2 | 2/2 | ✓ Complete | 2026-02-04 |
 | 10. Error Handling | v1.2 | 3/3 | ✓ Complete | 2026-02-04 |
 | 11. Loading & Empty States | v1.2 | 2/2 | ✓ Complete | 2026-02-04 |
-| 12. Mobile & Visual Polish | v1.2 | 0/TBD | Not started | - |
+| 12. Mobile & Visual Polish | v1.2 | 0/3 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-03*
