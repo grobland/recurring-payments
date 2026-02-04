@@ -4,8 +4,10 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import type { User } from "@/lib/db/schema";
+import { isRetryableError, getErrorMessage } from "@/lib/utils/errors";
 
 // Query keys
 export const userKeys = {
@@ -114,6 +116,27 @@ export function useUpdateUser() {
 
   return useMutation({
     mutationFn: updateUser,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     onSuccess: (data) => {
       queryClient.setQueryData(userKeys.profile(), data);
     },
@@ -126,6 +149,27 @@ export function useUpdateUser() {
 export function useDeleteAccount() {
   return useMutation({
     mutationFn: deleteAccount,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     // After deletion, the user will be signed out, so no cache invalidation needed
   });
 }
@@ -136,6 +180,27 @@ export function useDeleteAccount() {
 export function useExportData() {
   return useMutation({
     mutationFn: exportData,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     onSuccess: (blob) => {
       // Trigger download
       const url = window.URL.createObjectURL(blob);

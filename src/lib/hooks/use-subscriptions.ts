@@ -4,11 +4,13 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type {
   SubscriptionWithCategory,
   SubscriptionSummary,
 } from "@/types/subscription";
 import type { CreateSubscriptionInput, UpdateSubscriptionInput } from "@/lib/validations/subscription";
+import { isRetryableError, getErrorMessage } from "@/lib/utils/errors";
 
 // Query keys
 export const subscriptionKeys = {
@@ -196,6 +198,27 @@ export function useCreateSubscription() {
 
   return useMutation({
     mutationFn: createSubscription,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     onSuccess: () => {
       // Invalidate all subscription lists
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.lists() });
@@ -211,6 +234,27 @@ export function useUpdateSubscription() {
 
   return useMutation({
     mutationFn: updateSubscription,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     onSuccess: (data, variables) => {
       // Update the specific subscription in cache
       queryClient.setQueryData(
@@ -231,6 +275,27 @@ export function useDeleteSubscription() {
 
   return useMutation({
     mutationFn: deleteSubscription,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     onSuccess: (_, id) => {
       // Remove from detail cache
       queryClient.removeQueries({ queryKey: subscriptionKeys.detail(id) });
@@ -248,6 +313,27 @@ export function useRestoreSubscription() {
 
   return useMutation({
     mutationFn: restoreSubscription,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     onSuccess: (data, id) => {
       // Add back to cache
       queryClient.setQueryData(subscriptionKeys.detail(id), data);

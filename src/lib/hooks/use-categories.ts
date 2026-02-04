@@ -4,8 +4,10 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { Category } from "@/lib/db/schema";
 import type { CreateCategoryInput, UpdateCategoryInput } from "@/lib/validations/category";
+import { isRetryableError, getErrorMessage } from "@/lib/utils/errors";
 
 // Query keys
 export const categoryKeys = {
@@ -138,6 +140,27 @@ export function useCreateCategory() {
 
   return useMutation({
     mutationFn: createCategory,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     onSuccess: (data) => {
       // Optimistically add to the list
       queryClient.setQueryData<CategoriesResponse>(
@@ -161,6 +184,27 @@ export function useUpdateCategory() {
 
   return useMutation({
     mutationFn: updateCategory,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     onSuccess: (data, variables) => {
       // Update the specific category in cache
       queryClient.setQueryData(categoryKeys.detail(variables.id), data);
@@ -188,6 +232,27 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: deleteCategory,
+    retry: (failureCount, error) => {
+      // Only retry on network errors or 503
+      if (!isRetryableError(error)) return false;
+      // Retry up to 2 times (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), {
+        duration: Infinity,
+        action: {
+          label: "Try again",
+          onClick: () => {
+            // User can manually retry via form resubmit
+          },
+        },
+      });
+    },
     onSuccess: (_, id) => {
       // Remove from detail cache
       queryClient.removeQueries({ queryKey: categoryKeys.detail(id) });
