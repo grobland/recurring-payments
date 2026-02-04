@@ -13,6 +13,7 @@ import {
   RotateCcw,
   ExternalLink,
   Filter,
+  FileUp,
 } from "lucide-react";
 
 import { DashboardHeader } from "@/components/layout";
@@ -48,13 +49,21 @@ import {
   useDeleteSubscription,
   useRestoreSubscription,
   useCategoryOptions,
+  useDelayedLoading,
   type SubscriptionFilters,
 } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate, getDaysUntil } from "@/lib/utils/dates";
 import { isRetryableError } from "@/lib/utils/errors";
 import { ServiceUnavailable } from "@/components/shared/service-unavailable";
+import { EmptyState } from "@/components/shared/empty-state";
 import { toast } from "sonner";
+
+const SKELETON_WIDTHS = {
+  name: ["w-32", "w-40", "w-36", "w-28", "w-44"],
+  category: ["w-20", "w-24", "w-16", "w-20", "w-24"],
+  amount: ["w-16", "w-14", "w-18", "w-16", "w-14"],
+};
 
 export default function SubscriptionsPage() {
   const searchParams = useSearchParams();
@@ -81,6 +90,7 @@ export default function SubscriptionsPage() {
   };
 
   const { data, isLoading, error, refetch } = useSubscriptions(filters);
+  const showSkeleton = useDelayedLoading(isLoading);
   const { options: categoryOptions } = useCategoryOptions();
   const deleteMutation = useDeleteSubscription();
   const restoreMutation = useRestoreSubscription();
@@ -255,11 +265,54 @@ export default function SubscriptionsPage() {
         </div>
 
         {/* Content */}
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
+        {showSkeleton ? (
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Frequency</TableHead>
+                  <TableHead>Next Renewal</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <Skeleton className={`h-4 ${SKELETON_WIDTHS.name[i]}`} />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className={`h-6 ${SKELETON_WIDTHS.category[i]} rounded-full`} />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className={`h-4 ${SKELETON_WIDTHS.amount[i]}`} />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-16 rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-8" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         ) : error && isRetryableError(error) ? (
           <ServiceUnavailable
@@ -272,9 +325,34 @@ export default function SubscriptionsPage() {
             Failed to load subscriptions. Please try again.
           </div>
         ) : displayedSubscriptions.length === 0 ? (
-          <EmptyState hasFilters={!!search || status !== "all" || category !== "all"} />
+          !!search || status !== "all" || category !== "all" ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+              <CreditCard className="h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-semibold">
+                No subscriptions found
+              </h3>
+              <p className="mt-2 text-center text-sm text-muted-foreground">
+                Try adjusting your filters to find what you're looking for.
+              </p>
+            </div>
+          ) : (
+            <EmptyState
+              icon={CreditCard}
+              title="No subscriptions yet"
+              description="Add your first subscription to start tracking your recurring payments, or import them from a bank statement."
+              primaryAction={{
+                label: "Add subscription",
+                href: "/subscriptions/new",
+                icon: Plus,
+              }}
+              secondaryAction={{
+                label: "Import from PDF",
+                href: "/import",
+              }}
+            />
+          )
         ) : (
-          <div className="rounded-lg border">
+          <div className="rounded-lg border animate-in fade-in duration-150">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -437,29 +515,5 @@ function StatusBadge({ status }: { status: "active" | "paused" | "cancelled" }) 
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
-  );
-}
-
-function EmptyState({ hasFilters }: { hasFilters: boolean }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
-      <CreditCard className="h-12 w-12 text-muted-foreground" />
-      <h3 className="mt-4 text-lg font-semibold">
-        {hasFilters ? "No subscriptions found" : "No subscriptions yet"}
-      </h3>
-      <p className="mt-2 text-center text-sm text-muted-foreground">
-        {hasFilters
-          ? "Try adjusting your filters to find what you're looking for."
-          : "Get started by adding your first subscription."}
-      </p>
-      {!hasFilters && (
-        <Button asChild className="mt-4">
-          <Link href="/subscriptions/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Subscription
-          </Link>
-        </Button>
-      )}
-    </div>
   );
 }
