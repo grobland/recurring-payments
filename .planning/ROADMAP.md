@@ -4,7 +4,7 @@
 
 - v1.0 MVP - Phases 1-4 (shipped 2025-02-01)
 - v1.1 Import Improvements - Phases 5-8 (shipped 2026-02-02)
-- **v1.2 Production Polish** - Phases 9-12 (in progress)
+- v1.2 Production Polish - Phases 9-12 (shipped 2026-02-05)
 
 ## Overview
 
@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Reliability Foundation** - Error tracking, structured logging, health checks
 - [x] **Phase 10: Error Handling** - User-friendly errors, form validation, retry logic
 - [x] **Phase 11: Loading & Empty States** - Skeleton loaders, empty state messages
-- [ ] **Phase 12: Mobile & Visual Polish** - Responsive layout, typography, spacing, colors
+- [x] **Phase 12: Mobile & Visual Polish** - Responsive layout, typography, spacing, colors
 
 ## Phase Details
 
@@ -93,9 +93,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 12-01-PLAN.md — Mobile-optimized spacing and touch targets for dashboard pages
-- [ ] 12-02-PLAN.md — Form mobile polish with touch targets and button layouts
-- [ ] 12-03-PLAN.md — Remaining pages, shared components, and human verification
+- [x] 12-01-PLAN.md — Mobile-optimized spacing and touch targets for dashboard pages
+- [x] 12-02-PLAN.md — Form mobile polish with touch targets and button layouts
+- [x] 12-03-PLAN.md — Remaining pages, shared components, and human verification
 
 ## Progress
 
@@ -107,8 +107,8 @@ Phases execute in numeric order: 9 -> 9.1 -> 9.2 -> 10 -> ...
 | 9. Reliability Foundation | v1.2 | 2/2 | ✓ Complete | 2026-02-04 |
 | 10. Error Handling | v1.2 | 3/3 | ✓ Complete | 2026-02-04 |
 | 11. Loading & Empty States | v1.2 | 2/2 | ✓ Complete | 2026-02-04 |
-| 12. Mobile & Visual Polish | v1.2 | 0/3 | Not started | - |
+| 12. Mobile & Visual Polish | v1.2 | 3/3 | ✓ Complete | 2026-02-05 |
 
 ---
 *Roadmap created: 2026-02-03*
-*Last updated: 2026-02-04*
+*Last updated: 2026-02-05*
