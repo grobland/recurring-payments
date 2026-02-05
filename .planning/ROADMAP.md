@@ -142,10 +142,12 @@ Plans:
   3. User can view spending breakdown by category with visual chart (pie/bar)
   4. Analytics data refreshes automatically every 15 minutes via background job
   5. Dashboard analytics load in under 100ms (querying materialized views)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 13-01: TBD
+- [ ] 13-01-PLAN.md — Database materialized view + cron refresh infrastructure
+- [ ] 13-02-PLAN.md — Analytics API endpoint + TanStack Query hook
+- [ ] 13-03-PLAN.md — Dashboard UI (period selector, stat cards, donut chart)
 
 #### Phase 14: Duplicate Detection
 **Goal**: Users are warned about potential duplicates during import and can find duplicates in existing subscriptions
