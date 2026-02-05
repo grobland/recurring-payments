@@ -8,6 +8,17 @@ A web application for tracking and managing recurring subscriptions. Users can a
 
 Users can see all their subscriptions in one place and never get surprised by a renewal again.
 
+## Current Milestone: v1.3 Data & Intelligence
+
+**Goal:** Transform raw subscription data into actionable insights with duplicate detection, pattern recognition, and comprehensive spending analytics.
+
+**Target features:**
+- Duplicate detection (import-time warnings + background scanning)
+- Multi-statement pattern recognition (suggest subscriptions from recurring charges)
+- Spending trends (month-over-month, year-over-year charts)
+- Forecasting (upcoming charges calendar, annual projections)
+- Anomaly alerts (price increases, unexpected charges, missed renewals — in-app)
+
 ## Current State
 
 **Version:** v1.2 Production Polish (shipped 2026-02-05)
@@ -61,7 +72,13 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ### Active
 
-(None - define requirements in next milestone)
+- [ ] Duplicate detection during PDF import (warn if similar subscription exists)
+- [ ] Background duplicate scanning (surface potential duplicates for review)
+- [ ] Multi-statement pattern detection (identify recurring charges across imports)
+- [ ] Subscription suggestions from detected patterns (user confirms to add)
+- [ ] Historical spending trends (month-over-month, year-over-year charts)
+- [ ] Spending forecasting (upcoming charges calendar, annual projections)
+- [ ] Anomaly alerts in-app (price increases, unexpected charges, missed renewals)
 
 ### Out of Scope
 
@@ -108,4 +125,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | Retry detection pattern | Identifies transient failures for automatic retry | ✓ Good |
 
 ---
-*Last updated: 2026-02-05 after v1.2 milestone completion*
+*Last updated: 2026-02-05 after v1.3 milestone started*
