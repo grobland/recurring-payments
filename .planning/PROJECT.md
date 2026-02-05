@@ -8,22 +8,20 @@ A web application for tracking and managing recurring subscriptions. Users can a
 
 Users can see all their subscriptions in one place and never get surprised by a renewal again.
 
-## Current Milestone: v1.2 Production Polish
-
-**Goal:** Make the app production-ready with comprehensive UX refinements, error handling, and reliability improvements.
-
-**Target features:**
-- Mobile responsiveness and visual polish
-- Loading states, skeleton loaders, and empty state messages
-- User-friendly error messages and form validation
-- API error handling with retry logic
-- Error tracking (Sentry), structured logging, and health checks
-
 ## Current State
 
-**Version:** v1.1 Import Improvements (shipped 2026-02-02)
-**Codebase:** ~17,700 lines TypeScript, Next.js 16 + Supabase + OpenAI
+**Version:** v1.2 Production Polish (shipped 2026-02-05)
+**Codebase:** ~18,800 lines TypeScript, Next.js 16 + Supabase + OpenAI
 **Production URL:** https://recurring-payments.vercel.app
+
+**Current capabilities:**
+- PDF import with AI-powered extraction and confidence scoring
+- Full subscription CRUD with category management
+- Dashboard with spending analytics
+- Email reminders before renewals
+- Production-ready error tracking (Sentry)
+- Mobile-responsive design with polished UX
+- Structured logging and health monitoring
 
 ## Requirements
 
@@ -50,19 +48,20 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - ✓ Fix duplicate categories in edit dropdown — v1.1
 - ✓ Add category CRUD (create, update, delete) — v1.1
 - ✓ Handle category deletion gracefully (subscriptions become uncategorized) — v1.1
+- ✓ Mobile responsiveness across all pages — v1.2
+- ✓ Visual polish (typography, spacing, consistency) — v1.2
+- ✓ Loading states and skeleton loaders — v1.2
+- ✓ Empty state messages — v1.2
+- ✓ User-friendly error messages — v1.2
+- ✓ Form validation improvements — v1.2
+- ✓ API error handling with retry logic — v1.2
+- ✓ Error tracking integration (Sentry) — v1.2
+- ✓ Structured logging — v1.2
+- ✓ Health check endpoints — v1.2
 
 ### Active
 
-- [ ] Mobile responsiveness across all pages
-- [ ] Visual polish (typography, spacing, consistency)
-- [ ] Loading states and skeleton loaders
-- [ ] Empty state messages
-- [ ] User-friendly error messages
-- [ ] Form validation improvements
-- [ ] API error handling with retry logic
-- [ ] Error tracking integration (Sentry)
-- [ ] Structured logging
-- [ ] Health check endpoints
+(None - define requirements in next milestone)
 
 ### Out of Scope
 
@@ -74,10 +73,14 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ## Context
 
-**Codebase state:** v1.1 complete. Smart import with confidence-based selection, statement source tracking, renewal date intelligence, and full category CRUD all working. All 18 v1.1 requirements validated.
+**Codebase state:** v1.2 complete. Production-ready with error tracking, structured logging, user-friendly error handling, loading states, and mobile-first responsive design. All 19 v1.2 requirements validated.
 
 **Known issues:**
 - Email delivery requires verified Resend domain (RESEND_FROM_EMAIL)
+- Sentry requires DSN configuration for error tracking to work (NEXT_PUBLIC_SENTRY_DSN)
+
+**Tech debt:**
+- Logging infrastructure (withLogging, actionLog) created but not adopted by all API routes; routes adopt incrementally
 
 **Codebase documentation:** See `.planning/codebase/` for detailed architecture, stack, conventions, and concerns analysis.
 
@@ -99,6 +102,10 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | Transaction date as source of truth | Renewal dates derived from statement transaction dates, not import date | ✓ Good |
 | Click-to-edit date pattern | Cleaner UI than always-visible inputs | ✓ Good |
 | Command palette for searchable selectors | Better UX than standard Select, reusable pattern | ✓ Good |
+| Delayed skeleton pattern (200ms/300ms) | Prevents flash on fast loads while ensuring smooth UX | ✓ Good |
+| Touch target minimum 44px | Follows Apple HIG for mobile usability | ✓ Good |
+| Error transformation utility | Technical errors become user-friendly messages | ✓ Good |
+| Retry detection pattern | Identifies transient failures for automatic retry | ✓ Good |
 
 ---
-*Last updated: 2026-02-03 after v1.2 milestone start*
+*Last updated: 2026-02-05 after v1.2 milestone completion*

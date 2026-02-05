@@ -2,6 +2,51 @@
 
 ## Completed Milestones
 
+### v1.2 "Production Polish" (2026-02-04 → 2026-02-05)
+
+**Goal:** Make the app production-ready with comprehensive UX refinements, error handling, and reliability improvements.
+
+**What shipped:**
+- Sentry error tracking with performance monitoring, session replays, and user context
+- Structured logging (Pino) and health check endpoint for production monitoring
+- User-friendly error messages with getErrorMessage transformation and retry detection
+- Form validation improvements with onBlur validation and inline error messages
+- Loading infrastructure with useDelayedLoading hook preventing skeleton flash
+- Mobile-first responsive design with 44px touch targets and consistent spacing
+- Empty states with helpful guidance and dual CTAs
+
+**Phases completed:** 4 (Phases 9-12)
+- Phase 9: Reliability Foundation (2 plans)
+- Phase 10: Error Handling (3 plans)
+- Phase 11: Loading & Empty States (2 plans)
+- Phase 12: Mobile & Visual Polish (3 plans)
+
+**Stats:**
+- 10 plans
+- 67 files modified
+- ~18,800 lines TypeScript
+- 2 days development
+
+**Requirements:** 19/19 complete
+- UX-01 through UX-08 (UX Refinements)
+- ERR-01 through ERR-06 (Error Handling)
+- MON-01 through MON-05 (Reliability & Monitoring)
+
+**Key decisions:**
+- Sentry sample rates: 0.1 production, 1.0 development for cost control
+- Delayed skeleton pattern: 200ms delay + 300ms minimum display to prevent flash
+- Touch target minimum: 44px (h-11) per Apple HIG guidelines
+- Error transformation: getErrorMessage converts technical errors to user-friendly messages
+- Retry detection: isRetryableError identifies transient failures for automatic retry
+
+**Tech debt:**
+- Logging infrastructure created but not adopted by all API routes (intentional; routes adopt incrementally)
+- RESEND_FROM_EMAIL needs verified domain for production email delivery
+
+**What's next:** v1.3 milestone (billing/monetization, custom domain, or additional features)
+
+---
+
 ### v1.1 "Import Improvements" (2026-01-31 → 2026-02-02)
 
 **Goal:** Improve PDF import accuracy and user control, fix data quality issues discovered during testing.
@@ -67,4 +112,4 @@
 - PDF import E2E tests need TEST_USER credentials
 
 ---
-*Last updated: 2026-01-31*
+*Last updated: 2026-02-05*
