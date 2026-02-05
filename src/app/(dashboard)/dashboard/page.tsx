@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { getMonth, getYear } from "date-fns";
 import {
   CreditCard,
   TrendingUp,
-  Calendar,
   AlertCircle,
   Plus,
   ArrowRight,
@@ -15,18 +16,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PeriodSelector, getPeriodIdFromParams } from "@/components/dashboard/period-selector";
+import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
+import { CategoryChart } from "@/components/dashboard/category-chart";
 import { useSubscriptions, useUserStatus, useDelayedLoading } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
-import { formatRelativeDate, getDaysUntil } from "@/lib/utils/dates";
+import { getDaysUntil } from "@/lib/utils/dates";
 import { isRetryableError } from "@/lib/utils/errors";
 import { ServiceUnavailable } from "@/components/shared/service-unavailable";
+import type { AnalyticsParams } from "@/types/analytics";
 
 export default function DashboardPage() {
   const { data, isLoading, error, refetch } = useSubscriptions({ status: "active" });
   const { user, isTrialActive, daysLeftInTrial } = useUserStatus();
   const showSkeleton = useDelayedLoading(isLoading);
 
-  const summary = data?.summary;
+  // Analytics period state - default to current month
+  const [analyticsParams, setAnalyticsParams] = useState<AnalyticsParams>(() => {
+    const now = new Date();
+    return {
+      period: "month",
+      year: getYear(now),
+      month: getMonth(now) + 1, // date-fns months are 0-indexed
+    };
+  });
+
   const subscriptions = data?.subscriptions ?? [];
 
   // Get upcoming renewals (next 7 days)
@@ -45,7 +59,10 @@ export default function DashboardPage() {
   // Get subscriptions needing attention
   const needsAttention = subscriptions.filter((sub) => sub.needsUpdate);
 
-  const displayCurrency = user?.displayCurrency ?? "USD";
+  // Handle period change
+  const handlePeriodChange = (params: AnalyticsParams) => {
+    setAnalyticsParams(params);
+  };
 
   // Handle service unavailable (503, network errors)
   if (error && isRetryableError(error)) {
@@ -89,118 +106,19 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Monthly Spending
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {showSkeleton ? (
-                <>
-                  <Skeleton className="h-8 w-24" />
-                  <Skeleton className="mt-2 h-3 w-20" />
-                </>
-              ) : (
-                <div className="animate-in fade-in duration-150">
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(summary?.totalMonthly ?? 0, displayCurrency)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {formatCurrency(
-                      (summary?.totalMonthly ?? 0) * 12,
-                      displayCurrency
-                    )}{" "}
-                    per year
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Subscriptions
-              </CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {showSkeleton ? (
-                <>
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="mt-2 h-3 w-24" />
-                </>
-              ) : (
-                <div className="animate-in fade-in duration-150">
-                  <div className="text-2xl font-bold">
-                    {summary?.activeCount ?? 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {summary?.pausedCount ?? 0} paused,{" "}
-                    {summary?.cancelledCount ?? 0} cancelled
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Renewing Soon
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {showSkeleton ? (
-                <>
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="mt-2 h-3 w-24" />
-                </>
-              ) : (
-                <div className="animate-in fade-in duration-150">
-                  <div className="text-2xl font-bold">
-                    {summary?.upcomingRenewals?.next7Days ?? 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {summary?.upcomingRenewals?.next30Days ?? 0} in the next 30
-                    days
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Needs Attention
-              </CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {showSkeleton ? (
-                <>
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="mt-2 h-3 w-24" />
-                </>
-              ) : (
-                <div className="animate-in fade-in duration-150">
-                  <div className="text-2xl font-bold">
-                    {needsAttention.length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Subscriptions with outdated info
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Period Selector */}
+        <div className="flex justify-end">
+          <PeriodSelector
+            value={getPeriodIdFromParams(analyticsParams)}
+            onChange={handlePeriodChange}
+          />
         </div>
+
+        {/* Analytics Stat Cards */}
+        <AnalyticsCards params={analyticsParams} />
+
+        {/* Category Chart - Full Width */}
+        <CategoryChart params={analyticsParams} />
 
         {/* Main Content */}
         <div className="grid gap-6 lg:grid-cols-2">
