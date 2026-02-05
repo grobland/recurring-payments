@@ -83,35 +83,43 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DUP-01 | TBD | Pending |
-| DUP-02 | TBD | Pending |
-| DUP-03 | TBD | Pending |
-| DUP-04 | TBD | Pending |
-| DUP-05 | TBD | Pending |
-| DUP-06 | TBD | Pending |
-| ANLYT-01 | TBD | Pending |
-| ANLYT-02 | TBD | Pending |
-| ANLYT-03 | TBD | Pending |
-| ANLYT-04 | TBD | Pending |
-| ANLYT-05 | TBD | Pending |
-| ANLYT-06 | TBD | Pending |
-| PTRN-01 | TBD | Pending |
-| PTRN-02 | TBD | Pending |
-| PTRN-03 | TBD | Pending |
-| FCST-01 | TBD | Pending |
-| FCST-02 | TBD | Pending |
-| FCST-03 | TBD | Pending |
-| FCST-04 | TBD | Pending |
-| ALRT-01 | TBD | Pending |
-| ALRT-02 | TBD | Pending |
-| ALRT-03 | TBD | Pending |
-| ALRT-04 | TBD | Pending |
+| DUP-01 | Phase 14 | Pending |
+| DUP-02 | Phase 14 | Pending |
+| DUP-03 | Phase 14 | Pending |
+| DUP-04 | Phase 14 | Pending |
+| DUP-05 | Phase 14 | Pending |
+| DUP-06 | Phase 14 | Pending |
+| ANLYT-01 | Phase 13 | Pending |
+| ANLYT-02 | Phase 13 | Pending |
+| ANLYT-03 | Phase 13 | Pending |
+| ANLYT-04 | Phase 15 | Pending |
+| ANLYT-05 | Phase 15 | Pending |
+| ANLYT-06 | Phase 15 | Pending |
+| PTRN-01 | Phase 16 | Pending |
+| PTRN-02 | Phase 16 | Pending |
+| PTRN-03 | Phase 16 | Pending |
+| FCST-01 | Phase 17 | Pending |
+| FCST-02 | Phase 17 | Pending |
+| FCST-03 | Phase 17 | Pending |
+| FCST-04 | Phase 17 | Pending |
+| ALRT-01 | Phase 18 | Pending |
+| ALRT-02 | Phase 18 | Pending |
+| ALRT-03 | Phase 18 | Pending |
+| ALRT-04 | Phase 18 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23 (pending roadmap creation)
+- Mapped to phases: 23/23 (100%)
+- Unmapped: 0
+
+**Phase distribution:**
+- Phase 13 (Analytics Infrastructure): 3 requirements
+- Phase 14 (Duplicate Detection): 6 requirements
+- Phase 15 (Spending Analytics & Trends): 3 requirements
+- Phase 16 (Pattern Recognition): 3 requirements
+- Phase 17 (Spending Forecasting): 4 requirements
+- Phase 18 (Anomaly Detection & Alerts): 4 requirements
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after research completion*
+*Last updated: 2026-02-05 after roadmap creation*
