@@ -26,6 +26,7 @@ export async function POST(request: Request) {
     const monthsBack = Math.min(24, Math.max(1, body.monthsBack ?? 12));
     const windowStart = new Date();
     windowStart.setMonth(windowStart.getMonth() - monthsBack);
+    const windowStartStr = windowStart.toISOString();
 
     // Run detection query with window functions
     // This query finds recurring charges by grouping by merchant name + currency
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
           ) as prev_charge_date
         FROM ${subscriptions} s
         WHERE s.user_id = ${userId}
-          AND s.created_at >= ${windowStart}
+          AND s.created_at >= ${windowStartStr}
           AND s.import_audit_id IS NOT NULL
           AND s.deleted_at IS NULL
           AND s.merged_at IS NULL
