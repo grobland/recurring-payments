@@ -15,6 +15,13 @@
       "when": 1770046975462,
       "tag": "0001_salty_the_watchers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770375193251,
+      "tag": "0002_gorgeous_surge",
+      "breakpoints": true
     }
   ]
 }

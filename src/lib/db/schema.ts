@@ -253,6 +253,10 @@ export const subscriptions = pgTable(
     // Soft delete
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
 
+    // Merge tracking (for soft delete with undo)
+    mergedAt: timestamp("merged_at", { withTimezone: true }),
+    mergedIntoId: uuid("merged_into_id"), // Self-reference handled in relations
+
     // Import tracking
     importAuditId: uuid("import_audit_id").references(() => importAudits.id, {
       onDelete: "set null",
@@ -429,6 +433,14 @@ export const subscriptionsRelations = relations(
     importAudit: one(importAudits, {
       fields: [subscriptions.importAuditId],
       references: [importAudits.id],
+    }),
+    mergedInto: one(subscriptions, {
+      fields: [subscriptions.mergedIntoId],
+      references: [subscriptions.id],
+      relationName: "mergedSubscriptions",
+    }),
+    mergedFrom: many(subscriptions, {
+      relationName: "mergedSubscriptions",
     }),
     reminderLogs: many(reminderLogs),
   })
