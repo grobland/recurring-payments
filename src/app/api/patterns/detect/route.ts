@@ -122,13 +122,18 @@ export async function POST(request: Request) {
     let filtered = 0;
 
     for (const row of rawPatterns) {
-      // Parse arrays - they may come as strings from raw SQL
-      const chargeDatesArr = typeof row.charge_dates === 'string'
-        ? JSON.parse(row.charge_dates)
-        : row.charge_dates;
-      const amountsArr = typeof row.amounts === 'string'
-        ? JSON.parse(row.amounts)
-        : row.amounts;
+      // Parse arrays - PostgreSQL returns them as {val1,val2} format or as actual arrays
+      const parsePostgresArray = (val: string | string[] | number[]): string[] => {
+        if (Array.isArray(val)) return val.map(String);
+        if (typeof val === 'string' && val.startsWith('{') && val.endsWith('}')) {
+          // PostgreSQL array format: {val1,val2,val3}
+          return val.slice(1, -1).split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+        }
+        return [];
+      };
+
+      const chargeDatesArr = parsePostgresArray(row.charge_dates);
+      const amountsArr = parsePostgresArray(row.amounts);
 
       const pattern = {
         merchantName: row.merchant_name,
