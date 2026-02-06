@@ -195,10 +195,12 @@ Plans:
   3. User can accept pattern suggestion to create subscription with pre-filled data
   4. User can dismiss pattern suggestion permanently (won't show again for this pattern)
   5. Pattern suggestions display evidence: charge dates, amounts, detected frequency
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 16-01: TBD
+- [ ] 16-01-PLAN.md — Schema + pattern detection algorithm + category guesser
+- [ ] 16-02-PLAN.md — API endpoints (detect, suggestions, accept, dismiss) + hooks
+- [ ] 16-03-PLAN.md — Dashboard UI (PatternSuggestionsCard) + integration
 
 #### Phase 17: Spending Forecasting
 **Goal**: Users can view predicted future spending with confidence intervals
@@ -252,6 +254,6 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 | 13. Analytics Infrastructure | v1.3 | 3/3 | Complete | 2026-02-05 |
 | 14. Duplicate Detection | v1.3 | 4/4 | Complete | 2026-02-06 |
 | 15. Spending Analytics & Trends | v1.3 | 3/3 | Complete | 2026-02-06 |
-| 16. Pattern Recognition | v1.3 | 0/0 | Not started | - |
+| 16. Pattern Recognition | v1.3 | 0/3 | Planning complete | - |
 | 17. Spending Forecasting | v1.3 | 0/0 | Not started | - |
 | 18. Anomaly Detection & Alerts | v1.3 | 0/0 | Not started | - |
