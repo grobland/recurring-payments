@@ -163,10 +163,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 14-01-PLAN.md — TDD: Multi-field weighted similarity algorithm
-- [ ] 14-02-PLAN.md — Import-time duplicate detection with warnings and actions
-- [ ] 14-03-PLAN.md — Background scan, merge API, and subscriptions page UI
-- [ ] 14-04-PLAN.md — Integration wiring and verification checkpoint
+- [x] 14-01-PLAN.md — TDD: Multi-field weighted similarity algorithm
+- [x] 14-02-PLAN.md — Import-time duplicate detection with warnings and actions
+- [x] 14-03-PLAN.md — Background scan, merge API, and subscriptions page UI
+- [x] 14-04-PLAN.md — Integration wiring and verification checkpoint
 
 #### Phase 15: Spending Analytics & Trends
 **Goal**: Users can visualize spending trends over time and understand how spending changes
@@ -248,7 +248,7 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 | 11. Loading & Empty States | v1.2 | 2/2 | Complete | 2026-02-05 |
 | 12. Mobile & Visual Polish | v1.2 | 3/3 | Complete | 2026-02-05 |
 | 13. Analytics Infrastructure | v1.3 | 3/3 | Complete | 2026-02-05 |
-| 14. Duplicate Detection | v1.3 | 0/4 | Not started | - |
+| 14. Duplicate Detection | v1.3 | 4/4 | Complete | 2026-02-06 |
 | 15. Spending Analytics & Trends | v1.3 | 0/0 | Not started | - |
 | 16. Pattern Recognition | v1.3 | 0/0 | Not started | - |
 | 17. Spending Forecasting | v1.3 | 0/0 | Not started | - |

@@ -9,18 +9,18 @@ Requirements for Data & Intelligence milestone. Each maps to roadmap phases.
 
 ### Duplicate Detection
 
-- [ ] **DUP-01**: User sees warning when importing subscription similar to existing one
-- [ ] **DUP-02**: User can view similarity score and matching fields during import
-- [ ] **DUP-03**: User can choose to keep both, merge, or skip duplicate during import
-- [ ] **DUP-04**: User can trigger background scan for potential duplicates in existing subscriptions
-- [ ] **DUP-05**: User can review list of potential duplicates found by background scan
-- [ ] **DUP-06**: User can merge two subscriptions into one (combining best data from both)
+- [x] **DUP-01**: User sees warning when importing subscription similar to existing one
+- [x] **DUP-02**: User can view similarity score and matching fields during import
+- [x] **DUP-03**: User can choose to keep both, merge, or skip duplicate during import
+- [x] **DUP-04**: User can trigger background scan for potential duplicates in existing subscriptions
+- [x] **DUP-05**: User can review list of potential duplicates found by background scan
+- [x] **DUP-06**: User can merge two subscriptions into one (combining best data from both)
 
 ### Spending Analytics
 
-- [ ] **ANLYT-01**: User can view total monthly spending on dashboard
-- [ ] **ANLYT-02**: User can view total yearly spending on dashboard
-- [ ] **ANLYT-03**: User can view spending breakdown by category (pie/bar chart)
+- [x] **ANLYT-01**: User can view total monthly spending on dashboard
+- [x] **ANLYT-02**: User can view total yearly spending on dashboard
+- [x] **ANLYT-03**: User can view spending breakdown by category (pie/bar chart)
 - [ ] **ANLYT-04**: User can view month-over-month spending change with trend indicator
 - [ ] **ANLYT-05**: User can view year-over-year spending comparison chart
 - [ ] **ANLYT-06**: User can view spending trend over time for each category
@@ -83,15 +83,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DUP-01 | Phase 14 | Pending |
-| DUP-02 | Phase 14 | Pending |
-| DUP-03 | Phase 14 | Pending |
-| DUP-04 | Phase 14 | Pending |
-| DUP-05 | Phase 14 | Pending |
-| DUP-06 | Phase 14 | Pending |
-| ANLYT-01 | Phase 13 | Pending |
-| ANLYT-02 | Phase 13 | Pending |
-| ANLYT-03 | Phase 13 | Pending |
+| DUP-01 | Phase 14 | Complete |
+| DUP-02 | Phase 14 | Complete |
+| DUP-03 | Phase 14 | Complete |
+| DUP-04 | Phase 14 | Complete |
+| DUP-05 | Phase 14 | Complete |
+| DUP-06 | Phase 14 | Complete |
+| ANLYT-01 | Phase 13 | Complete |
+| ANLYT-02 | Phase 13 | Complete |
+| ANLYT-03 | Phase 13 | Complete |
 | ANLYT-04 | Phase 15 | Pending |
 | ANLYT-05 | Phase 15 | Pending |
 | ANLYT-06 | Phase 15 | Pending |
