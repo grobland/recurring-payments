@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { subscriptions, importAudits } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { confirmImportSchema } from "@/lib/validations/import";
 import { calculateNormalizedMonthly } from "@/lib/utils/normalize";
 import { isUserActive } from "@/lib/auth/helpers";
@@ -63,6 +63,24 @@ export async function POST(request: Request) {
       }
 
       if (sub.action === "merge" && sub.mergeWithId) {
+        // Verify the target subscription exists AND belongs to the user
+        const [existing] = await db
+          .select({ id: subscriptions.id })
+          .from(subscriptions)
+          .where(
+            and(
+              eq(subscriptions.id, sub.mergeWithId),
+              eq(subscriptions.userId, session.user.id)
+            )
+          )
+          .limit(1);
+
+        if (!existing) {
+          // Skip if subscription doesn't exist or belongs to another user
+          skippedCount++;
+          continue;
+        }
+
         // Update the existing subscription with new data
         await db
           .update(subscriptions)
