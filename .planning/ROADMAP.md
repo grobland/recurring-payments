@@ -178,10 +178,12 @@ Plans:
   3. User can view spending trend over time for each category with multi-line chart
   4. Charts handle multi-currency subscriptions correctly (converted at transaction-time rates)
   5. Trends display meaningful data even with limited history (graceful degradation)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 15-01: TBD
+- [ ] 15-01-PLAN.md — Trends API endpoint + useTrends hook
+- [ ] 15-02-PLAN.md — TrendIndicator component + analytics cards enhancement
+- [ ] 15-03-PLAN.md — YoY chart + category trends chart + dashboard integration
 
 #### Phase 16: Pattern Recognition
 **Goal**: Users receive suggestions for subscriptions based on recurring charges detected across statements
@@ -249,7 +251,7 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 | 12. Mobile & Visual Polish | v1.2 | 3/3 | Complete | 2026-02-05 |
 | 13. Analytics Infrastructure | v1.3 | 3/3 | Complete | 2026-02-05 |
 | 14. Duplicate Detection | v1.3 | 4/4 | Complete | 2026-02-06 |
-| 15. Spending Analytics & Trends | v1.3 | 0/0 | Not started | - |
+| 15. Spending Analytics & Trends | v1.3 | 0/3 | Planned | - |
 | 16. Pattern Recognition | v1.3 | 0/0 | Not started | - |
 | 17. Spending Forecasting | v1.3 | 0/0 | Not started | - |
 | 18. Anomaly Detection & Alerts | v1.3 | 0/0 | Not started | - |
