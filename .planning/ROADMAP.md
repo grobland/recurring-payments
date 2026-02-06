@@ -212,10 +212,13 @@ Plans:
   3. User can view annual spending forecast with total projection (extrapolated from current subscriptions)
   4. Forecasts display confidence intervals (80% and 95% bands) showing uncertainty range via fan charts
   5. Forecasts incorporate known renewal events (annual subscriptions) not just averages
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 17-01: TBD
+- [ ] 17-01-PLAN.md — Types, utilities, and calendar API endpoint
+- [ ] 17-02-PLAN.md — Monthly and annual API endpoints + useForecast hooks
+- [ ] 17-03-PLAN.md — Calendar view component with day selector
+- [ ] 17-04-PLAN.md — Forecast charts + dashboard integration + verification
 
 #### Phase 18: Anomaly Detection & Alerts
 **Goal**: Users are alerted to unusual spending patterns and subscription changes
@@ -255,5 +258,5 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 | 14. Duplicate Detection | v1.3 | 4/4 | Complete | 2026-02-06 |
 | 15. Spending Analytics & Trends | v1.3 | 3/3 | Complete | 2026-02-06 |
 | 16. Pattern Recognition | v1.3 | 3/3 | Complete | 2026-02-06 |
-| 17. Spending Forecasting | v1.3 | 0/0 | Not started | - |
+| 17. Spending Forecasting | v1.3 | 0/4 | Planning complete | - |
 | 18. Anomaly Detection & Alerts | v1.3 | 0/0 | Not started | - |
