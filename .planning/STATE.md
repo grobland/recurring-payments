@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 14 of 18 (Duplicate Detection) - IN PROGRESS
-Plan: 2 of 3 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-06 - Completed 14-02-PLAN.md (Import-Time Detection)
+Last activity: 2026-02-06 - Completed 14-03-PLAN.md (Background Scan and Merge)
 
-Progress: [█████████████░░░░░] 79% (33/42 estimated total plans across all milestones)
+Progress: [█████████████░░░░░] 81% (34/42 estimated total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33
-- Average duration: ~6.9 min
-- Total execution time: ~228 min (~3.8 hours)
+- Total plans completed: 34
+- Average duration: ~7.2 min
+- Total execution time: ~246 min (~4.1 hours)
 
 **By Milestone:**
 
@@ -30,10 +30,10 @@ Progress: [█████████████░░░░░] 79% (33/42 es
 | v1.0 MVP | 7 | ~57 min | ~8 min |
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
-| v1.3 Analytics (partial) | 4 | ~23 min | ~5.8 min |
+| v1.3 Analytics (partial) | 6 | ~49 min | ~8.2 min |
 
 **Recent Trend:**
-- Last 5 plans: [2, 5, 10, 6, 8] min
+- Last 5 plans: [5, 10, 6, 8, 18] min
 - Trend: Steady execution
 
 *Updated after each plan completion*
@@ -68,6 +68,9 @@ Summary of established patterns:
 | Duplicate detection threshold | 70% for detection, 85%+ defaults to Skip |
 | Expandable comparison panel | Click badge to toggle comparison view |
 | Duplicate action buttons | Keep Both / Skip / Merge pattern |
+| Merge tracking pattern | mergedAt + mergedIntoId for soft delete with 24hr undo |
+| Undo toast pattern | 10-second display with clickable undo action |
+| Field picker defaults | Pre-select newer values, show identical as single option |
 
 ### Pending Todos
 
@@ -89,9 +92,12 @@ None yet.
 **From 13-01:**
 - Database migration 0002_create_analytics_mv.sql must be run manually via Supabase SQL Editor (user confirmed this is done)
 
+**From 14-03:**
+- Database migration 0002_gorgeous_surge.sql adds mergedAt/mergedIntoId columns - run via `npm run db:push` or Supabase SQL Editor
+
 ## Session Continuity
 
-Last session: 2026-02-06 11:00
-Stopped at: Completed 14-02-PLAN.md (Import-Time Detection)
+Last session: 2026-02-06 11:05
+Stopped at: Completed 14-03-PLAN.md (Background Scan and Merge)
 Resume file: None
-Next step: Execute 14-03-PLAN.md (Merge API) when needed
+Next step: Execute 14-04-PLAN.md (Statistics Dashboard) when ready
