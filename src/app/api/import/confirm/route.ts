@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { subMonths, subYears } from "date-fns";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { subscriptions, importAudits } from "@/lib/db/schema";
@@ -132,6 +133,12 @@ export async function POST(request: Request) {
       }
 
       // Create new subscription linked to audit
+      // Calculate lastRenewalDate (transaction date) from nextRenewalDate
+      const lastRenewalDate =
+        sub.frequency === "yearly"
+          ? subYears(sub.nextRenewalDate, 1)
+          : subMonths(sub.nextRenewalDate, 1);
+
       const [created] = await db
         .insert(subscriptions)
         .values({
@@ -142,6 +149,7 @@ export async function POST(request: Request) {
           frequency: sub.frequency,
           categoryId: sub.categoryId,
           nextRenewalDate: sub.nextRenewalDate,
+          lastRenewalDate, // Store transaction date for pattern detection
           normalizedMonthlyAmount: calculateNormalizedMonthly(
             sub.amount,
             sub.frequency
