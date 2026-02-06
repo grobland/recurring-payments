@@ -43,11 +43,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { AccountCombobox } from "@/components/import/account-combobox";
 import { EmptyState } from "@/components/shared/empty-state";
+import { DuplicateWarning } from "@/components/subscriptions/duplicate-warning";
+import { DuplicateComparison } from "@/components/subscriptions/duplicate-comparison";
 import { useCategoryOptions, useImportSources, useImportHistory } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils/errors";
+
+/**
+ * Interface for enhanced duplicate match info from API
+ */
+interface DuplicateMatch {
+  existingId: string;
+  existingName: string;
+  existingAmount: string;
+  existingCurrency: string;
+  existingFrequency: string;
+  score: number;
+  matches: Record<string, boolean>;
+}
 
 interface DetectedSubscription {
   name: string;
@@ -55,8 +70,7 @@ interface DetectedSubscription {
   currency: string;
   frequency: "monthly" | "yearly";
   confidence: number;
-  isDuplicate?: boolean;
-  duplicateOf?: string;
+  duplicateMatch?: DuplicateMatch | null;  // Enhanced duplicate info from API
   transactionDate?: string | null;  // ISO string from AI
   dateFound?: boolean;
 }
@@ -66,6 +80,8 @@ interface ImportItem extends DetectedSubscription {
   categoryId: string | null;
   nextRenewalDate: Date;
   action: "create" | "skip" | "merge";
+  mergeWithId: string | null;  // For merge action - ID of existing subscription to merge with
+  showComparison: boolean;     // Whether to show the duplicate comparison view
   // Transaction date state
   transactionDateValue: Date | null;      // Current value (edited or original)
   originalTransactionDate: Date | null;   // Original AI value for diff
@@ -370,12 +386,36 @@ export default function ImportPage() {
             ? calculateRenewalFromTransaction(parsedTransactionDate, sub.frequency)
             : addMonths(new Date(), 1);
 
+          // Determine default action based on duplicate match score
+          // 85%+ similarity: Skip by default (conservative)
+          // 70-84% similarity: Keep Both by default
+          // No duplicate: Create if high confidence
+          const hasDuplicate = sub.duplicateMatch && sub.duplicateMatch.score >= 70;
+          const isHighSimilarity = sub.duplicateMatch && sub.duplicateMatch.score >= 85;
+
+          let defaultAction: "create" | "skip" | "merge" = "create";
+          let defaultSelected = sub.confidence >= 80;
+
+          if (hasDuplicate) {
+            if (isHighSimilarity) {
+              // 85%+ similarity: Skip by default
+              defaultAction = "skip";
+              defaultSelected = false;
+            } else {
+              // 70-84% similarity: Keep Both by default
+              defaultAction = "create";
+              defaultSelected = sub.confidence >= 80;
+            }
+          }
+
           return {
             ...sub,
-            selected: !sub.isDuplicate && sub.confidence >= 80,
+            selected: defaultSelected,
             categoryId: null,
             nextRenewalDate: calculatedRenewal,
-            action: sub.isDuplicate ? "skip" : "create",
+            action: defaultAction,
+            mergeWithId: null,
+            showComparison: false,
             // Date state
             transactionDateValue: parsedTransactionDate,
             originalTransactionDate: parsedTransactionDate,
@@ -502,6 +542,51 @@ export default function ImportPage() {
     );
   };
 
+  const toggleComparison = (index: number) => {
+    setItems((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, showComparison: !item.showComparison } : item
+      )
+    );
+  };
+
+  const setDuplicateAction = (
+    index: number,
+    action: "create" | "skip" | "merge"
+  ) => {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+
+        if (action === "create") {
+          // Keep Both - import as new subscription
+          return {
+            ...item,
+            action: "create",
+            selected: true,
+            mergeWithId: null,
+          };
+        } else if (action === "skip") {
+          // Skip - don't import this item
+          return {
+            ...item,
+            action: "skip",
+            selected: false,
+            mergeWithId: null,
+          };
+        } else {
+          // Merge - combine with existing (actual merge happens in 14-03)
+          return {
+            ...item,
+            action: "merge",
+            selected: true,
+            mergeWithId: item.duplicateMatch?.existingId || null,
+          };
+        }
+      })
+    );
+  };
+
   const highConfidenceCount = items.filter((item) => item.confidence >= 80).length;
 
   const selectAll = () => {
@@ -514,11 +599,16 @@ export default function ImportPage() {
 
   const selectHighConfidence = () => {
     setItems((prev) =>
-      prev.map((item) => ({
-        ...item,
-        selected: !item.isDuplicate && item.confidence >= 80,
-        action: (!item.isDuplicate && item.confidence >= 80) ? "create" as const : "skip" as const,
-      }))
+      prev.map((item) => {
+        // Exclude high similarity duplicates (85%+) from auto-selection
+        const isHighSimilarityDuplicate = item.duplicateMatch && item.duplicateMatch.score >= 85;
+        const shouldSelect = !isHighSimilarityDuplicate && item.confidence >= 80;
+        return {
+          ...item,
+          selected: shouldSelect,
+          action: shouldSelect ? "create" as const : "skip" as const,
+        };
+      })
     );
   };
 
@@ -531,6 +621,7 @@ export default function ImportPage() {
       categoryId: item.categoryId,
       nextRenewalDate: item.nextRenewalDate,
       action: item.selected ? item.action : "skip",
+      mergeWithId: item.action === "merge" ? item.mergeWithId : null,
     }));
 
     setIsConfirming(true);
@@ -768,18 +859,25 @@ export default function ImportPage() {
                         </div>
                       )}
                       <div className="space-y-4">
-                        {items.map((item, index) => (
+                        {items.map((item, index) => {
+                          const hasDuplicate = item.duplicateMatch && item.duplicateMatch.score >= 70;
+                          const isHighSimilarity = item.duplicateMatch && item.duplicateMatch.score >= 85;
+
+                          return (
                         <div
                           key={index}
                           className={cn(
                             "rounded-lg border p-4 transition-colors",
-                            item.selected ? "border-primary bg-primary/5" : ""
+                            item.selected ? "border-primary bg-primary/5" : "",
+                            // Yellow background highlight for high similarity duplicates
+                            isHighSimilarity && "bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800"
                           )}
                         >
                           <div className="flex items-start gap-4">
                             <Checkbox
                               checked={item.selected}
                               onCheckedChange={() => toggleItem(index)}
+                              disabled={item.action === "merge"}
                             />
                             <div className="flex-1 space-y-3">
                               <div className="flex items-center justify-between">
@@ -792,13 +890,96 @@ export default function ImportPage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <ConfidenceBadge score={item.confidence} />
-                                  {item.isDuplicate && (
-                                    <Badge variant="destructive">
-                                      Duplicate of {item.duplicateOf}
-                                    </Badge>
+                                  {hasDuplicate && item.duplicateMatch && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleComparison(index)}
+                                      className="cursor-pointer"
+                                    >
+                                      <DuplicateWarning
+                                        score={item.duplicateMatch.score}
+                                        existingName={item.duplicateMatch.existingName}
+                                        matches={item.duplicateMatch.matches as {
+                                          name: boolean;
+                                          amount: boolean;
+                                          frequency: boolean;
+                                          category?: boolean;
+                                          source?: boolean;
+                                        }}
+                                      />
+                                    </button>
                                   )}
                                 </div>
                               </div>
+
+                              {/* Duplicate Comparison Panel (expandable) */}
+                              {hasDuplicate && item.duplicateMatch && item.showComparison && (
+                                <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+                                  <DuplicateComparison
+                                    existing={{
+                                      id: item.duplicateMatch.existingId,
+                                      name: item.duplicateMatch.existingName,
+                                      amount: item.duplicateMatch.existingAmount,
+                                      currency: item.duplicateMatch.existingCurrency,
+                                      frequency: item.duplicateMatch.existingFrequency,
+                                    }}
+                                    importing={{
+                                      name: item.name,
+                                      amount: item.amount,
+                                      currency: item.currency,
+                                      frequency: item.frequency,
+                                    }}
+                                    score={item.duplicateMatch.score}
+                                    matches={item.duplicateMatch.matches as {
+                                      name: boolean;
+                                      amount: boolean;
+                                      frequency: boolean;
+                                      category?: boolean;
+                                      source?: boolean;
+                                    }}
+                                  />
+
+                                  {/* Action Buttons */}
+                                  <div className="mt-4 flex flex-wrap gap-2">
+                                    <Button
+                                      variant={item.action === "create" ? "default" : "outline"}
+                                      size="sm"
+                                      className="h-11"
+                                      onClick={() => setDuplicateAction(index, "create")}
+                                    >
+                                      Keep Both
+                                    </Button>
+                                    <Button
+                                      variant={item.action === "skip" ? "default" : "outline"}
+                                      size="sm"
+                                      className="h-11"
+                                      onClick={() => setDuplicateAction(index, "skip")}
+                                    >
+                                      Skip
+                                    </Button>
+                                    <Button
+                                      variant={item.action === "merge" ? "default" : "outline"}
+                                      size="sm"
+                                      className="h-11"
+                                      onClick={() => setDuplicateAction(index, "merge")}
+                                      title="Merge functionality coming soon"
+                                      disabled
+                                    >
+                                      Merge
+                                    </Button>
+                                  </div>
+
+                                  {/* Current action indicator */}
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    Current action:{" "}
+                                    <span className="font-medium">
+                                      {item.action === "create" && "Import as new subscription"}
+                                      {item.action === "skip" && "Don't import"}
+                                      {item.action === "merge" && `Merge with "${item.duplicateMatch.existingName}"`}
+                                    </span>
+                                  </p>
+                                </div>
+                              )}
 
                               {item.selected && (
                                 <div className="grid gap-3 sm:grid-cols-2">
@@ -920,7 +1101,8 @@ export default function ImportPage() {
                             </div>
                           </div>
                         </div>
-                      ))}
+                          );
+                        })}
                       </div>
                     </>
                   )}
