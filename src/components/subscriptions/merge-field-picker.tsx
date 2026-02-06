@@ -15,6 +15,7 @@ interface SubscriptionData {
   currency: string;
   frequency: "monthly" | "yearly";
   categoryId: string | null;
+  categoryName?: string | null;
   createdAt: Date;
   nextRenewalDate?: Date;
 }
@@ -136,8 +137,8 @@ export function MergeFieldPicker({
         selectedValue={selection.category}
         isIdentical={isCategoryIdentical}
         onChange={(value) => handleFieldChange("category", value)}
-        displayTarget={target.categoryId ?? "Uncategorized"}
-        displaySource={source.categoryId ?? "Uncategorized"}
+        displayTarget={target.categoryName ?? "Uncategorized"}
+        displaySource={source.categoryName ?? "Uncategorized"}
       />
 
       {/* Next Renewal Date field - if available */}

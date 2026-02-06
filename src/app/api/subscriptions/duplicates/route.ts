@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { subscriptions } from "@/lib/db/schema";
+import { subscriptions, categories } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import {
   calculateSimilarity,
@@ -19,6 +19,7 @@ export interface DuplicatePair {
     currency: string;
     frequency: "monthly" | "yearly";
     categoryId: string | null;
+    categoryName: string | null;
     createdAt: Date;
   };
   sub2: {
@@ -28,6 +29,7 @@ export interface DuplicatePair {
     currency: string;
     frequency: "monthly" | "yearly";
     categoryId: string | null;
+    categoryName: string | null;
     createdAt: Date;
   };
   score: number;
@@ -50,7 +52,7 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch all active subscriptions (not deleted, not merged)
+    // Fetch all active subscriptions (not deleted, not merged) with category names
     const userSubscriptions = await db
       .select({
         id: subscriptions.id,
@@ -59,9 +61,11 @@ export async function POST() {
         currency: subscriptions.currency,
         frequency: subscriptions.frequency,
         categoryId: subscriptions.categoryId,
+        categoryName: categories.name,
         createdAt: subscriptions.createdAt,
       })
       .from(subscriptions)
+      .leftJoin(categories, eq(subscriptions.categoryId, categories.id))
       .where(
         and(
           eq(subscriptions.userId, session.user.id),
@@ -107,6 +111,7 @@ export async function POST() {
               currency: sub1.currency,
               frequency: sub1.frequency,
               categoryId: sub1.categoryId,
+              categoryName: sub1.categoryName,
               createdAt: sub1.createdAt,
             },
             sub2: {
@@ -116,6 +121,7 @@ export async function POST() {
               currency: sub2.currency,
               frequency: sub2.frequency,
               categoryId: sub2.categoryId,
+              categoryName: sub2.categoryName,
               createdAt: sub2.createdAt,
             },
             score: result.score,
