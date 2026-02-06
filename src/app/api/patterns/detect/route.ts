@@ -60,14 +60,18 @@ export async function POST(request: Request) {
           ARRAY_AGG(amount ORDER BY charge_date) as amounts,
           AVG(amount)::numeric as avg_amount,
           COALESCE(STDDEV(amount), 0)::numeric as amount_stddev,
+          -- Only calculate interval stats from rows that have a previous charge
           AVG(
-            EXTRACT(EPOCH FROM (charge_date - prev_charge_date)) / 86400
+            CASE WHEN prev_charge_date IS NOT NULL
+              THEN EXTRACT(EPOCH FROM (charge_date - prev_charge_date)) / 86400
+            END
           )::integer as avg_interval_days,
           COALESCE(STDDEV(
-            EXTRACT(EPOCH FROM (charge_date - prev_charge_date)) / 86400
+            CASE WHEN prev_charge_date IS NOT NULL
+              THEN EXTRACT(EPOCH FROM (charge_date - prev_charge_date)) / 86400
+            END
           ), 0)::integer as interval_stddev
         FROM merchant_transactions
-        WHERE prev_charge_date IS NOT NULL
         GROUP BY merchant_name, currency
         HAVING COUNT(*) >= 2
       )
