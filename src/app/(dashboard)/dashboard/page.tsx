@@ -21,6 +21,7 @@ import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
 import { CategoryChart } from "@/components/dashboard/category-chart";
 import { YearOverYearChart } from "@/components/charts/year-over-year-chart";
 import { CategoryTrendsChart } from "@/components/charts/category-trends-chart";
+import { PatternSuggestionsCard } from "@/components/dashboard/pattern-suggestions-card";
 import { useSubscriptions, useUserStatus, useDelayedLoading } from "@/lib/hooks";
 import { useTrends } from "@/lib/hooks/use-analytics";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -117,6 +118,9 @@ export default function DashboardPage() {
             onChange={handlePeriodChange}
           />
         </div>
+
+        {/* Pattern Suggestions - only renders if patterns exist */}
+        <PatternSuggestionsCard />
 
         {/* Analytics Stat Cards */}
         <AnalyticsCards params={analyticsParams} />
