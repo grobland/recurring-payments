@@ -122,12 +122,20 @@ export async function POST(request: Request) {
     let filtered = 0;
 
     for (const row of rawPatterns) {
+      // Parse arrays - they may come as strings from raw SQL
+      const chargeDatesArr = typeof row.charge_dates === 'string'
+        ? JSON.parse(row.charge_dates)
+        : row.charge_dates;
+      const amountsArr = typeof row.amounts === 'string'
+        ? JSON.parse(row.amounts)
+        : row.amounts;
+
       const pattern = {
         merchantName: row.merchant_name,
         currency: row.currency,
         occurrenceCount: parseInt(row.occurrence_count),
-        chargeDates: row.charge_dates.map((d: string) => new Date(d)),
-        amounts: row.amounts.map((a: string) => parseFloat(a)),
+        chargeDates: chargeDatesArr.map((d: string) => new Date(d)),
+        amounts: amountsArr.map((a: string | number) => typeof a === 'string' ? parseFloat(a) : a),
         avgAmount: parseFloat(row.avg_amount),
         amountStddev: parseFloat(row.amount_stddev || "0"),
         avgIntervalDays: parseInt(row.avg_interval_days || "0"),
