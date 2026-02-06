@@ -3,9 +3,81 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { subscriptions } from "@/lib/db/schema";
 // eq, isNull used via query builder helpers
-import { parseDocumentForSubscriptions, parseTextForSubscriptions, detectDuplicates } from "@/lib/openai/pdf-parser";
+import { parseDocumentForSubscriptions, parseTextForSubscriptions, type DetectedSubscription } from "@/lib/openai/pdf-parser";
 import { isUserActive } from "@/lib/auth/helpers";
+import { calculateSimilarity, type SubscriptionRecord, type SimilarityResult } from "@/lib/utils/similarity";
 import OpenAI from "openai";
+
+// Threshold for considering a subscription as a potential duplicate
+const DUPLICATE_THRESHOLD = 70;
+
+/**
+ * Interface for enhanced duplicate match info returned to client
+ */
+interface DuplicateMatch {
+  existingId: string;
+  existingName: string;
+  existingAmount: string;
+  existingCurrency: string;
+  existingFrequency: string;
+  score: number;
+  matches: Record<string, boolean>;
+}
+
+/**
+ * Detects potential duplicates using the weighted similarity algorithm.
+ * Returns a Map of detected subscription index -> best matching existing subscription.
+ */
+function detectDuplicatesEnhanced(
+  detected: DetectedSubscription[],
+  existing: { id: string; name: string; amount: string; currency: string; frequency: string }[]
+): Map<number, DuplicateMatch> {
+  const duplicates = new Map<number, DuplicateMatch>();
+
+  detected.forEach((sub, index) => {
+    let bestMatch: DuplicateMatch | null = null;
+    let bestScore = 0;
+
+    for (const existingSub of existing) {
+      // Build SubscriptionRecord for comparison
+      const detectedRecord: SubscriptionRecord = {
+        name: sub.name,
+        amount: sub.amount,
+        currency: sub.currency,
+        frequency: sub.frequency,
+      };
+
+      const existingRecord: SubscriptionRecord = {
+        name: existingSub.name,
+        amount: parseFloat(existingSub.amount),
+        currency: existingSub.currency,
+        frequency: existingSub.frequency as "monthly" | "yearly",
+      };
+
+      const result: SimilarityResult = calculateSimilarity(detectedRecord, existingRecord);
+
+      // Only consider matches at or above the threshold
+      if (result.score >= DUPLICATE_THRESHOLD && result.score > bestScore) {
+        bestScore = result.score;
+        bestMatch = {
+          existingId: existingSub.id,
+          existingName: existingSub.name,
+          existingAmount: existingSub.amount,
+          existingCurrency: existingSub.currency,
+          existingFrequency: existingSub.frequency,
+          score: result.score,
+          matches: result.matches,
+        };
+      }
+    }
+
+    if (bestMatch) {
+      duplicates.set(index, bestMatch);
+    }
+  });
+
+  return duplicates;
+}
 
 // Helper to extract text from PDF using pdf2json (serverless-compatible)
 async function extractTextFromPdf(pdfBuffer: Buffer): Promise<string> {
@@ -130,32 +202,35 @@ export async function POST(request: Request) {
       parseResult = await parseDocumentForSubscriptions(base64Images, mimeType);
     }
 
-    // Get existing subscriptions for duplicate detection
+    // Get existing subscriptions for duplicate detection (only active ones)
     const existingSubscriptions = await db.query.subscriptions.findMany({
       where: (table, { and, eq, isNull }) =>
-        and(eq(table.userId, session.user!.id), isNull(table.deletedAt)),
+        and(
+          eq(table.userId, session.user!.id),
+          eq(table.status, "active"),
+          isNull(table.deletedAt)
+        ),
       columns: {
         id: true,
         name: true,
         amount: true,
         currency: true,
+        frequency: true,
       },
     });
 
-    // Detect duplicates
-    const duplicates = detectDuplicates(
+    // Detect duplicates using enhanced weighted similarity algorithm
+    const duplicates = detectDuplicatesEnhanced(
       parseResult.subscriptions,
       existingSubscriptions
     );
 
-    // Mark subscriptions with duplicate info
+    // Mark subscriptions with enhanced duplicate info
     const subscriptionsWithDuplicates = parseResult.subscriptions.map((sub, index) => {
-      const duplicate = duplicates.get(index);
+      const duplicateMatch = duplicates.get(index);
       return {
         ...sub,
-        isDuplicate: !!duplicate,
-        duplicateOf: duplicate?.existingName,
-        duplicateSimilarity: duplicate?.similarity,
+        duplicateMatch: duplicateMatch || null,
       };
     });
 
