@@ -31,20 +31,22 @@ export async function POST(request: Request) {
     // Run detection query with window functions
     // This query finds recurring charges by grouping by merchant name + currency
     // and calculating intervals between charges using LAG
+    // Uses last_renewal_date (actual transaction date) instead of created_at (import date)
     const detectionQuery = sql`
       WITH merchant_transactions AS (
         SELECT
           s.name as merchant_name,
           s.amount::numeric as amount,
           s.currency,
-          s.created_at as charge_date,
-          LAG(s.created_at) OVER (
+          s.last_renewal_date as charge_date,
+          LAG(s.last_renewal_date) OVER (
             PARTITION BY LOWER(s.name), s.currency
-            ORDER BY s.created_at
+            ORDER BY s.last_renewal_date
           ) as prev_charge_date
         FROM ${subscriptions} s
         WHERE s.user_id = ${userId}
-          AND s.created_at >= ${windowStartStr}
+          AND s.last_renewal_date >= ${windowStartStr}
+          AND s.last_renewal_date IS NOT NULL
           AND s.import_audit_id IS NOT NULL
           AND s.deleted_at IS NULL
           AND s.merged_at IS NULL
