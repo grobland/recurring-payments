@@ -29,7 +29,7 @@ export const confirmImportSchema = z.object({
         error: "Please select a renewal date",
       }),
       action: z.enum(["create", "skip", "merge"]),
-      mergeWithId: z.string().uuid().optional(), // If action is "merge"
+      mergeWithId: z.string().uuid().optional().nullable(), // If action is "merge"
     })
   ),
   statementSource: z
