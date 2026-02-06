@@ -1,5 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AnalyticsResponse, AnalyticsPeriod } from "@/types/analytics";
+import type {
+  AnalyticsResponse,
+  AnalyticsPeriod,
+  TrendsResponse,
+} from "@/types/analytics";
 import { isRetryableError } from "@/lib/utils/errors";
 
 /**
@@ -13,6 +17,7 @@ export const analyticsKeys = {
     month?: number,
     quarter?: number
   ) => [...analyticsKeys.all, { period, year, month, quarter }] as const,
+  trends: (months: number) => [...analyticsKeys.all, "trends", { months }] as const,
 };
 
 /**
@@ -90,9 +95,61 @@ export function useAnalytics(
 }
 
 /**
+ * Fetch trends data from the API
+ */
+async function fetchTrends(months: number): Promise<TrendsResponse> {
+  const params = new URLSearchParams({ months: months.toString() });
+  const response = await fetch(`/api/analytics/trends?${params}`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to fetch trends");
+  }
+
+  return response.json();
+}
+
+/**
+ * Hook to fetch and cache trends data
+ *
+ * Returns historical spending data for month-over-month indicators,
+ * year-over-year charts, and category trend lines.
+ *
+ * @param months - Number of months of history (default 12, max 24)
+ *
+ * @example
+ * ```tsx
+ * // Default 12 months
+ * const { data, isLoading, isError } = useTrends();
+ *
+ * // Custom range
+ * const { data } = useTrends(6);
+ * ```
+ */
+export function useTrends(months: number = 12) {
+  return useQuery({
+    queryKey: analyticsKeys.trends(months),
+    queryFn: () => fetchTrends(months),
+    staleTime: 5 * 60 * 1000, // 5 minutes (matches analytics)
+    refetchOnWindowFocus: false, // Data refreshes server-side via cron
+    retry: (failureCount, error) => {
+      // Only retry on transient errors (network, 503)
+      if (!isRetryableError(error)) return false;
+      // Max 2 retries (3 total attempts)
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => {
+      // Exponential backoff: 1s, 2s
+      return Math.min(1000 * 2 ** attemptIndex, 2000);
+    },
+  });
+}
+
+/**
  * Hook to invalidate all analytics queries
  *
  * Use after subscription mutations to refresh analytics data.
+ * Also invalidates trends data since they share the "analytics" prefix.
  *
  * @example
  * ```tsx
