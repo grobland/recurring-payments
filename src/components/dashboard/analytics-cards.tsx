@@ -9,7 +9,8 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAnalytics } from "@/lib/hooks/use-analytics";
+import { TrendIndicator } from "./trend-indicator";
+import { useAnalytics, useTrends } from "@/lib/hooks/use-analytics";
 import { useDelayedLoading } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import type { AnalyticsParams } from "@/types/analytics";
@@ -29,6 +30,7 @@ export function AnalyticsCards({ params }: AnalyticsCardsProps) {
     params.month,
     params.quarter
   );
+  const { data: trendsData } = useTrends(12);
 
   const showSkeleton = useDelayedLoading(isLoading);
 
@@ -69,6 +71,7 @@ export function AnalyticsCards({ params }: AnalyticsCardsProps) {
             <>
               <Skeleton className="h-8 w-24" />
               <Skeleton className="mt-2 h-3 w-20" />
+              <Skeleton className="mt-1 h-4 w-28" />
             </>
           ) : (
             <div className="animate-in fade-in duration-150">
@@ -78,6 +81,13 @@ export function AnalyticsCards({ params }: AnalyticsCardsProps) {
               <p className="text-xs text-muted-foreground">
                 {formatCurrency(data?.totalYearly ?? 0, displayCurrency)} per year
               </p>
+              {trendsData?.momChange && (
+                <TrendIndicator
+                  change={trendsData.momChange}
+                  currency={displayCurrency}
+                  className="mt-1"
+                />
+              )}
             </div>
           )}
         </CardContent>
