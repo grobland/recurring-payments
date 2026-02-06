@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Phase 15 - Spending Analytics & Trends
+**Current focus:** Phase 16 - Pattern Recognition
 
 ## Current Position
 
-Phase: 15 of 18 (Spending Analytics & Trends)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-02-06 - Completed 15-03-PLAN.md (Trend Charts)
+Phase: 16 of 18 (Pattern Recognition)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-06 - Completed 16-01-PLAN.md (Pattern Recognition Foundation)
 
-Progress: [███████████████░░░] 90% (38/42 estimated total plans across all milestones)
+Progress: [███████████████░░░] 93% (39/42 estimated total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38
-- Average duration: ~6.9 min
-- Total execution time: ~264 min (~4.4 hours)
+- Total plans completed: 39
+- Average duration: ~7.0 min
+- Total execution time: ~275 min (~4.6 hours)
 
 **By Milestone:**
 
@@ -30,11 +30,11 @@ Progress: [███████████████░░░] 90% (38/42 es
 | v1.0 MVP | 7 | ~57 min | ~8 min |
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
-| v1.3 Analytics (partial) | 10 | ~67 min | ~6.7 min |
+| v1.3 Analytics (partial) | 11 | ~78 min | ~7.1 min |
 
 **Recent Trend:**
-- Last 5 plans: [18, 5, 4, 4, 5] min
-- Trend: Steady execution
+- Last 5 plans: [5, 4, 4, 5, 11] min
+- Trend: Steady execution with occasional complexity spikes
 
 *Updated after each plan completion*
 
@@ -77,6 +77,9 @@ Summary of established patterns:
 | Chart empty state pattern | Show "More data needed" message with counts for insufficient history |
 | YoY line styling | Solid primary for current year, dashed muted for previous year |
 | Category chart colors | Use categoryColor from database for consistent color mapping |
+| Pattern confidence scoring | Multi-factor (occurrence 30%, interval 40%, amount 30%) with 0-100 scale |
+| Pattern confidence thresholds | MIN_DISPLAY=70, MEDIUM=50, HIGH=80 for display filtering |
+| Keyword-based category guessing | Case-insensitive substring search through 14 category keyword lists |
 
 ### Pending Todos
 
@@ -101,9 +104,12 @@ None yet.
 **From 14-03:**
 - Database migration 0002_gorgeous_surge.sql adds mergedAt/mergedIntoId columns - run via `npm run db:push` or Supabase SQL Editor
 
+**From 16-01:**
+- Database migration 0003_old_azazel.sql adds recurring_patterns table - run via `npm run db:push` or Supabase SQL Editor
+
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Completed 15-03-PLAN.md (Trend Charts) - PHASE 15 COMPLETE
+Stopped at: Completed 16-01-PLAN.md (Pattern Recognition Foundation)
 Resume file: None
-Next step: Begin Phase 16 (Anomaly Detection)
+Next step: Continue Phase 16 - Plan 02 (Pattern Detection Query)
