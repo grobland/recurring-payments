@@ -57,6 +57,7 @@ import { formatDate, getDaysUntil } from "@/lib/utils/dates";
 import { isRetryableError } from "@/lib/utils/errors";
 import { ServiceUnavailable } from "@/components/shared/service-unavailable";
 import { EmptyState } from "@/components/shared/empty-state";
+import { DuplicateScanSection } from "@/components/subscriptions/duplicate-scan-results";
 import { toast } from "sonner";
 
 const SKELETON_WIDTHS = {
@@ -263,6 +264,9 @@ export default function SubscriptionsPage() {
             </Button>
           </div>
         </div>
+
+        {/* Duplicate scan section */}
+        <DuplicateScanSection />
 
         {/* Content */}
         {showSkeleton ? (

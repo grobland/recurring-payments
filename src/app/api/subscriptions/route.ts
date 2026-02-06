@@ -39,6 +39,9 @@ export async function GET(request: Request) {
       conditions.push(isNull(subscriptions.deletedAt));
     }
 
+    // Always exclude merged subscriptions (they're handled separately via undo)
+    conditions.push(isNull(subscriptions.mergedAt));
+
     // Filter by status
     if (filters.status) {
       conditions.push(eq(subscriptions.status, filters.status));
