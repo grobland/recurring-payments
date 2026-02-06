@@ -7,6 +7,36 @@ import { confirmImportSchema } from "@/lib/validations/import";
 import { calculateNormalizedMonthly } from "@/lib/utils/normalize";
 import { isUserActive } from "@/lib/auth/helpers";
 
+/**
+ * Trigger pattern detection in the background after import completes.
+ * Uses internal fetch to call the detection endpoint with the user's session.
+ */
+async function triggerPatternDetection(request: Request): Promise<void> {
+  try {
+    // Get the base URL from the request
+    const url = new URL(request.url);
+    const baseUrl = `${url.protocol}//${url.host}`;
+
+    // Forward cookies for authentication
+    const cookies = request.headers.get("cookie") || "";
+
+    // Fire and forget - don't await the response
+    fetch(`${baseUrl}/api/patterns/detect`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Cookie": cookies,
+      },
+      body: JSON.stringify({ monthsBack: 12 }),
+    }).catch((error) => {
+      // Log but don't fail the import
+      console.error("Background pattern detection failed:", error);
+    });
+  } catch (error) {
+    console.error("Failed to trigger pattern detection:", error);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const session = await auth();
@@ -137,6 +167,10 @@ export async function POST(request: Request) {
         completedAt: new Date(),
       })
       .where(eq(importAudits.id, audit.id));
+
+    // Trigger pattern detection in background after successful import
+    // This re-evaluates patterns with the newly imported data
+    triggerPatternDetection(request);
 
     return NextResponse.json({
       created: createdCount,
