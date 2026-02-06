@@ -21,9 +21,9 @@ Requirements for Data & Intelligence milestone. Each maps to roadmap phases.
 - [x] **ANLYT-01**: User can view total monthly spending on dashboard
 - [x] **ANLYT-02**: User can view total yearly spending on dashboard
 - [x] **ANLYT-03**: User can view spending breakdown by category (pie/bar chart)
-- [ ] **ANLYT-04**: User can view month-over-month spending change with trend indicator
-- [ ] **ANLYT-05**: User can view year-over-year spending comparison chart
-- [ ] **ANLYT-06**: User can view spending trend over time for each category
+- [x] **ANLYT-04**: User can view month-over-month spending change with trend indicator
+- [x] **ANLYT-05**: User can view year-over-year spending comparison chart
+- [x] **ANLYT-06**: User can view spending trend over time for each category
 
 ### Pattern Recognition
 
@@ -92,9 +92,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ANLYT-01 | Phase 13 | Complete |
 | ANLYT-02 | Phase 13 | Complete |
 | ANLYT-03 | Phase 13 | Complete |
-| ANLYT-04 | Phase 15 | Pending |
-| ANLYT-05 | Phase 15 | Pending |
-| ANLYT-06 | Phase 15 | Pending |
+| ANLYT-04 | Phase 15 | Complete |
+| ANLYT-05 | Phase 15 | Complete |
+| ANLYT-06 | Phase 15 | Complete |
 | PTRN-01 | Phase 16 | Pending |
 | PTRN-02 | Phase 16 | Pending |
 | PTRN-03 | Phase 16 | Pending |
