@@ -378,6 +378,54 @@ export const fxRatesCache = pgTable(
   ]
 );
 
+// ============ RECURRING PATTERNS TABLE ============
+
+export const recurringPatterns = pgTable(
+  "recurring_patterns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Pattern identification
+    merchantName: varchar("merchant_name", { length: 255 }).notNull(),
+    currency: varchar("currency", { length: 3 }).notNull(),
+
+    // Detection data
+    occurrenceCount: integer("occurrence_count").notNull(),
+    avgAmount: decimal("avg_amount", { precision: 10, scale: 2 }).notNull(),
+    amountStddev: decimal("amount_stddev", { precision: 10, scale: 2 }),
+    avgIntervalDays: integer("avg_interval_days"),
+    intervalStddev: integer("interval_stddev"),
+    detectedFrequency: frequencyEnum("detected_frequency"), // monthly | yearly | null
+
+    // Evidence data (stored as JSON arrays)
+    chargeDates: jsonb("charge_dates").$type<string[]>().notNull(),
+    amounts: jsonb("amounts").$type<number[]>().notNull(),
+
+    // Confidence scoring
+    confidenceScore: integer("confidence_score").notNull(), // 0-100
+
+    // User actions
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    createdSubscriptionId: uuid("created_subscription_id").references(() => subscriptions.id, {
+      onDelete: "set null",
+    }),
+
+    // Timestamps
+    detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("recurring_patterns_user_id_idx").on(table.userId),
+    index("recurring_patterns_merchant_currency_idx").on(table.merchantName, table.currency),
+    index("recurring_patterns_confidence_idx").on(table.confidenceScore),
+  ]
+);
+
+
 // ============ RELATIONS ============
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -388,6 +436,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   reminderLogs: many(reminderLogs),
   importAudits: many(importAudits),
   authenticators: many(authenticators),
+  recurringPatterns: many(recurringPatterns),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -468,6 +517,19 @@ export const importAuditsRelations = relations(
   })
 );
 
+
+export const recurringPatternsRelations = relations(recurringPatterns, ({ one }) => ({
+  user: one(users, {
+    fields: [recurringPatterns.userId],
+    references: [users.id],
+  }),
+  createdSubscription: one(subscriptions, {
+    fields: [recurringPatterns.createdSubscriptionId],
+    references: [subscriptions.id],
+  }),
+}));
+
+
 // ============ TYPE EXPORTS ============
 
 export type User = typeof users.$inferSelect;
@@ -493,3 +555,5 @@ export type NewImportAudit = typeof importAudits.$inferInsert;
 
 export type FxRatesCache = typeof fxRatesCache.$inferSelect;
 export type NewFxRatesCache = typeof fxRatesCache.$inferInsert;
+export type RecurringPattern = typeof recurringPatterns.$inferSelect;
+export type NewRecurringPattern = typeof recurringPatterns.$inferInsert;
