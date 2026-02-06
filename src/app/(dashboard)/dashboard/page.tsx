@@ -19,7 +19,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PeriodSelector, getPeriodIdFromParams } from "@/components/dashboard/period-selector";
 import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
 import { CategoryChart } from "@/components/dashboard/category-chart";
+import { YearOverYearChart } from "@/components/charts/year-over-year-chart";
+import { CategoryTrendsChart } from "@/components/charts/category-trends-chart";
 import { useSubscriptions, useUserStatus, useDelayedLoading } from "@/lib/hooks";
+import { useTrends } from "@/lib/hooks/use-analytics";
 import { formatCurrency } from "@/lib/utils/currency";
 import { getDaysUntil } from "@/lib/utils/dates";
 import { isRetryableError } from "@/lib/utils/errors";
@@ -30,6 +33,7 @@ export default function DashboardPage() {
   const { data, isLoading, error, refetch } = useSubscriptions({ status: "active" });
   const { user, isTrialActive, daysLeftInTrial } = useUserStatus();
   const showSkeleton = useDelayedLoading(isLoading);
+  const { data: trendsData, isLoading: trendsLoading } = useTrends(12);
 
   // Analytics period state - default to current month
   const [analyticsParams, setAnalyticsParams] = useState<AnalyticsParams>(() => {
@@ -119,6 +123,48 @@ export default function DashboardPage() {
 
         {/* Category Chart - Full Width */}
         <CategoryChart params={analyticsParams} />
+
+        {/* Spending Trends Section */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Spending Trends</h2>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Year-over-Year Chart */}
+            {trendsLoading ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Year-over-Year Comparison</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-[300px] w-full" />
+                </CardContent>
+              </Card>
+            ) : trendsData?.yearComparison ? (
+              <YearOverYearChart
+                data={trendsData.yearComparison}
+                currentYear={new Date().getFullYear()}
+                currency={trendsData.displayCurrency}
+              />
+            ) : null}
+
+            {/* Category Trends Chart */}
+            {trendsLoading ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Spending by Category</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-[300px] w-full" />
+                </CardContent>
+              </Card>
+            ) : trendsData?.categoryTrends ? (
+              <CategoryTrendsChart
+                data={trendsData.categoryTrends}
+                currency={trendsData.displayCurrency}
+              />
+            ) : null}
+          </div>
+        </div>
 
         {/* Main Content */}
         <div className="grid gap-6 lg:grid-cols-2">
