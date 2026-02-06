@@ -81,3 +81,89 @@ export interface AnalyticsResponse {
   /** ISO date when FX rates were last fetched */
   rateTimestamp: string;
 }
+
+// ============================================================================
+// Trends API Types
+// ============================================================================
+
+/**
+ * Parameters for querying trends data
+ */
+export interface TrendsParams {
+  /** Number of months of historical data to return (default 12, max 24) */
+  months: number;
+}
+
+/**
+ * Monthly spending data point
+ */
+export interface MonthlyTrend {
+  /** Month name (e.g., "Jan", "Feb") */
+  month: string;
+  /** Year (e.g., 2026) */
+  year: number;
+  /** Total spending amount in display currency */
+  amount: number;
+  /** Whether any conversion from foreign currency occurred */
+  wasConverted: boolean;
+}
+
+/**
+ * Category spending over time
+ */
+export interface CategoryTrend {
+  /** Category UUID, null for uncategorized */
+  categoryId: string | null;
+  /** Category display name */
+  categoryName: string;
+  /** Hex color code for chart line */
+  categoryColor: string;
+  /** Monthly spending data points */
+  data: MonthlyTrend[];
+}
+
+/**
+ * Year-over-year comparison for a single month
+ */
+export interface YearComparison {
+  /** Month name (e.g., "Jan", "Feb") */
+  month: string;
+  /** Spending in current year */
+  currentYear: number;
+  /** Spending in previous year */
+  previousYear: number;
+}
+
+/**
+ * Month-over-month change calculation
+ */
+export interface MoMChange {
+  /** Current month total spending */
+  current: number;
+  /** Previous month total spending */
+  previous: number;
+  /** Absolute change (current - previous) */
+  absolute: number;
+  /** Percentage change ((current - previous) / previous * 100) */
+  percentage: number;
+  /** Direction indicator for styling */
+  direction: "up" | "down" | "neutral";
+}
+
+/**
+ * Full trends response from the API
+ */
+export interface TrendsResponse {
+  /** User's display currency */
+  displayCurrency: string;
+  /** Month-by-month spending totals */
+  monthlyTrends: MonthlyTrend[];
+  /** Per-category monthly breakdown */
+  categoryTrends: CategoryTrend[];
+  /** Current year vs previous year by month */
+  yearComparison: YearComparison[];
+  /** Month-over-month change stats */
+  momChange: MoMChange;
+  /** ISO timestamp when FX rates were fetched */
+  rateTimestamp: string;
+}
