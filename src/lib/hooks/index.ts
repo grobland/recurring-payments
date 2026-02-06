@@ -45,3 +45,8 @@ export { useDelayedLoading } from "./use-delayed-loading";
 // Duplicate detection hooks
 export { useDuplicateScan, type DuplicatePair } from "./use-duplicate-scan";
 export { useMergeSubscription, type MergeRequest } from "./use-merge-subscription";
+
+// Pattern recognition hooks
+export { usePatternSuggestions } from "./use-pattern-suggestions";
+export { useAcceptPattern } from "./use-accept-pattern";
+export { useDismissPattern } from "./use-dismiss-pattern";
