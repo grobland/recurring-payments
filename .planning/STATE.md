@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 17 of 18 (Spending Forecasting)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-07 - Completed 17-01-PLAN.md (forecast foundation)
+Last activity: 2026-02-07 - Completed 17-02-PLAN.md (monthly/annual APIs)
 
-Progress: [████████████████░░] 97% (44/45 estimated total plans across all milestones)
+Progress: [█████████████████░] 98% (45/47 estimated total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 44
+- Total plans completed: 45
 - Average duration: ~7.0 min
-- Total execution time: ~312 min (~5.2 hours)
+- Total execution time: ~321 min (~5.4 hours)
 
 **By Milestone:**
 
@@ -30,10 +30,10 @@ Progress: [████████████████░░] 97% (44/45 es
 | v1.0 MVP | 7 | ~57 min | ~8 min |
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
-| v1.3 Analytics (partial) | 14 | ~101 min | ~7.2 min |
+| v1.3 Analytics (partial) | 15 | ~110 min | ~7.3 min |
 
 **Recent Trend:**
-- Last 5 plans: [8, 6, 10, 8, 7] min
+- Last 5 plans: [6, 10, 8, 7, 9] min
 - Trend: Steady execution with debugging spikes
 
 *Updated after each plan completion*
@@ -86,6 +86,9 @@ Summary of established patterns:
 | Forecast volatility | Coefficient of variation (CV) = stdDev/mean, default 20%, cap at 100% |
 | sqrt(time) uncertainty scaling | Confidence intervals widen with sqrt(monthsAhead) for fan charts |
 | Confidence interval floors | Lower bounds floored at 0 (spending cannot be negative) |
+| Forecast API pattern | Project renewals, query historical volatility, add expanding CI |
+| Annual sqrt(12) scaling | Annual stdDev = monthly stdDev * sqrt(12) for proper uncertainty |
+| useForecast hooks pattern | forecastKeys factory, 5-min staleTime, isRetryableError retry logic |
 
 ### Pending Todos
 
@@ -98,7 +101,7 @@ None yet.
 - Duplicate detection false positive risk requires careful threshold calibration (start at 85% similarity) - RESOLVED: Phase 14 COMPLETE with 70% threshold
 - Anomaly detection alert fatigue risk requires weekly batching, not real-time alerts
 - Multi-currency handling needs transaction-time FX rates (not current rates)
-- Forecast accuracy needs uncertainty visualization (prediction intervals, not point estimates) - IN PROGRESS: 17-01 adds confidence intervals
+- Forecast accuracy needs uncertainty visualization (prediction intervals, not point estimates) - RESOLVED: 17-01 and 17-02 add confidence intervals
 
 **Carried forward from v1.2:**
 - RESEND_FROM_EMAIL needs verified domain for production email delivery
@@ -116,6 +119,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Completed 17-01-PLAN.md (forecast foundation)
+Stopped at: Completed 17-02-PLAN.md (monthly/annual APIs)
 Resume file: None
-Next step: Execute 17-02-PLAN.md (monthly/annual APIs)
+Next step: Execute 17-03-PLAN.md (monthly forecast chart UI)
