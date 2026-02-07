@@ -4,6 +4,7 @@ import * as React from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "./theme-toggle";
+import { NotificationBell } from "@/components/alerts/notification-bell";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -46,6 +47,7 @@ export function DashboardHeader({ title, breadcrumbs }: DashboardHeaderProps) {
         <h1 className="text-lg font-semibold">{title}</h1>
       )}
       <div className="ml-auto flex items-center gap-2">
+        <NotificationBell />
         <ThemeToggle />
       </div>
     </header>
