@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Phase 18 - Anomaly Detection
+**Current focus:** Phase 18 - Anomaly Detection - COMPLETE
 
 ## Current Position
 
-Phase: 18 of 18 (Anomaly Detection)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-07 - Completed 18-02-PLAN.md (alerts API and hooks)
+Phase: 18 of 18 (Anomaly Detection) - COMPLETE
+Plan: 3 of 3 in current phase (COMPLETE)
+Status: v1.3 Analytics milestone COMPLETE
+Last activity: 2026-02-07 - Completed 18-03-PLAN.md (alerts UI)
 
-Progress: [██████████████████] 100% (49/50 estimated total plans across all milestones)
+Progress: [██████████████████] 100% (50/50 total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 49
+- Total plans completed: 50
 - Average duration: ~7.0 min
-- Total execution time: ~341 min (~5.7 hours)
+- Total execution time: ~346 min (~5.8 hours)
 
 **By Milestone:**
 
@@ -30,10 +30,10 @@ Progress: [██████████████████] 100% (49/50 e
 | v1.0 MVP | 7 | ~57 min | ~8 min |
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
-| v1.3 Analytics | 20 | ~140 min | ~7.0 min |
+| v1.3 Analytics | 21 | ~145 min | ~6.9 min |
 
 **Recent Trend:**
-- Last 5 plans: [7, 9, 8, 4, 4] min
+- Last 5 plans: [9, 8, 4, 4, 5] min
 - Trend: Steady execution
 
 *Updated after each plan completion*
@@ -98,39 +98,35 @@ Summary of established patterns:
 | Price change threshold | >5% OR >$2 absolute increase |
 | Query key factory pattern | alertKeys with all/list for cache management |
 | Alert hooks invalidation | Invalidate alertKeys.all after mutations for instant UI |
+| Dropdown notification pattern | Red dot indicator (not count), 5-item limit with View all |
+| Alert color coding | Red for price increase, yellow for missed renewal |
 
 ### Pending Todos
 
-None yet.
+None - all milestones complete.
 
 ### Blockers/Concerns
 
-**v1.3 milestone concerns:**
-- Analytics infrastructure must be established first (Phase 13 is foundation for all other phases) - RESOLVED: Phase 13 COMPLETE
-- Duplicate detection false positive risk requires careful threshold calibration (start at 85% similarity) - RESOLVED: Phase 14 COMPLETE with 70% threshold
-- Anomaly detection alert fatigue risk requires weekly batching, not real-time alerts
-- Multi-currency handling needs transaction-time FX rates (not current rates)
-- Forecast accuracy needs uncertainty visualization (prediction intervals, not point estimates) - RESOLVED: Phase 17 COMPLETE with fan charts
+**All milestone concerns RESOLVED:**
+- v1.0-v1.3 milestones complete
+- Analytics infrastructure complete (Phase 13)
+- Duplicate detection complete with 70% threshold (Phase 14)
+- Forecast accuracy with fan charts complete (Phase 17)
+- Anomaly detection with alert UI complete (Phase 18)
 
-**Carried forward from v1.2:**
+**Carried forward (production deployment):**
 - RESEND_FROM_EMAIL needs verified domain for production email delivery
 - NEXT_PUBLIC_SENTRY_DSN and related env vars needed for Sentry error tracking
 
-**From 13-01:**
-- Database migration 0002_create_analytics_mv.sql must be run manually via Supabase SQL Editor (user confirmed this is done)
-
-**From 14-03:**
-- Database migration 0002_gorgeous_surge.sql adds mergedAt/mergedIntoId columns - run via `npm run db:push` or Supabase SQL Editor
-
-**From 16-01:**
-- Database migration 0003_old_azazel.sql adds recurring_patterns table - run via `npm run db:push` or Supabase SQL Editor
-
-**From 18-01:**
-- Database migration 0004_modern_argent.sql adds alerts table and alert_type enum - run via `npm run db:push` or Supabase SQL Editor
+**Database migrations (run if not already done):**
+- 0002_create_analytics_mv.sql - analytics materialized view
+- 0002_gorgeous_surge.sql - mergedAt/mergedIntoId columns
+- 0003_old_azazel.sql - recurring_patterns table
+- 0004_modern_argent.sql - alerts table and alert_type enum
 
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Completed 18-02-PLAN.md (alerts API and hooks)
+Stopped at: Completed 18-03-PLAN.md (alerts UI) - ALL PLANS COMPLETE
 Resume file: None
-Next step: 18-03-PLAN.md (alerts UI)
+Next step: Project complete - all 50 plans across 4 milestones executed
