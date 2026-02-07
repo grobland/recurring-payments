@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { subscriptions, categories } from "@/lib/db/schema";
+import { subscriptions, categories, alerts } from "@/lib/db/schema";
+import { detectPriceChange } from "@/lib/utils/anomaly-detection";
 import { updateSubscriptionSchema } from "@/lib/validations/subscription";
 import { calculateNormalizedMonthly } from "@/lib/utils/normalize";
 import { eq, and, isNull, or } from "drizzle-orm";
@@ -123,6 +124,33 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           { error: "Invalid category" },
           { status: 400 }
         );
+      }
+    }
+
+    // Detect price increase BEFORE updating
+    const oldAmount = parseFloat(existing.amount);
+    const newAmount = data.amount !== undefined ? data.amount : oldAmount;
+
+    if (data.amount !== undefined && data.amount !== oldAmount) {
+      const priceChange = detectPriceChange(oldAmount, newAmount);
+
+      if (priceChange.isSignificant) {
+        // Create price increase alert (fire-and-forget, don't block update)
+        db.insert(alerts)
+          .values({
+            userId: session.user.id,
+            subscriptionId: id,
+            type: "price_increase",
+            metadata: {
+              oldAmount: priceChange.oldAmount,
+              newAmount: priceChange.newAmount,
+              currency: data.currency ?? existing.currency,
+              subscriptionName: data.name ?? existing.name,
+            },
+          })
+          .catch((err) => {
+            console.error("Failed to create price increase alert:", err);
+          });
       }
     }
 
