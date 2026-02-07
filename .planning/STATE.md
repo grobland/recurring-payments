@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Phase 17 - Spending Forecasting
+**Current focus:** Phase 18 - Anomaly Detection
 
 ## Current Position
 
-Phase: 17 of 18 (Spending Forecasting)
-Plan: 4 of 4 in current phase
-Status: Phase complete
-Last activity: 2026-02-07 - Completed 17-04-PLAN.md (forecast visualizations)
+Phase: 18 of 18 (Anomaly Detection)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-07 - Completed 18-01-PLAN.md (alerts foundation)
 
-Progress: [██████████████████] 100% (47/47 estimated total plans across all milestones)
+Progress: [██████████████████] 100% (48/50 estimated total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 47
-- Average duration: ~7.1 min
-- Total execution time: ~333 min (~5.6 hours)
+- Total plans completed: 48
+- Average duration: ~7.0 min
+- Total execution time: ~337 min (~5.6 hours)
 
 **By Milestone:**
 
@@ -30,10 +30,10 @@ Progress: [██████████████████] 100% (47/47 e
 | v1.0 MVP | 7 | ~57 min | ~8 min |
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
-| v1.3 Analytics | 19 | ~136 min | ~7.2 min |
+| v1.3 Analytics | 20 | ~140 min | ~7.0 min |
 
 **Recent Trend:**
-- Last 5 plans: [10, 8, 7, 9, 8] min
+- Last 5 plans: [8, 7, 9, 8, 4] min
 - Trend: Steady execution
 
 *Updated after each plan completion*
@@ -93,6 +93,9 @@ Summary of established patterns:
 | Date grouping pattern | useMemo with reduce to group items by date key for O(1) lookup |
 | Stacked area fan chart | Stack bands from lower95 base upward for proper Recharts rendering |
 | Gradient CI bands | 95% band at 15% opacity, 80% band at 35% opacity for visual distinction |
+| Alert lifecycle pattern | acknowledgedAt/dismissedAt for user interaction tracking |
+| Missed renewal threshold | 3+ days overdue AND not updated since renewal date |
+| Price change threshold | >5% OR >$2 absolute increase |
 
 ### Pending Todos
 
@@ -120,9 +123,12 @@ None yet.
 **From 16-01:**
 - Database migration 0003_old_azazel.sql adds recurring_patterns table - run via `npm run db:push` or Supabase SQL Editor
 
+**From 18-01:**
+- Database migration 0004_modern_argent.sql adds alerts table and alert_type enum - run via `npm run db:push` or Supabase SQL Editor
+
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Completed 17-04-PLAN.md (forecast visualizations) - Phase 17 COMPLETE
+Stopped at: Completed 18-01-PLAN.md (alerts foundation)
 Resume file: None
-Next step: Phase 18 (Anomaly Detection) or v1.3 milestone wrap-up
+Next step: 18-02-PLAN.md (alerts UI) or 18-03-PLAN.md (price change detection)
