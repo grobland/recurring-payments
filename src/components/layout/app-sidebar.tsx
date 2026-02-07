@@ -16,6 +16,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  TrendingUp,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -61,6 +62,11 @@ const mainNavItems = [
     title: "Analytics",
     href: "/analytics",
     icon: BarChart3,
+  },
+  {
+    title: "Forecast",
+    href: "/dashboard/forecasting",
+    icon: TrendingUp,
   },
   {
     title: "Import",
