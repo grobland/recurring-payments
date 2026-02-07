@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 17 of 18 (Spending Forecasting)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-07 - Completed 17-02-PLAN.md (monthly/annual APIs)
+Last activity: 2026-02-07 - Completed 17-03-PLAN.md (upcoming charges calendar UI)
 
-Progress: [█████████████████░] 98% (45/47 estimated total plans across all milestones)
+Progress: [█████████████████░] 98% (46/47 estimated total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 45
+- Total plans completed: 46
 - Average duration: ~7.0 min
-- Total execution time: ~321 min (~5.4 hours)
+- Total execution time: ~325 min (~5.4 hours)
 
 **By Milestone:**
 
@@ -89,6 +89,8 @@ Summary of established patterns:
 | Forecast API pattern | Project renewals, query historical volatility, add expanding CI |
 | Annual sqrt(12) scaling | Annual stdDev = monthly stdDev * sqrt(12) for proper uncertainty |
 | useForecast hooks pattern | forecastKeys factory, 5-min staleTime, isRetryableError retry logic |
+| Calendar charge indicators | CSS after pseudo-element for dot indicator on days with events |
+| Date grouping pattern | useMemo with reduce to group items by date key for O(1) lookup |
 
 ### Pending Todos
 
@@ -119,6 +121,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Completed 17-02-PLAN.md (monthly/annual APIs)
+Stopped at: Completed 17-03-PLAN.md (upcoming charges calendar UI)
 Resume file: None
-Next step: Execute 17-03-PLAN.md (monthly forecast chart UI)
+Next step: Execute 17-04-PLAN.md (forecast dashboard page)
