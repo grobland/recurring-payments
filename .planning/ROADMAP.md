@@ -230,10 +230,13 @@ Plans:
   3. User can dismiss individual alerts or acknowledge them (mark as reviewed)
   4. User is alerted when expected renewal charge doesn't appear (missed renewal detection)
   5. Alerts are batched in weekly digest (not real-time) to prevent alert fatigue
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 18-01: TBD
+- [ ] 18-01-PLAN.md — Database schema + detection utilities + cron job
+- [ ] 18-02-PLAN.md — Alerts API endpoints + TanStack Query hooks + price detection
+- [ ] 18-03-PLAN.md — Notification bell UI + dropdown component
+- [ ] 18-04-PLAN.md — Weekly digest email + cron job + verification
 
 ## Progress
 
@@ -259,4 +262,4 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 | 15. Spending Analytics & Trends | v1.3 | 3/3 | Complete | 2026-02-06 |
 | 16. Pattern Recognition | v1.3 | 3/3 | Complete | 2026-02-06 |
 | 17. Spending Forecasting | v1.3 | 4/4 | Complete | 2026-02-07 |
-| 18. Anomaly Detection & Alerts | v1.3 | 0/0 | Not started | - |
+| 18. Anomaly Detection & Alerts | v1.3 | 0/4 | Not started | - |
