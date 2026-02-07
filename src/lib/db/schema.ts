@@ -39,6 +39,11 @@ export const reminderStatusEnum = pgEnum("reminder_status", [
   "pending",
 ]);
 
+export const alertTypeEnum = pgEnum("alert_type", [
+  "price_increase",
+  "missed_renewal",
+]);
+
 // ============ USERS TABLE ============
 
 export const users = pgTable("users", {
@@ -425,6 +430,44 @@ export const recurringPatterns = pgTable(
   ]
 );
 
+// ============ ALERTS TABLE ============
+
+export const alerts = pgTable(
+  "alerts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    subscriptionId: uuid("subscription_id").references(() => subscriptions.id, {
+      onDelete: "cascade",
+    }),
+
+    type: alertTypeEnum("type").notNull(),
+
+    // Store alert-specific data (old/new prices, expected date, etc.)
+    metadata: jsonb("metadata").$type<{
+      oldAmount?: number;
+      newAmount?: number;
+      currency?: string;
+      expectedDate?: string;
+      subscriptionName?: string; // Snapshot in case subscription deleted
+    }>(),
+
+    // Lifecycle
+    acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true }), // Soft delete
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("alerts_user_id_idx").on(table.userId),
+    index("alerts_subscription_id_idx").on(table.subscriptionId),
+    index("alerts_created_at_idx").on(table.createdAt),
+  ]
+);
 
 // ============ RELATIONS ============
 
@@ -437,6 +480,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   importAudits: many(importAudits),
   authenticators: many(authenticators),
   recurringPatterns: many(recurringPatterns),
+  alerts: many(alerts),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -492,6 +536,7 @@ export const subscriptionsRelations = relations(
       relationName: "mergedSubscriptions",
     }),
     reminderLogs: many(reminderLogs),
+    alerts: many(alerts),
   })
 );
 
@@ -529,6 +574,16 @@ export const recurringPatternsRelations = relations(recurringPatterns, ({ one })
   }),
 }));
 
+export const alertsRelations = relations(alerts, ({ one }) => ({
+  user: one(users, {
+    fields: [alerts.userId],
+    references: [users.id],
+  }),
+  subscription: one(subscriptions, {
+    fields: [alerts.subscriptionId],
+    references: [subscriptions.id],
+  }),
+}));
 
 // ============ TYPE EXPORTS ============
 
@@ -557,3 +612,6 @@ export type FxRatesCache = typeof fxRatesCache.$inferSelect;
 export type NewFxRatesCache = typeof fxRatesCache.$inferInsert;
 export type RecurringPattern = typeof recurringPatterns.$inferSelect;
 export type NewRecurringPattern = typeof recurringPatterns.$inferInsert;
+
+export type Alert = typeof alerts.$inferSelect;
+export type NewAlert = typeof alerts.$inferInsert;
