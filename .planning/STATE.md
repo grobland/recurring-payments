@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 17 of 18 (Spending Forecasting)
-Plan: 0 of 4 in current phase
-Status: Planned (ready to execute)
-Last activity: 2026-02-06 - Planned Phase 17 (4 plans in 2 waves)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-07 - Completed 17-01-PLAN.md (forecast foundation)
 
-Progress: [████████████████░░] 96% (43/45 estimated total plans across all milestones)
+Progress: [████████████████░░] 97% (44/45 estimated total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 43
+- Total plans completed: 44
 - Average duration: ~7.0 min
-- Total execution time: ~305 min (~5.1 hours)
+- Total execution time: ~312 min (~5.2 hours)
 
 **By Milestone:**
 
@@ -33,7 +33,7 @@ Progress: [████████████████░░] 96% (43/45 es
 | v1.3 Analytics (partial) | 14 | ~101 min | ~7.2 min |
 
 **Recent Trend:**
-- Last 5 plans: [7, 8, 6, 10, 8] min
+- Last 5 plans: [8, 6, 10, 8, 7] min
 - Trend: Steady execution with debugging spikes
 
 *Updated after each plan completion*
@@ -83,6 +83,9 @@ Summary of established patterns:
 | PostgreSQL window functions | LAG for time-series interval detection in pattern analysis |
 | Fire-and-forget triggers | Background async operations don't block primary request |
 | Pattern duplicate filtering | 70% similarity threshold prevents suggesting existing subscriptions |
+| Forecast volatility | Coefficient of variation (CV) = stdDev/mean, default 20%, cap at 100% |
+| sqrt(time) uncertainty scaling | Confidence intervals widen with sqrt(monthsAhead) for fan charts |
+| Confidence interval floors | Lower bounds floored at 0 (spending cannot be negative) |
 
 ### Pending Todos
 
@@ -95,7 +98,7 @@ None yet.
 - Duplicate detection false positive risk requires careful threshold calibration (start at 85% similarity) - RESOLVED: Phase 14 COMPLETE with 70% threshold
 - Anomaly detection alert fatigue risk requires weekly batching, not real-time alerts
 - Multi-currency handling needs transaction-time FX rates (not current rates)
-- Forecast accuracy needs uncertainty visualization (prediction intervals, not point estimates)
+- Forecast accuracy needs uncertainty visualization (prediction intervals, not point estimates) - IN PROGRESS: 17-01 adds confidence intervals
 
 **Carried forward from v1.2:**
 - RESEND_FROM_EMAIL needs verified domain for production email delivery
@@ -112,7 +115,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-06
-Stopped at: Phase 17 planned, ready for execution
-Resume file: .planning/phases/17-spending-forecasting/.continue-here.md
-Next step: Execute Phase 17 (/gsd:execute-phase 17)
+Last session: 2026-02-07
+Stopped at: Completed 17-01-PLAN.md (forecast foundation)
+Resume file: None
+Next step: Execute 17-02-PLAN.md (monthly/annual APIs)
