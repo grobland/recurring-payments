@@ -27,16 +27,16 @@ Requirements for Data & Intelligence milestone. Each maps to roadmap phases.
 
 ### Pattern Recognition
 
-- [ ] **PTRN-01**: System detects recurring charges across multiple statement imports
-- [ ] **PTRN-02**: User sees suggested subscriptions from detected patterns with confidence
-- [ ] **PTRN-03**: User can accept pattern suggestion to create subscription or dismiss it
+- [x] **PTRN-01**: System detects recurring charges across multiple statement imports
+- [x] **PTRN-02**: User sees suggested subscriptions from detected patterns with confidence
+- [x] **PTRN-03**: User can accept pattern suggestion to create subscription or dismiss it
 
 ### Forecasting
 
-- [ ] **FCST-01**: User can view upcoming charges calendar showing next 30/60/90 days
-- [ ] **FCST-02**: User can view monthly spending projections for upcoming months
-- [ ] **FCST-03**: User can view annual spending forecast with total projection
-- [ ] **FCST-04**: Forecasts display confidence intervals showing uncertainty range
+- [x] **FCST-01**: User can view upcoming charges calendar showing next 30/60/90 days
+- [x] **FCST-02**: User can view monthly spending projections for upcoming months
+- [x] **FCST-03**: User can view annual spending forecast with total projection
+- [x] **FCST-04**: Forecasts display confidence intervals showing uncertainty range
 
 ### Anomaly Alerts
 
@@ -95,13 +95,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ANLYT-04 | Phase 15 | Complete |
 | ANLYT-05 | Phase 15 | Complete |
 | ANLYT-06 | Phase 15 | Complete |
-| PTRN-01 | Phase 16 | Pending |
-| PTRN-02 | Phase 16 | Pending |
-| PTRN-03 | Phase 16 | Pending |
-| FCST-01 | Phase 17 | Pending |
-| FCST-02 | Phase 17 | Pending |
-| FCST-03 | Phase 17 | Pending |
-| FCST-04 | Phase 17 | Pending |
+| PTRN-01 | Phase 16 | Complete |
+| PTRN-02 | Phase 16 | Complete |
+| PTRN-03 | Phase 16 | Complete |
+| FCST-01 | Phase 17 | Complete |
+| FCST-02 | Phase 17 | Complete |
+| FCST-03 | Phase 17 | Complete |
+| FCST-04 | Phase 17 | Complete |
 | ALRT-01 | Phase 18 | Pending |
 | ALRT-02 | Phase 18 | Pending |
 | ALRT-03 | Phase 18 | Pending |
