@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-08)
 ## Current Position
 
 Phase: 19 of 23 (Batch Upload Foundation)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-02-08 - v2.0 roadmap created
+Plan: 01 of 03
+Status: In progress
+Last activity: 2026-02-08 - Completed 19-01-PLAN.md
 
 Progress: [████████████████████░] 78% (18 of 23 phases complete)
 
@@ -32,18 +32,23 @@ Progress: [████████████████████░] 78% 
 - Pattern recognition with subscription suggestions
 - Anomaly alerts with notification bell and weekly digest
 
-### v2.0 Statement Hub (PLANNED)
+### v2.0 Statement Hub (IN PROGRESS)
 
 **Phases:** 19-23 (5 phases)
-**Requirements:** 27 total (0 complete)
+**Requirements:** 27 total (1 complete)
 **Milestone goal:** Transform import to comprehensive statement management with batch uploads, full data retention, and manual enrichment
+
+**Phase 19 progress:**
+- 19-01: Schema and hashing foundation (DONE)
+- 19-02: Batch upload UI (pending)
+- 19-03: Processing endpoints (pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 51
+- Total plans completed: 52
 - Average duration: ~6.9 min
-- Total execution time: ~350 min (~5.8 hours)
+- Total execution time: ~354 min (~5.9 hours)
 
 **By Milestone:**
 
@@ -53,6 +58,7 @@ Progress: [████████████████████░] 78% 
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
 | v1.3 Data & Intelligence | 21 | ~149 min | ~7.1 min |
+| v2.0 Statement Hub | 1 | ~4 min | ~4 min |
 
 ## Accumulated Context
 
@@ -73,6 +79,9 @@ Progress: [████████████████████░] 78% 
 | Fan chart stacking | Stack bands from lower95 base upward |
 | Alert lifecycle | acknowledgedAt/dismissedAt for user interaction |
 | Weekly digest | Batch alerts to prevent notification fatigue |
+| Chunked file hashing | 1MB chunks for memory efficiency with large files |
+| User-scoped unique | pdfHash uniqueness per user, not global |
+| Transaction fingerprint | merchant+amount+date hash for dedup |
 
 ### v2.0 Architecture Notes
 
@@ -82,7 +91,7 @@ From research (2026-02-08):
 - TanStack Virtual for virtualized scrolling (only new dependency needed)
 - Table partitioning by user + date for time-based cleanup
 - Statement line items stored separately from subscriptions
-- Bidirectional links: subscription.sourceLineItemId ↔ lineItem.convertedToSubscriptionId
+- Bidirectional links: subscription.sourceLineItemId -> lineItem.convertedToSubscriptionId
 
 ### Blockers/Concerns
 
@@ -95,10 +104,11 @@ From research (2026-02-08):
 - 0002_gorgeous_surge.sql - mergedAt/mergedIntoId columns
 - 0003_old_azazel.sql - recurring_patterns table
 - 0004_modern_argent.sql - alerts table and alert_type enum
+- 0005_strange_triathlon.sql - statements and transactions tables
 
 ## Session Continuity
 
 Last session: 2026-02-08
-Status: v2.0 roadmap created, ready to plan Phase 19
+Status: Completed 19-01-PLAN.md
 Resume file: None
-Next step: `/gsd:plan-phase 19` to create execution plan for Batch Upload Foundation
+Next step: Execute 19-02-PLAN.md for batch upload UI
