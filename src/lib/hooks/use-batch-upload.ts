@@ -136,6 +136,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
   const [isProcessing, setIsProcessing] = useState(false);
   const processingRef = useRef(false);
   const fileMapRef = useRef<Map<string, File>>(new Map());
+  const queueRef = useRef<QueuedFile[]>([]);
 
   // Generate unique ID for each file
   const generateId = () => `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -144,6 +145,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
   const updateFile = useCallback((id: string, updates: Partial<QueuedFile>) => {
     setQueue(prev => {
       const updated = prev.map(f => f.id === id ? { ...f, ...updates } : f);
+      queueRef.current = updated;
       saveQueueState(updated, sourceType);
       return updated;
     });
@@ -169,6 +171,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
 
     setQueue(prev => {
       const updated = [...prev, ...newFiles];
+      queueRef.current = updated;
       saveQueueState(updated, sourceType);
       return updated;
     });
@@ -179,6 +182,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
     fileMapRef.current.delete(id);
     setQueue(prev => {
       const updated = prev.filter(f => f.id !== id);
+      queueRef.current = updated;
       saveQueueState(updated, sourceType);
       return updated;
     });
@@ -190,6 +194,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
       const updated = prev.filter(f =>
         f.status === "complete" || f.status === "duplicate"
       );
+      queueRef.current = updated;
       saveQueueState(updated, sourceType);
       return updated;
     });
@@ -203,6 +208,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
       const updated = prev.map(f =>
         f.id === id ? { ...f, status: "pending" as FileStatus, error: null, progress: 0 } : f
       );
+      queueRef.current = updated;
       saveQueueState(updated, sourceType);
       return updated;
     });
@@ -315,12 +321,8 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
     setIsProcessing(true);
 
     while (processingRef.current) {
-      // Find next pending file (use current state via callback)
-      let nextFile: QueuedFile | undefined;
-      setQueue(prev => {
-        nextFile = prev.find(f => f.status === "pending");
-        return prev;
-      });
+      // Find next pending file from the ref (always current)
+      const nextFile = queueRef.current.find(f => f.status === "pending");
 
       if (!nextFile) {
         break; // No more pending files
@@ -335,30 +337,27 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
     processingRef.current = false;
     setIsProcessing(false);
 
-    // Calculate results from final state
-    setQueue(prev => {
-      const results: BatchUploadResult = {
-        totalFiles: prev.length,
-        successful: prev.filter(f => f.status === "complete").length,
-        failed: prev.filter(f => f.status === "error").length,
-        skipped: prev.filter(f => f.status === "duplicate").length,
-        totalTransactions: prev.reduce((sum, f) => sum + (f.transactionCount || 0), 0),
-      };
-      onComplete?.(results);
+    // Calculate results from the ref (always current)
+    const finalQueue = queueRef.current;
+    const results: BatchUploadResult = {
+      totalFiles: finalQueue.length,
+      successful: finalQueue.filter(f => f.status === "complete").length,
+      failed: finalQueue.filter(f => f.status === "error").length,
+      skipped: finalQueue.filter(f => f.status === "duplicate").length,
+      totalTransactions: finalQueue.reduce((sum, f) => sum + (f.transactionCount || 0), 0),
+    };
+    onComplete?.(results);
 
-      // Clear persisted state on completion
-      clearQueueState();
-
-      return prev;
-    });
+    // Clear persisted state on completion
+    clearQueueState();
   }, [processFile, onComplete]);
 
   // Start processing when files are added
   const startProcessing = useCallback(() => {
-    if (!processingRef.current && queue.some(f => f.status === "pending")) {
+    if (!processingRef.current && queueRef.current.some(f => f.status === "pending")) {
       processQueue();
     }
-  }, [queue, processQueue]);
+  }, [processQueue]);
 
   // Get queue statistics
   const stats = {
