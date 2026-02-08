@@ -40,10 +40,10 @@ Requirements for Data & Intelligence milestone. Each maps to roadmap phases.
 
 ### Anomaly Alerts
 
-- [ ] **ALRT-01**: User is alerted when a subscription's price increases (>5% or >$2)
-- [ ] **ALRT-02**: User can view all alerts in a notification center
-- [ ] **ALRT-03**: User can dismiss or acknowledge alerts
-- [ ] **ALRT-04**: User is alerted when expected renewal charge doesn't appear (missed renewal)
+- [x] **ALRT-01**: User is alerted when a subscription's price increases (>5% or >$2)
+- [x] **ALRT-02**: User can view all alerts in a notification center
+- [x] **ALRT-03**: User can dismiss or acknowledge alerts
+- [x] **ALRT-04**: User is alerted when expected renewal charge doesn't appear (missed renewal)
 
 ## Future Requirements
 
@@ -102,10 +102,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FCST-02 | Phase 17 | Complete |
 | FCST-03 | Phase 17 | Complete |
 | FCST-04 | Phase 17 | Complete |
-| ALRT-01 | Phase 18 | Pending |
-| ALRT-02 | Phase 18 | Pending |
-| ALRT-03 | Phase 18 | Pending |
-| ALRT-04 | Phase 18 | Pending |
+| ALRT-01 | Phase 18 | Complete |
+| ALRT-02 | Phase 18 | Complete |
+| ALRT-03 | Phase 18 | Complete |
+| ALRT-04 | Phase 18 | Complete |
 
 **Coverage:**
 - v1.3 requirements: 23 total
@@ -122,4 +122,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after roadmap creation*
+*Last updated: 2026-02-08 after Phase 18 completion*

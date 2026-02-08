@@ -5,7 +5,7 @@
 - ✅ **v1.0 MVP** - Phases 1-4 (shipped 2026-01-30)
 - ✅ **v1.1 Import Improvements** - Phases 5-8 (shipped 2026-02-02)
 - ✅ **v1.2 Production Polish** - Phases 9-12 (shipped 2026-02-05)
-- 🚧 **v1.3 Data & Intelligence** - Phases 13-18 (in progress)
+- ✅ **v1.3 Data & Intelligence** - Phases 13-18 (shipped 2026-02-08)
 
 ## Phases
 
@@ -128,7 +128,7 @@ Plans:
 
 </details>
 
-### 🚧 v1.3 Data & Intelligence (In Progress)
+### ✅ v1.3 Data & Intelligence (Shipped 2026-02-08)
 
 **Milestone Goal:** Transform raw subscription data into actionable insights with duplicate detection, pattern recognition, and comprehensive spending analytics.
 
@@ -233,10 +233,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 18-01-PLAN.md — Database schema + detection utilities + cron job
-- [ ] 18-02-PLAN.md — Alerts API endpoints + TanStack Query hooks + price detection
-- [ ] 18-03-PLAN.md — Notification bell UI + dropdown component
-- [ ] 18-04-PLAN.md — Weekly digest email + cron job + verification
+- [x] 18-01-PLAN.md — Database schema + detection utilities + cron job
+- [x] 18-02-PLAN.md — Alerts API endpoints + TanStack Query hooks + price detection
+- [x] 18-03-PLAN.md — Notification bell UI + dropdown component
+- [x] 18-04-PLAN.md — Weekly digest email + cron job + verification
 
 ## Progress
 
@@ -262,4 +262,4 @@ Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 | 15. Spending Analytics & Trends | v1.3 | 3/3 | Complete | 2026-02-06 |
 | 16. Pattern Recognition | v1.3 | 3/3 | Complete | 2026-02-06 |
 | 17. Spending Forecasting | v1.3 | 4/4 | Complete | 2026-02-07 |
-| 18. Anomaly Detection & Alerts | v1.3 | 0/4 | Not started | - |
+| 18. Anomaly Detection & Alerts | v1.3 | 4/4 | Complete | 2026-02-08 |
