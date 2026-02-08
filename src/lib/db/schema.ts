@@ -44,6 +44,20 @@ export const alertTypeEnum = pgEnum("alert_type", [
   "missed_renewal",
 ]);
 
+export const processingStatusEnum = pgEnum("processing_status", [
+  "pending",
+  "processing",
+  "complete",
+  "failed",
+]);
+
+export const transactionTagStatusEnum = pgEnum("transaction_tag_status", [
+  "unreviewed",
+  "potential_subscription",
+  "not_subscription",
+  "converted",
+]);
+
 // ============ USERS TABLE ============
 
 export const users = pgTable("users", {
@@ -469,6 +483,104 @@ export const alerts = pgTable(
   ]
 );
 
+// ============ STATEMENTS TABLE ============
+
+export const statements = pgTable(
+  "statements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Source identification
+    sourceType: varchar("source_type", { length: 100 }).notNull(), // "Chase Sapphire", "Bank of America"
+
+    // PDF storage
+    pdfHash: varchar("pdf_hash", { length: 64 }).notNull(), // SHA-256 for duplicate detection
+    pdfStoragePath: text("pdf_storage_path"), // Supabase Storage path (nullable until uploaded)
+    originalFilename: varchar("original_filename", { length: 255 }).notNull(),
+    fileSizeBytes: integer("file_size_bytes").notNull(),
+
+    // Statement metadata
+    statementDate: timestamp("statement_date", { withTimezone: true }),
+
+    // Processing
+    processingStatus: processingStatusEnum("processing_status")
+      .default("pending")
+      .notNull(),
+    processingError: text("processing_error"),
+    transactionCount: integer("transaction_count").default(0).notNull(),
+
+    // Timestamps
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("statements_user_id_idx").on(table.userId),
+    index("statements_pdf_hash_idx").on(table.pdfHash),
+    uniqueIndex("statements_user_hash_idx").on(table.userId, table.pdfHash), // User-scoped uniqueness
+  ]
+);
+
+// ============ TRANSACTIONS TABLE ============
+
+export const transactions = pgTable(
+  "transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    statementId: uuid("statement_id")
+      .notNull()
+      .references(() => statements.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Transaction data
+    transactionDate: timestamp("transaction_date", { withTimezone: true }).notNull(),
+    merchantName: varchar("merchant_name", { length: 255 }).notNull(),
+    amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 3 }).notNull(),
+    description: text("description"),
+
+    // Deduplication
+    fingerprint: varchar("fingerprint", { length: 64 }).notNull(), // merchant+amount+date hash
+
+    // AI metadata
+    tagStatus: transactionTagStatusEnum("tag_status")
+      .default("unreviewed")
+      .notNull(),
+    confidenceScore: integer("confidence_score"), // 0-100
+    categoryGuess: varchar("category_guess", { length: 100 }),
+    rawText: text("raw_text"),
+    aiMetadata: jsonb("ai_metadata").$type<{
+      categoryGuesses?: string[];
+      extractedAt: string;
+      model: string;
+    }>(),
+
+    // Conversion tracking
+    convertedToSubscriptionId: uuid("converted_to_subscription_id").references(
+      () => subscriptions.id,
+      { onDelete: "set null" }
+    ),
+
+    // Timestamps
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("transactions_user_id_idx").on(table.userId),
+    index("transactions_statement_id_idx").on(table.statementId),
+    index("transactions_fingerprint_idx").on(table.fingerprint),
+    index("transactions_tag_status_idx").on(table.tagStatus),
+    index("transactions_date_idx").on(table.transactionDate),
+  ]
+);
+
 // ============ RELATIONS ============
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -481,6 +593,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   authenticators: many(authenticators),
   recurringPatterns: many(recurringPatterns),
   alerts: many(alerts),
+  statements: many(statements),
+  transactions: many(transactions),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -537,6 +651,7 @@ export const subscriptionsRelations = relations(
     }),
     reminderLogs: many(reminderLogs),
     alerts: many(alerts),
+    convertedFromTransactions: many(transactions),
   })
 );
 
@@ -585,6 +700,29 @@ export const alertsRelations = relations(alerts, ({ one }) => ({
   }),
 }));
 
+export const statementsRelations = relations(statements, ({ one, many }) => ({
+  user: one(users, {
+    fields: [statements.userId],
+    references: [users.id],
+  }),
+  transactions: many(transactions),
+}));
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  statement: one(statements, {
+    fields: [transactions.statementId],
+    references: [statements.id],
+  }),
+  user: one(users, {
+    fields: [transactions.userId],
+    references: [users.id],
+  }),
+  convertedToSubscription: one(subscriptions, {
+    fields: [transactions.convertedToSubscriptionId],
+    references: [subscriptions.id],
+  }),
+}));
+
 // ============ TYPE EXPORTS ============
 
 export type User = typeof users.$inferSelect;
@@ -615,3 +753,8 @@ export type NewRecurringPattern = typeof recurringPatterns.$inferInsert;
 
 export type Alert = typeof alerts.$inferSelect;
 export type NewAlert = typeof alerts.$inferInsert;
+
+export type Statement = typeof statements.$inferSelect;
+export type NewStatement = typeof statements.$inferInsert;
+export type Transaction = typeof transactions.$inferSelect;
+export type NewTransaction = typeof transactions.$inferInsert;
