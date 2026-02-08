@@ -208,11 +208,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 19-01: Schema + file hashing utility (statements, transactions tables)
-- [ ] 19-02: Batch API endpoints (check-hash, upload, process)
-- [ ] 19-03: useBatchUpload hook (queue management, sequential processing)
-- [ ] 19-04: UI components (BatchUploader, FileQueue, FileItem)
-- [ ] 19-05: Integration + verification (batch import page, navigation)
+- [x] 19-01: Schema + file hashing utility (statements, transactions tables)
+- [x] 19-02: Batch API endpoints (check-hash, upload, process)
+- [x] 19-03: useBatchUpload hook (queue management, sequential processing)
+- [x] 19-04: UI components (BatchUploader, FileQueue, FileItem)
+- [x] 19-05: Integration + verification (batch import page, navigation)
 
 ### Phase 20: Statement Browser & Filtering
 **Goal**: Users can browse and filter all stored transactions with fast, responsive UI
@@ -297,7 +297,7 @@ Plans:
 | 16. Pattern Recognition | v1.3 | 3/3 | Complete | 2026-02-06 |
 | 17. Spending Forecasting | v1.3 | 4/4 | Complete | 2026-02-07 |
 | 18. Anomaly Detection & Alerts | v1.3 | 4/4 | Complete | 2026-02-08 |
-| 19. Batch Upload Foundation | v2.0 | 0/TBD | Not started | - |
+| 19. Batch Upload Foundation | v2.0 | 5/5 | Complete | 2026-02-08 |
 | 20. Statement Browser & Filtering | v2.0 | 0/TBD | Not started | - |
 | 21. Manual Tagging & Conversion | v2.0 | 0/TBD | Not started | - |
 | 22. Source Dashboard & Re-import | v2.0 | 0/TBD | Not started | - |
