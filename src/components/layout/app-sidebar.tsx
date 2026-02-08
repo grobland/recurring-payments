@@ -8,6 +8,7 @@ import {
   CreditCard,
   BarChart3,
   FileUp,
+  FolderUp,
   Bell,
   Settings,
   HelpCircle,
@@ -72,6 +73,11 @@ const mainNavItems = [
     title: "Import",
     href: "/import",
     icon: FileUp,
+  },
+  {
+    title: "Batch Import",
+    href: "/import/batch",
+    icon: FolderUp,
   },
   {
     title: "Reminders",
