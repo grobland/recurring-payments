@@ -50,3 +50,12 @@ export { useMergeSubscription, type MergeRequest } from "./use-merge-subscriptio
 export { usePatternSuggestions } from "./use-pattern-suggestions";
 export { useAcceptPattern } from "./use-accept-pattern";
 export { useDismissPattern } from "./use-dismiss-pattern";
+
+// Batch upload hooks
+export {
+  useBatchUpload,
+  type QueuedFile,
+  type FileStatus,
+  type BatchUploadResult,
+  type DuplicateAction,
+} from "./use-batch-upload";
