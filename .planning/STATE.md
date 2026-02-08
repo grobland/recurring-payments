@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-08)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v1.3 milestone complete — ready for next milestone planning
+**Current focus:** v2.0 Statement Hub — defining requirements
 
 ## Current Position
 
-Phase: 18 of 18 (Anomaly Detection) - v1.3 SHIPPED
-Plan: All plans complete
-Status: Milestone complete, awaiting next milestone
-Last activity: 2026-02-08 — v1.3 Data & Intelligence shipped
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-08 — Milestone v2.0 started
 
-Progress: [████████████████████] 100% (51/51 total plans across 4 milestones)
+Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (v2.0 requirements in progress)
 
 ## Milestone Summary
 
@@ -83,6 +83,6 @@ Progress: [████████████████████] 100% (5
 ## Session Continuity
 
 Last session: 2026-02-08
-Status: v1.3 milestone complete and archived
+Status: v2.0 Statement Hub milestone started — defining requirements
 Resume file: None
-Next step: `/gsd:new-milestone` for v1.4 planning
+Next step: Define requirements, then create roadmap

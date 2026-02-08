@@ -29,6 +29,20 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Mobile-responsive design with polished UX
 - Structured logging and health monitoring
 
+## Current Milestone: v2.0 Statement Hub
+
+**Goal:** Transform import from single-file extraction to a comprehensive statement management system that retains all data for analysis and manual enrichment.
+
+**Target features:**
+- Batch import (upload multiple PDFs at once for 12+ months of statements)
+- Statement data retention (store ALL line items, not just imported subscriptions)
+- Source dashboard (overview cards per source with coverage dates)
+- Statement browser (browse/filter/search all items by source)
+- Potential subscription tagging (mark items for later review)
+- Manual conversion (convert any statement item to subscription)
+- AI suggestions (highlight likely subscriptions not yet added)
+- Re-import capability (go back to any statement and import skipped items)
+
 ## Requirements
 
 ### Validated
@@ -82,7 +96,16 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ### Active
 
-(No active requirements - awaiting next milestone planning)
+**v2.0 Statement Hub:**
+- Batch PDF import (multiple files at once)
+- Statement line item retention (all items stored, not just subscriptions)
+- Source management dashboard with coverage visualization
+- Statement browser with filtering and search
+- Potential subscription tagging system
+- Manual item-to-subscription conversion
+- AI-powered subscription suggestions from statement data
+- Re-import capability for previously skipped items
+- Enhanced pattern detection with historical data
 
 ### Out of Scope
 
@@ -137,4 +160,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | Fire-and-forget pattern triggers | Background async operations don't block primary request | Good |
 
 ---
-*Last updated: 2026-02-08 after v1.3 milestone*
+*Last updated: 2026-02-08 after v2.0 milestone started*
