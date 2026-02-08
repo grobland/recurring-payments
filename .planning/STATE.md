@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-08)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.0 Statement Hub — defining requirements
+**Current focus:** v2.0 Statement Hub - Phase 19 (Batch Upload Foundation)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 19 of 23 (Batch Upload Foundation)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-02-08 — Milestone v2.0 started
+Status: Ready to plan
+Last activity: 2026-02-08 - v2.0 roadmap created
 
-Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (v2.0 requirements in progress)
+Progress: [████████████████████░] 78% (18 of 23 phases complete)
 
 ## Milestone Summary
 
@@ -31,6 +31,12 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (v2.
 - Spending trends and forecasting with fan charts
 - Pattern recognition with subscription suggestions
 - Anomaly alerts with notification bell and weekly digest
+
+### v2.0 Statement Hub (PLANNED)
+
+**Phases:** 19-23 (5 phases)
+**Requirements:** 27 total (0 complete)
+**Milestone goal:** Transform import to comprehensive statement management with batch uploads, full data retention, and manual enrichment
 
 ## Performance Metrics
 
@@ -68,6 +74,16 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (v2.
 | Alert lifecycle | acknowledgedAt/dismissedAt for user interaction |
 | Weekly digest | Batch alerts to prevent notification fatigue |
 
+### v2.0 Architecture Notes
+
+From research (2026-02-08):
+- Sequential PDF processing prevents memory exhaustion (50-100MB per file)
+- Keyset (cursor-based) pagination required for 10k+ line items
+- TanStack Virtual for virtualized scrolling (only new dependency needed)
+- Table partitioning by user + date for time-based cleanup
+- Statement line items stored separately from subscriptions
+- Bidirectional links: subscription.sourceLineItemId ↔ lineItem.convertedToSubscriptionId
+
 ### Blockers/Concerns
 
 **Production deployment (carried forward):**
@@ -83,6 +99,6 @@ Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (v2.
 ## Session Continuity
 
 Last session: 2026-02-08
-Status: v2.0 Statement Hub milestone started — defining requirements
+Status: v2.0 roadmap created, ready to plan Phase 19
 Resume file: None
-Next step: Define requirements, then create roadmap
+Next step: `/gsd:plan-phase 19` to create execution plan for Batch Upload Foundation

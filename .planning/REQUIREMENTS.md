@@ -85,39 +85,46 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BATCH-01 | TBD | Pending |
-| BATCH-02 | TBD | Pending |
-| BATCH-03 | TBD | Pending |
-| BATCH-04 | TBD | Pending |
-| BATCH-05 | TBD | Pending |
-| DATA-01 | TBD | Pending |
-| DATA-02 | TBD | Pending |
-| DATA-03 | TBD | Pending |
-| DATA-04 | TBD | Pending |
-| BRWS-01 | TBD | Pending |
-| BRWS-02 | TBD | Pending |
-| BRWS-03 | TBD | Pending |
-| BRWS-04 | TBD | Pending |
-| BRWS-05 | TBD | Pending |
-| BRWS-06 | TBD | Pending |
-| ENRCH-01 | TBD | Pending |
-| ENRCH-02 | TBD | Pending |
-| ENRCH-03 | TBD | Pending |
-| ENRCH-04 | TBD | Pending |
-| SRC-01 | TBD | Pending |
-| SRC-02 | TBD | Pending |
-| SRC-03 | TBD | Pending |
-| SRC-04 | TBD | Pending |
-| AI-01 | TBD | Pending |
-| AI-02 | TBD | Pending |
-| AI-03 | TBD | Pending |
-| AI-04 | TBD | Pending |
+| BATCH-01 | Phase 19 | Pending |
+| BATCH-02 | Phase 19 | Pending |
+| BATCH-03 | Phase 19 | Pending |
+| BATCH-04 | Phase 19 | Pending |
+| BATCH-05 | Phase 19 | Pending |
+| DATA-01 | Phase 19 | Pending |
+| DATA-02 | Phase 19 | Pending |
+| DATA-03 | Phase 19 | Pending |
+| DATA-04 | Phase 19 | Pending |
+| BRWS-01 | Phase 20 | Pending |
+| BRWS-02 | Phase 20 | Pending |
+| BRWS-03 | Phase 20 | Pending |
+| BRWS-04 | Phase 20 | Pending |
+| BRWS-05 | Phase 20 | Pending |
+| BRWS-06 | Phase 20 | Pending |
+| ENRCH-01 | Phase 21 | Pending |
+| ENRCH-02 | Phase 21 | Pending |
+| ENRCH-03 | Phase 21 | Pending |
+| ENRCH-04 | Phase 21 | Pending |
+| SRC-01 | Phase 22 | Pending |
+| SRC-02 | Phase 22 | Pending |
+| SRC-03 | Phase 22 | Pending |
+| SRC-04 | Phase 22 | Pending |
+| AI-01 | Phase 23 | Pending |
+| AI-02 | Phase 23 | Pending |
+| AI-03 | Phase 23 | Pending |
+| AI-04 | Phase 23 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27
+- Mapped to phases: 27
+- Unmapped: 0
+
+**Coverage by phase:**
+- Phase 19 (Batch Upload Foundation): 9 requirements
+- Phase 20 (Statement Browser & Filtering): 6 requirements
+- Phase 21 (Manual Tagging & Conversion): 4 requirements
+- Phase 22 (Source Dashboard & Re-import): 4 requirements
+- Phase 23 (AI Suggestions & Pattern Detection): 4 requirements
 
 ---
 *Requirements defined: 2026-02-08*
-*Last updated: 2026-02-08 after initial definition*
+*Last updated: 2026-02-08 after roadmap creation*

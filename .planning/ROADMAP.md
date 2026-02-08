@@ -6,6 +6,7 @@
 - ✅ **v1.1 Import Improvements** - Phases 5-8 (shipped 2026-02-02)
 - ✅ **v1.2 Production Polish** - Phases 9-12 (shipped 2026-02-05)
 - ✅ **v1.3 Data & Intelligence** - Phases 13-18 (shipped 2026-02-08)
+- 📋 **v2.0 Statement Hub** - Phases 19-23 (planned)
 
 ## Phases
 
@@ -190,6 +191,87 @@ Plans:
 
 </details>
 
+## v2.0 Statement Hub (Planned)
+
+**Milestone Goal:** Transform import from single-file extraction to comprehensive statement management system with batch uploads, full data retention, and manual enrichment capabilities.
+
+### Phase 19: Batch Upload Foundation
+**Goal**: Users can upload multiple PDFs at once and system stores all statement line items with robust deduplication
+**Depends on**: Phase 18
+**Requirements**: BATCH-01, BATCH-02, BATCH-03, BATCH-04, BATCH-05, DATA-01, DATA-02, DATA-03, DATA-04
+**Success Criteria** (what must be TRUE):
+  1. User can drag-and-drop 12+ PDF files at once and see upload progress for each file
+  2. System processes PDFs sequentially without memory exhaustion (handles 50-100MB files)
+  3. All transactions from statements are stored (not just high-confidence subscriptions)
+  4. System detects when user uploads duplicate statements and prompts to skip or re-import
+  5. Batch import can resume if interrupted (per-file status tracking persists)
+**Plans**: TBD
+
+Plans:
+- [ ] 19-01: TBD during phase planning
+- [ ] 19-02: TBD during phase planning
+
+### Phase 20: Statement Browser & Filtering
+**Goal**: Users can browse and filter all stored transactions with fast, responsive UI
+**Depends on**: Phase 19
+**Requirements**: BRWS-01, BRWS-02, BRWS-03, BRWS-04, BRWS-05, BRWS-06
+**Success Criteria** (what must be TRUE):
+  1. User can view list of all transactions across all sources with virtualized scrolling (10k+ items at 60fps)
+  2. User can filter transactions by source (bank/card), date range, and search by merchant name
+  3. User can filter by tag status (potential subscription, converted, dismissed)
+  4. Browser uses keyset pagination (not OFFSET) for fast page loads even at deep pages
+  5. Mobile view shows card layout (not broken table with horizontal scrolling)
+**Plans**: TBD
+
+Plans:
+- [ ] 20-01: TBD during phase planning
+- [ ] 20-02: TBD during phase planning
+
+### Phase 21: Manual Tagging & Conversion
+**Goal**: Users can manually enrich statement data by tagging items and converting them to subscriptions
+**Depends on**: Phase 20
+**Requirements**: ENRCH-01, ENRCH-02, ENRCH-03, ENRCH-04
+**Success Criteria** (what must be TRUE):
+  1. User can tag any transaction as "potential subscription" with inline combobox (not modal)
+  2. User can convert any transaction to subscription with one click (form pre-filled with transaction data)
+  3. User can bulk-tag multiple transactions at once via multi-select
+  4. Manual tags are preserved when user re-imports the same statement (not overwritten)
+**Plans**: TBD
+
+Plans:
+- [ ] 21-01: TBD during phase planning
+- [ ] 21-02: TBD during phase planning
+
+### Phase 22: Source Dashboard & Re-import
+**Goal**: Users can see overview of statement coverage and re-import items they initially skipped
+**Depends on**: Phase 21
+**Requirements**: SRC-01, SRC-02, SRC-03, SRC-04
+**Success Criteria** (what must be TRUE):
+  1. User sees dashboard with cards showing each bank/credit card's statement coverage (date range, item count)
+  2. User can drill into specific statement to see all items (imported vs skipped)
+  3. User can re-import items from previous statements they initially skipped
+  4. Batch import that fails mid-process can be resumed from last successful file
+**Plans**: TBD
+
+Plans:
+- [ ] 22-01: TBD during phase planning
+- [ ] 22-02: TBD during phase planning
+
+### Phase 23: AI Suggestions & Pattern Detection
+**Goal**: System proactively suggests subscriptions based on recurring patterns in statement data
+**Depends on**: Phase 22
+**Requirements**: AI-01, AI-02, AI-03, AI-04
+**Success Criteria** (what must be TRUE):
+  1. System detects recurring patterns in statement data (same merchant, 3+ occurrences, monthly frequency)
+  2. User sees suggestions dashboard showing potential subscriptions with evidence (dates, amounts, confidence scores)
+  3. User can accept suggestion with one click (creates subscription) or dismiss permanently
+  4. System auto-tags high-confidence items (>80%) as "potential_subscription" during import
+**Plans**: TBD
+
+Plans:
+- [ ] 23-01: TBD during phase planning
+- [ ] 23-02: TBD during phase planning
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -212,3 +294,8 @@ Plans:
 | 16. Pattern Recognition | v1.3 | 3/3 | Complete | 2026-02-06 |
 | 17. Spending Forecasting | v1.3 | 4/4 | Complete | 2026-02-07 |
 | 18. Anomaly Detection & Alerts | v1.3 | 4/4 | Complete | 2026-02-08 |
+| 19. Batch Upload Foundation | v2.0 | 0/TBD | Not started | - |
+| 20. Statement Browser & Filtering | v2.0 | 0/TBD | Not started | - |
+| 21. Manual Tagging & Conversion | v2.0 | 0/TBD | Not started | - |
+| 22. Source Dashboard & Re-import | v2.0 | 0/TBD | Not started | - |
+| 23. AI Suggestions & Pattern Detection | v2.0 | 0/TBD | Not started | - |
