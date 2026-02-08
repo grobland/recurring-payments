@@ -205,11 +205,14 @@ Plans:
   3. All transactions from statements are stored (not just high-confidence subscriptions)
   4. System detects when user uploads duplicate statements and prompts to skip or re-import
   5. Batch import can resume if interrupted (per-file status tracking persists)
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 19-01: TBD during phase planning
-- [ ] 19-02: TBD during phase planning
+- [ ] 19-01: Schema + file hashing utility (statements, transactions tables)
+- [ ] 19-02: Batch API endpoints (check-hash, upload, process)
+- [ ] 19-03: useBatchUpload hook (queue management, sequential processing)
+- [ ] 19-04: UI components (BatchUploader, FileQueue, FileItem)
+- [ ] 19-05: Integration + verification (batch import page, navigation)
 
 ### Phase 20: Statement Browser & Filtering
 **Goal**: Users can browse and filter all stored transactions with fast, responsive UI
