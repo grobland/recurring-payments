@@ -10,7 +10,7 @@
 ## Phases
 
 <details>
-<summary>✅ v1.0 MVP (Phases 1-4) - SHIPPED 2026-01-30</summary>
+<summary>v1.0 MVP (Phases 1-4) - SHIPPED 2026-01-30</summary>
 
 ### Phase 1: Service Configuration
 **Goal**: All external service integrations configured and verified
@@ -50,7 +50,7 @@ Plans:
 </details>
 
 <details>
-<summary>✅ v1.1 Import Improvements (Phases 5-8) - SHIPPED 2026-02-02</summary>
+<summary>v1.1 Import Improvements (Phases 5-8) - SHIPPED 2026-02-02</summary>
 
 ### Phase 5: Category Management
 **Goal**: Users can fully manage subscription categories
@@ -90,7 +90,7 @@ Plans:
 </details>
 
 <details>
-<summary>✅ v1.2 Production Polish (Phases 9-12) - SHIPPED 2026-02-05</summary>
+<summary>v1.2 Production Polish (Phases 9-12) - SHIPPED 2026-02-05</summary>
 
 ### Phase 9: Reliability Foundation
 **Goal**: Production monitoring and error tracking operational
@@ -128,120 +128,69 @@ Plans:
 
 </details>
 
-### ✅ v1.3 Data & Intelligence (Shipped 2026-02-08)
+<details>
+<summary>v1.3 Data & Intelligence (Phases 13-18) - SHIPPED 2026-02-08</summary>
 
-**Milestone Goal:** Transform raw subscription data into actionable insights with duplicate detection, pattern recognition, and comprehensive spending analytics.
-
-#### Phase 13: Analytics Infrastructure
+### Phase 13: Analytics Infrastructure
 **Goal**: Analytics foundation with pre-computed aggregates for all intelligence features
-**Depends on**: Phase 12
-**Requirements**: ANLYT-01, ANLYT-02, ANLYT-03
-**Success Criteria** (what must be TRUE):
-  1. User can view total monthly spending on dashboard (normalized to user's default currency)
-  2. User can view total yearly spending on dashboard (current year)
-  3. User can view spending breakdown by category with visual chart (pie/bar)
-  4. Analytics data refreshes automatically every 15 minutes via background job
-  5. Dashboard analytics load in under 100ms (querying materialized views)
 **Plans**: 3 plans
 
 Plans:
-- [x] 13-01-PLAN.md — Database materialized view + cron refresh infrastructure
-- [x] 13-02-PLAN.md — Analytics API endpoint + TanStack Query hook
-- [x] 13-03-PLAN.md — Dashboard UI (period selector, stat cards, donut chart)
+- [x] 13-01: Database materialized view + cron refresh infrastructure
+- [x] 13-02: Analytics API endpoint + TanStack Query hook
+- [x] 13-03: Dashboard UI (period selector, stat cards, donut chart)
 
-#### Phase 14: Duplicate Detection
+### Phase 14: Duplicate Detection
 **Goal**: Users are warned about potential duplicates during import and can find duplicates in existing subscriptions
-**Depends on**: Phase 13
-**Requirements**: DUP-01, DUP-02, DUP-03, DUP-04, DUP-05, DUP-06
-**Success Criteria** (what must be TRUE):
-  1. User sees warning banner when importing subscription similar to existing one (85%+ similarity)
-  2. User can view similarity score and matching fields (name, amount, frequency) during import
-  3. User can choose to keep both, skip duplicate, or merge during import
-  4. User can trigger background scan from subscriptions page to find all potential duplicates
-  5. User can review list of potential duplicates with evidence (matching fields displayed)
-  6. User can merge two subscriptions into one, combining best data from both records
 **Plans**: 4 plans
 
 Plans:
-- [x] 14-01-PLAN.md — TDD: Multi-field weighted similarity algorithm
-- [x] 14-02-PLAN.md — Import-time duplicate detection with warnings and actions
-- [x] 14-03-PLAN.md — Background scan, merge API, and subscriptions page UI
-- [x] 14-04-PLAN.md — Integration wiring and verification checkpoint
+- [x] 14-01: TDD: Multi-field weighted similarity algorithm
+- [x] 14-02: Import-time duplicate detection with warnings and actions
+- [x] 14-03: Background scan, merge API, and subscriptions page UI
+- [x] 14-04: Integration wiring and verification checkpoint
 
-#### Phase 15: Spending Analytics & Trends
+### Phase 15: Spending Analytics & Trends
 **Goal**: Users can visualize spending trends over time and understand how spending changes
-**Depends on**: Phase 13
-**Requirements**: ANLYT-04, ANLYT-05, ANLYT-06
-**Success Criteria** (what must be TRUE):
-  1. User can view month-over-month spending change with percentage and trend indicator (up/down arrow)
-  2. User can view year-over-year spending comparison in line chart (current vs previous year)
-  3. User can view spending trend over time for each category with multi-line chart
-  4. Charts handle multi-currency subscriptions correctly (converted at transaction-time rates)
-  5. Trends display meaningful data even with limited history (graceful degradation)
 **Plans**: 3 plans
 
 Plans:
-- [x] 15-01-PLAN.md — Trends API endpoint + useTrends hook
-- [x] 15-02-PLAN.md — TrendIndicator component + analytics cards enhancement
-- [x] 15-03-PLAN.md — YoY chart + category trends chart + dashboard integration
+- [x] 15-01: Trends API endpoint + useTrends hook
+- [x] 15-02: TrendIndicator component + analytics cards enhancement
+- [x] 15-03: YoY chart + category trends chart + dashboard integration
 
-#### Phase 16: Pattern Recognition
+### Phase 16: Pattern Recognition
 **Goal**: Users receive suggestions for subscriptions based on recurring charges detected across statements
-**Depends on**: Phase 13
-**Requirements**: PTRN-01, PTRN-02, PTRN-03
-**Success Criteria** (what must be TRUE):
-  1. System detects recurring charges across multiple statement imports (same merchant, similar amount, regular frequency)
-  2. User sees suggested subscriptions from detected patterns with confidence score (70%+ shown)
-  3. User can accept pattern suggestion to create subscription with pre-filled data
-  4. User can dismiss pattern suggestion permanently (won't show again for this pattern)
-  5. Pattern suggestions display evidence: charge dates, amounts, detected frequency
 **Plans**: 3 plans
 
 Plans:
-- [x] 16-01-PLAN.md — Schema + pattern detection algorithm + category guesser
-- [x] 16-02-PLAN.md — API endpoints (detect, suggestions, accept, dismiss) + hooks
-- [x] 16-03-PLAN.md — Dashboard UI (PatternSuggestionsCard) + integration
+- [x] 16-01: Schema + pattern detection algorithm + category guesser
+- [x] 16-02: API endpoints (detect, suggestions, accept, dismiss) + hooks
+- [x] 16-03: Dashboard UI (PatternSuggestionsCard) + integration
 
-#### Phase 17: Spending Forecasting
+### Phase 17: Spending Forecasting
 **Goal**: Users can view predicted future spending with confidence intervals
-**Depends on**: Phase 15
-**Requirements**: FCST-01, FCST-02, FCST-03, FCST-04
-**Success Criteria** (what must be TRUE):
-  1. User can view upcoming charges calendar showing next 30/60/90 days with known renewals
-  2. User can view monthly spending projections for next 3-6 months
-  3. User can view annual spending forecast with total projection (extrapolated from current subscriptions)
-  4. Forecasts display confidence intervals (80% and 95% bands) showing uncertainty range via fan charts
-  5. Forecasts incorporate known renewal events (annual subscriptions) not just averages
 **Plans**: 4 plans
 
 Plans:
-- [x] 17-01-PLAN.md — Types, utilities, and calendar API endpoint
-- [x] 17-02-PLAN.md — Monthly and annual API endpoints + useForecast hooks
-- [x] 17-03-PLAN.md — Calendar view component with day selector
-- [x] 17-04-PLAN.md — Forecast charts + dashboard integration + verification
+- [x] 17-01: Types, utilities, and calendar API endpoint
+- [x] 17-02: Monthly and annual API endpoints + useForecast hooks
+- [x] 17-03: Calendar view component with day selector
+- [x] 17-04: Forecast charts + dashboard integration + verification
 
-#### Phase 18: Anomaly Detection & Alerts
+### Phase 18: Anomaly Detection & Alerts
 **Goal**: Users are alerted to unusual spending patterns and subscription changes
-**Depends on**: Phase 15
-**Requirements**: ALRT-01, ALRT-02, ALRT-03, ALRT-04
-**Success Criteria** (what must be TRUE):
-  1. User is alerted when a subscription's price increases beyond threshold (>5% or >$2)
-  2. User can view all alerts in notification center with timestamps and context
-  3. User can dismiss individual alerts or acknowledge them (mark as reviewed)
-  4. User is alerted when expected renewal charge doesn't appear (missed renewal detection)
-  5. Alerts are batched in weekly digest (not real-time) to prevent alert fatigue
 **Plans**: 4 plans
 
 Plans:
-- [x] 18-01-PLAN.md — Database schema + detection utilities + cron job
-- [x] 18-02-PLAN.md — Alerts API endpoints + TanStack Query hooks + price detection
-- [x] 18-03-PLAN.md — Notification bell UI + dropdown component
-- [x] 18-04-PLAN.md — Weekly digest email + cron job + verification
+- [x] 18-01: Database schema + detection utilities + cron job
+- [x] 18-02: Alerts API endpoints + TanStack Query hooks + price detection
+- [x] 18-03: Notification bell UI + dropdown component
+- [x] 18-04: Weekly digest email + cron job + verification
+
+</details>
 
 ## Progress
-
-**Execution Order:**
-Phases execute in numeric order: 13 → 14 → 15 → 16 → 17 → 18
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|

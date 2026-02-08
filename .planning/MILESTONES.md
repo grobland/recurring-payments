@@ -2,6 +2,57 @@
 
 ## Completed Milestones
 
+### v1.3 "Data & Intelligence" (2026-02-05 → 2026-02-08)
+
+**Goal:** Transform raw subscription data into actionable insights with duplicate detection, pattern recognition, and comprehensive spending analytics.
+
+**What shipped:**
+- Analytics infrastructure with materialized views for fast dashboard queries (<100ms)
+- Spending trends (month-over-month indicators, year-over-year charts, per-category trends)
+- Spending forecasting with calendar view (30/60/90 days) and fan charts with confidence intervals
+- Duplicate detection during import with similarity scoring and merge capabilities
+- Pattern recognition detecting recurring charges across statements with subscription suggestions
+- Anomaly alerts for price increases (>5% or >$2) and missed renewals (3+ days overdue)
+- Notification bell UI with weekly digest emails (Monday 8am UTC)
+
+**Phases completed:** 6 (Phases 13-18)
+- Phase 13: Analytics Infrastructure (3 plans)
+- Phase 14: Duplicate Detection (4 plans)
+- Phase 15: Spending Analytics & Trends (3 plans)
+- Phase 16: Pattern Recognition (3 plans)
+- Phase 17: Spending Forecasting (4 plans)
+- Phase 18: Anomaly Detection & Alerts (4 plans)
+
+**Stats:**
+- 21 plans, 100 commits
+- 146 files modified
+- ~27,350 lines TypeScript
+- 4 days development
+
+**Requirements:** 23/23 complete
+- DUP-01 through DUP-06 (Duplicate Detection)
+- ANLYT-01 through ANLYT-06 (Spending Analytics)
+- PTRN-01 through PTRN-03 (Pattern Recognition)
+- FCST-01 through FCST-04 (Forecasting)
+- ALRT-01 through ALRT-04 (Anomaly Alerts)
+
+**Key decisions:**
+- Materialized view pattern for analytics (<100ms queries with 15-minute refresh)
+- 70% similarity threshold for duplicate detection (balance accuracy vs false positives)
+- sqrt(time) uncertainty scaling for forecast confidence intervals
+- Weekly digest batching over real-time alerts (prevent notification fatigue)
+- Fire-and-forget pattern triggers (async operations don't block primary request)
+- Jaro-Winkler for fuzzy name matching with 0.8 threshold
+- Multi-factor confidence scoring for patterns (occurrence 30%, interval 40%, amount 30%)
+
+**Tech debt:**
+- Hooks not re-exported from central index (use-duplicate-scan, useTrends, useForecast*, useAlerts)
+- Phase 14 verification inline in summary rather than separate file
+
+**What's next:** `/gsd:new-milestone` for v1.4 planning (billing, production deployment, or additional features)
+
+---
+
 ### v1.2 "Production Polish" (2026-02-04 → 2026-02-05)
 
 **Goal:** Make the app production-ready with comprehensive UX refinements, error handling, and reliability improvements.
@@ -112,4 +163,4 @@
 - PDF import E2E tests need TEST_USER credentials
 
 ---
-*Last updated: 2026-02-05*
+*Last updated: 2026-02-08*
