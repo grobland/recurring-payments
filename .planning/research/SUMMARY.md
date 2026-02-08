@@ -1,205 +1,325 @@
 # Project Research Summary
 
-**Project:** Subscription Manager v1.3 - Data & Intelligence
-**Domain:** Subscription analytics with AI-powered duplicate detection, pattern recognition, spending forecasting, and anomaly alerts
-**Researched:** 2026-02-05
+**Project:** Subscription Manager v2.0 - Statement Hub
+**Domain:** Batch import, statement data retention, statement browsing, manual enrichment
+**Researched:** 2026-02-08
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The v1.3 Data & Intelligence milestone adds analytical capabilities to the existing subscription manager: duplicate detection, multi-statement pattern recognition, spending trends (MoM/YoY), forecasting, and anomaly alerts. Research reveals a critical architectural insight: **use PostgreSQL analytics with lightweight algorithmic libraries instead of heavyweight ML frameworks.**
+The v2.0 Statement Hub milestone transforms the subscription manager from single-file extraction to comprehensive statement management. Users can now upload multiple bank statements at once, browse all transaction line items (not just detected subscriptions), manually tag potential subscriptions, and strengthen AI pattern detection with historical data.
 
-The existing stack already provides 80% of needed capabilities through PostgreSQL window functions, Recharts visualization, and timestamped data structures. Only three lightweight additions are recommended: **fastest-levenshtein** (~2KB) for duplicate detection via Levenshtein distance, **simple-statistics** (~30KB) for statistical calculations (z-score, moving averages, exponential smoothing), and PostgreSQL's native window functions for time-series analytics. This adds 32KB to the bundle vs 200KB+ for ML frameworks like TensorFlow.js, with no meaningful accuracy loss for typical subscription datasets (100-500 records per user).
+Research reveals three critical insights that define the Statement Hub architecture:
 
-The primary risk is **false positive explosion in duplicate detection**. With 300 subscriptions, there are 44,850 possible pairs - even 99.99% specificity yields 4 false positives per scan. Prevention requires multi-signal confidence scoring (name similarity + amount match + frequency match), blocking strategies to reduce comparison space by 90%+, and showing evidence not just confidence scores. The critical finding: intelligence features fail when they make autonomous suggestions about existing user data without calibrated confidence. One bad duplicate suggestion erodes trust in all AI features, not just duplicates.
+**1. Batch import is table stakes, not a differentiator** - In 2026, users expect to drag-and-drop 12+ months of statements at once. Single-file upload feels antiquated. Every modern fintech app supports batch uploads with real-time progress indicators. This is baseline UX, not a competitive advantage.
+
+**2. Statement data retention enables the real value: manual enrichment** - The differentiator isn't just storing ALL line items - it's creating a collaborative intelligence loop. Users browse historical transactions, manually tag items AI missed, and teach the system what subscriptions look like. This transforms import from a one-time extraction to an ongoing enrichment workflow that gets smarter over time.
+
+**3. Sequential processing prevents memory exhaustion** - Processing 12 PDFs simultaneously causes Node.js heap overflow (50-100MB per file × 12 = 600MB-1.2GB). The anti-pattern is parallel processing; the solution is sequential processing with streaming progress updates. Users see "Processing file 3 of 12" instead of a frozen spinner.
+
+The recommended architecture extends existing patterns without disrupting current functionality. A new `statement_line_items` table stores ALL transactions from uploaded statements, linked to existing `import_audits` via foreign key. Line items can be tagged, filtered, and converted to subscriptions. When converted, a bidirectional link is established (`subscription.sourceLineItemId` and `lineItem.convertedToSubscriptionId`) enabling "show source statement" features.
+
+The primary risks are **pagination performance collapse at scale** (OFFSET 10000 takes 30 seconds) and **unbounded table growth without archival** (millions of rows cause query slowdowns, index bloat, and backup issues). Prevention requires keyset (cursor-based) pagination from day 1 and table partitioning by user and date to enable time-based cleanup.
 
 ## Key Findings
 
-### Recommended Stack
+### Recommended Stack Additions
 
-Research recommends **algorithmic approaches over ML frameworks** for subscription data. For datasets with 100-500 records per user, statistical methods (Levenshtein distance, z-score anomaly detection, exponential smoothing forecasts) are faster, smaller (32KB vs 200KB+), more maintainable, and provide explainable results that users can verify.
+Research shows the existing stack (Next.js 16, Drizzle ORM, PostgreSQL, OpenAI GPT-4o, React Dropzone) handles 90% of Statement Hub requirements. **Only one new dependency is needed:**
 
-**Core technologies:**
-- **fastest-levenshtein (2KB)**: Duplicate detection via edit distance - benchmarked 2-5x faster than alternatives, provides both distance() and closest() functions
-- **simple-statistics (30KB)**: Mean, median, z-score, moving averages, exponential smoothing - comprehensive, zero dependencies, tree-shakeable
-- **PostgreSQL window functions (no dependency)**: LAG/LEAD for MoM changes, NTILE for percentile ranking, AVG OVER for moving averages - already available in Supabase
-- **Recharts (existing)**: 67.6% faster than Chart.js for datasets >100K points due to virtual DOM optimization
+**@tanstack/react-virtual** (3.13.18, ~15KB)
+- **Purpose:** Virtualized scrolling for statement browser with 10,000+ line items
+- **Why:** Renders only visible rows (10-20 at a time) + buffer, reuses DOM elements, maintains 60fps with 10K+ rows
+- **Alternative considered:** react-window (maintenance mode), AG Grid ($1,000/year)
+- **Installation:** `npm install @tanstack/react-virtual@^3.13.18`
 
 **What NOT to add:**
-- TensorFlow.js/ML libraries: 200KB+ bundle size, unpredictable latency, black box results unsuitable for small datasets
-- Fuse.js for duplicate detection: Optimized for search UX not programmatic similarity scoring, 10KB vs 2KB
-- TimescaleDB: Overkill for monthly/yearly subscription events (not high-frequency IoT data)
-- ARIMA/Prophet forecasting: Requires 50+ data points, adds 500KB+, exponential smoothing sufficient for 3-6 month forecasts
+- OpenAI Batch API: 50% cost savings but 24-hour latency - users uploading 12 months expect instant feedback, not batch jobs
+- MongoDB for statement storage: Adds new database, overkill - PostgreSQL handles millions of rows with partitioning
+- Real-time WebSocket progress: Over-engineered - Server-Sent Events (built into Next.js ReadableStream) sufficient
+- Automatic reconciliation across sources: Enterprise feature adds complexity users don't need for personal subscription tracking
 
-### Expected Features
+### Architecture Components
 
-Research reveals duplicate detection and spending analytics are **table stakes** (users expect them), while advanced pattern recognition and forecasting are **differentiators** that set the product apart.
+**New database tables:**
 
-**Must have (table stakes):**
-- Duplicate detection on import - prevents importing same subscription twice, standard in all import flows
-- Basic spending totals - sum of active subscriptions grouped by period (monthly/annual)
-- Category spending breakdown - see which categories cost most, standard in finance apps
-- Upcoming renewals calendar - next 30/60/90 days with grouped display
-- Price increase detection - alert when subscription price changes
+1. **statement_line_items** (stores ALL transactions from statements)
+   - Columns: merchantName, amount, currency, transactionDate, tags (JSONB array), aiConfidence, convertedToSubscriptionId
+   - Indexes: userId + transactionDate (composite), merchantName (B-tree), tags (GIN for containment queries)
+   - Partitioning: By user (HASH) then by month (RANGE) for time-based cleanup
+   - Rationale: Structured schema enables filtering by merchant, date, tag (impossible with JSONB on import_audits)
 
-**Should have (competitive):**
-- Background duplicate scanning - proactively find duplicates in existing subscriptions (not just imports)
-- Multi-statement pattern detection - identify recurring charges across multiple imports
-- Spending forecast calendar - visual calendar showing predicted future spending
-- MoM/YoY trend charts - line charts showing spending evolution over time
-- Anomaly detection alerts - notify when spending deviates from normal patterns
+2. **Extension to subscriptions table**
+   - Add: sourceLineItemId (nullable FK to statement_line_items)
+   - Rationale: Enables "show original statement line" feature, tracks conversion lineage
 
-**Defer (v2+):**
-- AI-generated spending insights - NLG complexity, uncertain ROI
-- Category benchmarking - requires aggregate user data, privacy concerns
-- Real-time bank monitoring - Plaid integration adds security/compliance burden
-- Automatic subscription cancellation - liability risk, requires account access
+**Enhanced import flow:**
 
-### Architecture Approach
+- Current flow (subscriptions-only) continues unchanged
+- New flow adds `mode` parameter: "subscriptions" (default) or "full_statement"
+- Full statement mode calls new GPT-4 prompt extracting ALL transactions (not just subscriptions)
+- Line items bulk inserted with chunking (1,000 rows per batch to avoid query size limits)
+- Progress streamed to client via ReadableStream (Server-Sent Events pattern)
 
-Research shows the optimal architecture combines **PostgreSQL-native extensions** (fuzzystrmatch for duplicate detection, BRIN indexes for time-series), **computed aggregates** (materialized views for analytics), and **hybrid processing** (batch background jobs for pattern recognition, real-time for anomaly detection).
+**Statement browser architecture:**
 
-**Major components:**
-1. **Materialized Views for Analytics** - Pre-compute category spending, time-series trends, and subscription patterns; refresh every 15 minutes via Vercel cron; reduces query time from 200-500ms to 5-10ms
-2. **Database-Side Fuzzy Matching** - Enable fuzzystrmatch and pg_trgm extensions; use Soundex pre-filter + Levenshtein distance for 100x performance improvement (100ms to 1ms for 15K records)
-3. **Server-Side Forecast Calculation + Client-Side Visualization** - Calculate forecasts (moving average/exponential smoothing) in API route; render with Recharts fan charts showing prediction intervals (not point estimates)
-4. **Hybrid Anomaly Detection** - Rules-based detection (price changes) in real-time on subscription updates; pattern-based detection (spending spikes) in daily background job; weekly digest instead of per-anomaly alerts
+- Query API with filters: `/api/statements/line-items?source=X&tagged=Y&from=date&to=date&cursor=Z`
+- Keyset (cursor-based) pagination: Uses transactionDate cursor instead of OFFSET (constant time, not linear)
+- Virtualized table: TanStack Virtual renders only visible rows, handles 10K+ items at 60fps
+- Filter sidebar: Source, tags, date range (standard banking app pattern per research)
+
+**Tagging and conversion flows:**
+
+- Tag API: POST `/api/statements/line-items/[id]/tag` updates tags JSONB array (add/remove)
+- Conversion API: POST `/api/subscriptions/from-line-item` creates subscription from line item, sets sourceLineItemId, marks line item as converted (prevents double-conversion)
+- UI pattern: Inline combobox in table row (not modal) with recently-used subscriptions quick-access
+
+### Feature Categorization
+
+Based on analysis of 10+ fintech apps (MoneyWiz, PocketGuard, Expensify, YNAB) and enterprise reconciliation tools:
+
+**Table Stakes (users EXPECT these):**
+1. Batch PDF upload with drag-and-drop
+2. Statement data retention (all line items stored)
+3. Transaction browsing UI (filter, search, sort)
+4. Duplicate detection during import (extended to statements)
+5. Drag-and-drop file upload UX
+6. Progress indicators for batch processing
+
+**Differentiators (competitive advantage):**
+7. Manual transaction tagging (mark as potential subscription)
+8. Manual conversion (any item → subscription)
+9. Source dashboard (overview cards per statement source)
+10. AI suggestions from statement data (recurring pattern detection)
+11. Re-import capability (import skipped items from previous statements)
+12. Historical data strengthens pattern detection (12 months of data = better AI)
+
+**Anti-Features (deliberately avoid):**
+- Automatic reconciliation across multiple sources (enterprise complexity users don't need)
+- Automated cash application (B2B feature, not relevant for personal subscriptions)
+- Multi-currency reconciliation (scope creep, low demand)
+- Transaction-level commenting/notes (<5% usage in research)
+- Automatic category learning (ML complexity, premature optimization)
+- Real-time import via Plaid (massive scope increase, security/privacy concerns)
+- Transaction splitting (wrong use case for subscriptions)
+- Budget tracking (feature creep, separate product direction)
 
 ### Critical Pitfalls
 
-1. **Quadratic False Positive Explosion** - With 300 subscriptions (44,850 pairs), even 99.99% specificity yields 4 false positives. Prevention: use blocking (group by amount first to reduce comparison space 90%+), multi-signal confidence scoring (name + amount + frequency + category + date proximity), show evidence not just confidence, learn from user feedback to calibrate thresholds
+**Pitfall 1: Memory Exhaustion in Batch PDF Processing (CRITICAL)**
+- **What:** Processing 12+ PDFs simultaneously causes Node.js heap overflow, crashing import
+- **Why:** 50-page statement = 50-100MB memory; 12 files = 600MB-1.2GB exceeding Node default (512MB-1.7GB)
+- **Prevention:** Process sequentially not in parallel, use streaming PDF libraries, increase heap to 4GB, store PDFs in S3/Supabase Storage not memory
+- **Phase impact:** Must address in Phase 1 (Batch Upload) before UI work
+- **Detection:** Monitor process.memoryUsage(), watch for "heap out of memory" errors
 
-2. **Pattern Recognition Cold Start Problem** - ML-based suggestions require 100+ data points; median user has insufficient data for meaningful patterns. Prevention: use rule-based heuristics ("if video streaming but no music, suggest Spotify"), transfer learning from aggregate data (pre-computed co-occurrence patterns), graceful degradation with explicit messaging ("Add 10 subscriptions for suggestions")
+**Pitfall 2: Unbounded Table Growth Without Archival (CRITICAL)**
+- **What:** Line items table grows to millions of rows causing query slowdowns, index bloat, backup issues
+- **Why:** 50-200 items per statement × no cleanup = indefinite growth; PostgreSQL MVCC creates dead tuples
+- **Prevention:** Partition table by user + date, implement 24-month retention policy, archive to S3, tune autovacuum for high-write tables
+- **Phase impact:** Must design in Phase 2 (Statement Storage) - retrofitting partitioning requires full rebuild
+- **Detection:** Query pgstattuple for bloat >30%, monitor table size growth rate (GB/month)
 
-3. **Multi-Currency Analytics with Wrong Exchange Rate Timing** - Using current rates for historical transactions means analytics measure "currency market performance" not "user spending behavior." Prevention: store FX rates at transaction time in database, use monthly averages for forecasts, show currency breakdown not just converted totals, warn users about FX volatility exposure
+**Pitfall 3: Pagination Performance Collapse at Scale (CRITICAL)**
+- **What:** Transaction browsing becomes unusable (20+ second page loads) when paginating deep with OFFSET
+- **Why:** OFFSET 10000 forces database to scan and discard 10,000 rows; performance degrades linearly with depth
+- **Prevention:** Use keyset (cursor-based) pagination with transactionDate cursor, create composite indexes, use BRIN indexes for time-series data
+- **Phase impact:** Must implement in Phase 3 (Statement Browser) - changing pagination later breaks API
+- **Detection:** Test pagination at page 100, 500, 1000; use EXPLAIN ANALYZE to check for Seq Scan
 
-4. **Forecasting Without Uncertainty Bands** - Showing "$245.67" (false precision) without uncertainty creates miscalibrated expectations; 19% error is excellent for time-series forecasting but user expects ±$5 accuracy not ±$50. Prevention: show prediction intervals (80% and 95% confidence bands), visualize uncertainty with fan charts, explain forecast limitations upfront, track accuracy over time
+**Pitfall 4: Deduplication Logic Failure on Re-imports (CRITICAL)**
+- **What:** Re-importing same statement creates duplicates or false negatives (missing items)
+- **Why:** Naive hash of (date+amount+merchant) fails on merchant name variations, same-day charges, floating-point precision
+- **Prevention:** Use composite fingerprint with fuzzy tolerance (normalized merchant + rounded amount + date ±2 days), store source file hash, implement idempotent import API
+- **Phase impact:** Must design in Phase 2 before data accumulates - changing deduplication later requires backfilling
+- **Detection:** Monitor duplicate rate via SQL query, test re-importing same file multiple times
 
-5. **Anomaly Detection Alert Fatigue** - Static thresholds generate 5-10 alerts per week (annual renewals, user-initiated changes, small fluctuations); after 2 weeks users ignore all alerts or disable them. Prevention: learn user-specific baselines (not global thresholds), use sliding window to avoid alerting after intentional changes, batch alerts weekly (not real-time), learn from user feedback to calibrate thresholds
+**Pitfall 5: Manual Tags Lost on Re-import (CRITICAL)**
+- **What:** User manually tags transactions, then re-imports statement - tags overwritten/deleted
+- **Why:** Re-import logic treats all line items as new data, overwrites existing records
+- **Prevention:** Never UPDATE line items (only INSERT with replacesId), track user_modified flag, implement tag preservation logic during re-import
+- **Phase impact:** Must implement in Phase 4 (Manual Tagging) - fixing later requires data recovery from backups
+- **Detection:** Track manual tag count before/after re-import, add audit log for tag deletions
+
+### Moderate Pitfalls
+
+**Pitfall 6: Transaction Browser Filter Performance (IMPORTANT)**
+- Generic indexes don't cover filter combinations causing 10+ second query times
+- Prevention: Create partial indexes for common filter combos, use PostgreSQL full-text search for merchant, pre-filter by userId
+- Detection: Test filters with 100K+ rows, use EXPLAIN ANALYZE
+
+**Pitfall 7: Batch Import Progress Not Saved on Failure (IMPORTANT)**
+- Import fails on file 8 of 12, user must re-upload all 12 files
+- Prevention: Process and persist each file independently, store per-file status, allow resuming failed batch
+- Detection: Kill import mid-batch, check if partial progress saved
+
+**Pitfall 8: No Loading State for Long Batch Imports (IMPORTANT)**
+- User uploads 12 files, sees spinner for 5 minutes with no feedback, thinks app froze
+- Prevention: Use Server-Sent Events for real-time progress, show per-file status, display estimated time remaining
+- Detection: Upload 12 files and monitor user confusion in testing
+
+**Pitfall 9: Statement Browser Mobile UX Breaks (MODERATE)**
+- Table with 10 columns doesn't fit on mobile, horizontal scrolling feels broken
+- Prevention: Use card layout on mobile, table on desktop; show only essential columns (date, merchant, amount)
+- Detection: Test on real mobile device
+
+**Pitfall 10: Tagging UX Requires Too Many Clicks (MODERATE)**
+- Tagging requires: click row → dialog → search → select → save; users give up after 5-10 items
+- Prevention: Inline combobox in table row, keyboard shortcuts, bulk actions, recently-used subscriptions quick-access
+- Detection: User test "tag 20 transactions", track average time per tag
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure prioritizes foundational analytics infrastructure first, then builds progressively more complex intelligence features:
+Based on combined research, suggested phase structure prioritizes foundational data storage, then UI for browsing/enrichment, then intelligence features:
 
-### Phase 1: Analytics Infrastructure (Foundation)
-**Rationale:** All other features depend on pre-computed analytics (forecasting needs trends, anomalies need baselines). Must establish materialized views and background job infrastructure before building intelligence features.
-
-**Delivers:**
-- Materialized views for category spending, spending trends, subscription patterns
-- `/api/analytics/summary` endpoint querying pre-computed data
-- Vercel cron job for 15-minute view refresh
-- Updated analytics page consuming pre-computed data instead of client-side aggregation
-
-**Stack:** PostgreSQL materialized views, Drizzle raw SQL support, Vercel cron jobs
-
-**Addresses:** Basic spending totals (table stakes), category spending breakdown (table stakes), time-series foundation for trends
-
-**Avoids:** Analytics queries without indexes (Pitfall #8 - performance degrades at scale)
-
-**Estimated Effort:** 5-6 days
-
-### Phase 2: Duplicate Detection
-**Rationale:** Independent feature valuable for import flow; established AI confidence calibration pattern from PDF imports provides trust foundation; must be built with conservative thresholds to avoid eroding user trust.
+### Phase 1: Batch Upload Foundation (Week 1-2)
+**Rationale:** Core feature that users expect; establishes sequential processing pattern preventing memory issues; foundational for all other phases.
 
 **Delivers:**
-- fuzzystrmatch and pg_trgm PostgreSQL extensions enabled
-- `/api/subscriptions/duplicates` endpoint with Soundex pre-filter + Levenshtein distance
-- `<DuplicateWarning />` component with multi-signal evidence display
-- Duplicate detection integration in subscription form and import review
-- Background duplicate scanning job (optional for v1.3)
+- Database: `statement_line_items` table with partitioning, indexes, relations
+- Database: `sourceLineItemId` column on `subscriptions` table
+- Import API: Enhanced `/api/import` with `mode` parameter ("subscriptions" | "full_statement")
+- Parser: New `statement-parser.ts` with GPT-4 prompt for ALL transactions
+- Batch API: `/api/statements/line-items/batch` for bulk inserts with chunking
+- UI: Drag-and-drop upload zone with progress indicators
+- UI: Mode toggle in import page (subscriptions-only vs full statement)
 
-**Stack:** fastest-levenshtein (2KB), PostgreSQL fuzzystrmatch
+**Stack:** Drizzle ORM (schema), OpenAI GPT-4o (extended prompt), React Dropzone (existing), Next.js ReadableStream (progress)
 
-**Addresses:** Duplicate detection on import (table stakes), manual duplicate marking (table stakes), background duplicate scanning (differentiator)
+**Addresses:** Batch PDF upload (#1 table stakes), statement data retention (#2 table stakes), drag-and-drop UX (#5 table stakes), progress indicators (#6 table stakes)
 
-**Avoids:** Quadratic false positive explosion (Pitfall #1 - critical) via blocking, multi-signal scoring, evidence display; import timing issues (Pitfall #7 - moderate) via importAuditId checks
+**Avoids:** Memory exhaustion (Pitfall #1 - critical) via sequential processing, unbounded table growth (Pitfall #2 - critical) via partitioning design, deduplication failure (Pitfall #4 - critical) via fingerprinting logic
 
-**Estimated Effort:** 4-5 days
+**Research flags:** None - patterns well-established
 
-### Phase 3: Spending Analytics & Trends
-**Rationale:** Builds on Phase 1 infrastructure; high user visibility; low technical risk; establishes multi-currency handling patterns for forecasting.
+**Estimated Effort:** 8-10 days (includes schema design, migration, API implementation, UI components)
 
-**Delivers:**
-- MoM/YoY trend charts with percentage changes
-- Category trend analysis (which categories growing/shrinking)
-- Subscription clustering (grouping similar subscriptions)
-- Multi-currency aggregation with FX rate storage at transaction time
-- Recharts LineChart and PieChart visualizations
+---
 
-**Stack:** simple-statistics (moving averages), PostgreSQL window functions (LAG/LEAD), Recharts
-
-**Addresses:** MoM/YoY trend charts (differentiator), category trend analysis (differentiator), subscription clustering (differentiator)
-
-**Avoids:** Multi-currency with wrong FX timing (Pitfall #3 - critical) via stored transaction-time rates; deleted subscriptions in historical analytics (Pitfall #12 - minor) via inclusive queries
-
-**Estimated Effort:** 5-6 days
-
-### Phase 4: Spending Forecasting
-**Rationale:** Requires stable analytics data from Phase 3; pure computation with no side effects (low risk); must include uncertainty visualization from day 1.
+### Phase 2: Statement Browser & Filtering (Week 3-4)
+**Rationale:** Must be able to browse retained data; establishes filtering patterns and pagination strategy before data accumulates.
 
 **Delivers:**
-- Spending forecast API endpoint with exponential smoothing
-- 6-month forecast calendar with prediction intervals (80% and 95% confidence bands)
-- Fan chart visualization with Recharts AreaChart
-- Forecast limitations explanation in UI
-- Known renewal events incorporated (annual subscriptions)
+- Query API: `/api/statements/line-items` GET with filters (source, tagged, date range, cursor)
+- Browser page: `/statements` with virtualized table using TanStack Virtual
+- Filter sidebar: Source filter, tag filter, date range picker
+- Keyset pagination: Cursor-based with transactionDate
+- Duplicate detection: Extended to statements (file hash checking)
+- Empty states: "No statements uploaded yet" with upload CTA
 
-**Stack:** simple-statistics (exponentialSmoothing, linearRegression), Recharts AreaChart
+**Stack:** @tanstack/react-virtual (NEW - 15KB), TanStack Table (existing), shadcn/ui components (existing)
 
-**Addresses:** Spending forecast calendar (differentiator), spending projections (differentiator), renewal density heatmap (optional)
+**Addresses:** Transaction browsing UI (#3 table stakes), duplicate detection (#4 table stakes)
 
-**Avoids:** Accuracy expectations without uncertainty (Pitfall #4 - important) via prediction intervals; ignoring seasonality (Pitfall #6 - moderate) via seasonal adjustment factors; ignoring known events (Pitfall #9 - moderate) via annual renewal calendar integration
+**Avoids:** Pagination performance collapse (Pitfall #3 - critical) via keyset pagination, filter performance issues (Pitfall #6 - important) via composite indexes, mobile UX breaks (Pitfall #9 - moderate) via responsive design
 
-**Estimated Effort:** 4-5 days
+**Research flags:** None - TanStack Virtual and keyset pagination are proven patterns
 
-### Phase 5: Anomaly Detection & Alerts
-**Rationale:** Most complex feature; requires historical data from Phase 3 to establish baselines; false positive risk needs careful calibration; start with rules-based detection (price changes), expand to pattern-based (spending spikes) only after validating thresholds.
+**Estimated Effort:** 6-8 days (includes API with complex filtering, virtualized table, filter UI, pagination)
+
+---
+
+### Phase 3: Manual Tagging & Conversion (Week 5-6)
+**Rationale:** Core differentiator - enables users to enrich data AI missed; establishes collaborative intelligence loop.
 
 **Delivers:**
-- `anomalies` table and schema
-- Rules-based price change detection (real-time on subscription update)
-- Pattern-based spending spike detection (daily background job)
-- `/api/anomalies` endpoint with user-specific filtering
-- `<AnomalyAlerts />` component with dismissible alerts
-- Weekly digest email (not per-anomaly alerts)
-- User feedback tracking for threshold calibration
+- Tag API: POST `/api/statements/line-items/[id]/tag` for add/remove tags
+- Conversion API: POST `/api/subscriptions/from-line-item` with pre-filled data
+- Tag UI: Inline combobox in table rows with recently-used subscriptions
+- Bulk actions: "Tag selected items" for multi-select
+- Conversion modal: Pre-filled form with line item data (merchant, amount, frequency)
+- Converted badge: Visual indicator showing which items became subscriptions
+- Tag preservation: Logic to prevent losing manual tags on re-import
 
-**Stack:** simple-statistics (mean, standardDeviation, zScore), background job infrastructure
+**Stack:** shadcn/ui Combobox, Drizzle ORM (JSONB updates), existing subscription creation flow
 
-**Addresses:** Price increase detection (table stakes), missed renewal detection (differentiator), spending deviation alerts (differentiator)
+**Addresses:** Manual tagging (#7 differentiator), manual conversion (#8 differentiator)
 
-**Avoids:** Alert fatigue from uncalibrated thresholds (Pitfall #5 - critical) via user-specific baselines, sliding window for intentional changes, weekly batching, feedback learning
+**Avoids:** Manual tags lost on re-import (Pitfall #5 - critical) via user_modified flag, tagging UX friction (Pitfall #10 - moderate) via inline editing and bulk actions
 
-**Estimated Effort:** 5-6 days
+**Research flags:** None - tag preservation patterns documented in Modern Treasury research
+
+**Estimated Effort:** 5-7 days (includes tag API, conversion API, inline editing UI, bulk actions)
+
+---
+
+### Phase 4: Source Dashboard & Re-import (Week 7-8)
+**Rationale:** Quick overview of data coverage; enables users to fix initial import mistakes; low-complexity enhancements.
+
+**Delivers:**
+- Source Dashboard: Grid of cards showing statements per source (count, date range, total items)
+- Aggregation query: GROUP BY source with counts
+- Re-import UI: Statement detail view showing all items (imported vs skipped)
+- Import status: Visual indicators (✅ imported, ⭕ skipped)
+- Import from detail: "Import this item" button on skipped items
+- Partial import tracking: Per-file status (pending, processing, completed, failed)
+- Resume capability: Continue failed batch from last successful file
+
+**Stack:** shadcn/ui Cards, existing query patterns, reuse conversion flow from Phase 3
+
+**Addresses:** Source dashboard (#9 differentiator), re-import capability (#11 differentiator)
+
+**Avoids:** Batch progress not saved (Pitfall #7 - important) via per-file status tracking, no loading state (Pitfall #8 - important) via detailed progress UI
+
+**Research flags:** None - dashboard aggregations and status tracking are standard patterns
+
+**Estimated Effort:** 4-6 days (includes aggregation queries, dashboard UI, detail view, resume logic)
+
+---
+
+### Phase 5: AI Suggestions & Pattern Detection (Week 9-10)
+**Rationale:** Leverages historical statement data to strengthen existing pattern detection (v1.3); proactive user value.
+
+**Delivers:**
+- Extended pattern detection: Scan `statement_line_items` not just `subscriptions`
+- Recurring pattern detection: Same merchant, 3+ occurrences, monthly frequency
+- Suggestion dashboard: "We found 2 potential subscriptions" with confidence scores
+- Evidence display: List of matching transactions supporting suggestion
+- Accept/dismiss actions: One-click add or permanent dismissal
+- Tag integration: Auto-tag high-confidence items (>80%) as "potential_subscription"
+
+**Stack:** Extend existing pattern detection algorithm (v1.3), Drizzle ORM queries, confidence scoring
+
+**Addresses:** AI suggestions (#10 differentiator), historical pattern detection (#12 differentiator)
+
+**Avoids:** False positive suggestions by requiring 3+ occurrences, showing evidence not just confidence, allowing dismissals
+
+**Research flags:** Possible - if initial confidence thresholds generate too many false positives, may need `/gsd:research-phase` to tune; start conservatively (85% threshold)
+
+**Estimated Effort:** 5-7 days (includes pattern detection extension, suggestion UI, accept/dismiss flows)
+
+---
 
 ### Phase Ordering Rationale
 
-- **Phase 1 first**: Analytics infrastructure is dependency for all other phases (forecasting needs trends, anomalies need baselines, duplicate detection benefits from pattern data)
-- **Phase 2 early**: Duplicate detection is independent, high-value for imports, establishes AI trust calibration
-- **Phase 3 before 4**: Forecasting requires stable historical analytics data with correct multi-currency handling
-- **Phase 5 last**: Anomaly detection most complex, needs validated analytics foundation, false positive risk requires careful tuning with real user data
+- **Phase 1 is foundation:** All other phases depend on statement data storage
+- **Phase 2 before 3:** Must be able to browse data before tagging it
+- **Phase 3 before 4:** Conversion flow reused in re-import
+- **Phase 5 last:** Requires historical data from imports, benefits from tag data from Phase 3
 
-**Parallelization opportunity:** Phases 2 and 4 can be developed in parallel after Phase 1 completes (no dependencies on each other)
+**Parallelization opportunity:** None - phases have strict dependencies
+
+**Total estimated effort:** 28-38 days (5.6-7.6 weeks) for full Statement Hub milestone
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 5 (Anomaly Detection):** Threshold calibration is user-specific and domain-specific; may need additional research during implementation to tune false positive rates with real data; consider `/gsd:research-phase` if initial thresholds generate too many alerts
+- **Phase 5 (AI Suggestions):** Confidence threshold tuning is user-specific; may need additional research if false positive rate >20%; consider `/gsd:research-phase` after initial implementation with real data
 
 Phases with standard patterns (skip research-phase):
-- **Phase 1 (Analytics Infrastructure):** PostgreSQL materialized views are well-documented with established patterns; Vercel cron jobs standard for Next.js background processing
-- **Phase 2 (Duplicate Detection):** Levenshtein distance is gold standard for fuzzy matching; PostgreSQL fuzzystrmatch widely used in production
-- **Phase 3 (Spending Analytics):** Window functions and Recharts integration follow established Next.js patterns
-- **Phase 4 (Forecasting):** Exponential smoothing is well-understood time-series technique with clear implementation
+- **Phase 1 (Batch Upload):** Sequential processing, streaming progress, and partitioning are well-documented patterns
+- **Phase 2 (Statement Browser):** Keyset pagination and virtualized tables are proven at scale
+- **Phase 3 (Manual Tagging):** Tag preservation and inline editing patterns documented in fintech research
+- **Phase 4 (Source Dashboard):** Aggregation queries and status tracking are standard database patterns
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | fastest-levenshtein and simple-statistics are official npm packages (1.6M and 500K weekly downloads); PostgreSQL window functions are standard features; Recharts already in use |
-| Features | HIGH | Table stakes clear from banking/finance app research (Brex, Wave, PocketSmith); differentiators based on 2026 fintech trends and subscription apps (Rocket Money, Monarch) |
-| Architecture | HIGH | Materialized views proven PostgreSQL pattern; fuzzy matching with fuzzystrmatch widely used; Recharts performance benefits documented (67.6% faster than Chart.js for large datasets) |
-| Pitfalls | HIGH | False positive quadratic growth documented in research (arxiv.org/abs/1907.02821); cold start problem well-known in recommender systems; alert fatigue documented in cybersecurity literature (59% report too many alerts) |
+| Stack | HIGH | Only 1 new dependency (@tanstack/react-virtual); all other capabilities use existing stack (Drizzle, OpenAI, React Dropzone, Next.js); npm package widely adopted (3.13.18 stable) |
+| Features | HIGH | Table stakes clear from 10+ fintech app research (MoneyWiz, PocketGuard, Expensify, YNAB); differentiators validated by Modern Treasury transaction tagging patterns |
+| Architecture | HIGH | Extends existing schema cleanly (additive only); keyset pagination and partitioning are proven PostgreSQL patterns; TanStack Virtual is industry standard for large lists |
+| Pitfalls | HIGH | Memory exhaustion documented in Node.js limits research; pagination performance and table bloat documented in PostgreSQL optimization guides; deduplication issues covered in Modern Treasury case studies |
 
 **Overall confidence:** HIGH
 
@@ -207,55 +327,62 @@ Phases with standard patterns (skip research-phase):
 
 Areas where research was conclusive but implementation needs validation:
 
-- **Duplicate detection threshold calibration:** Research shows 70%+ similarity threshold recommended, but optimal value depends on actual subscription name patterns in production data; start with 85% (conservative), adjust based on user feedback tracking in `duplicate_decisions` table
+- **Optimal partition strategy:** Research shows monthly partitioning recommended for time-series data, but actual partition size depends on statement volume per user; start with monthly partitions, monitor partition size (target: 10K-100K rows per partition); if partitions grow >500K rows, consider weekly partitioning
 
-- **Anomaly detection false positive rate:** Research shows z-score >2.5 is standard statistical threshold, but subscription spending has user-specific volatility; validate with first 50 users, calculate FPR from `anomaly_feedback` table, adjust thresholds if FPR >20%
+- **Sequential processing timeout:** Research shows 12 PDFs × 20 seconds/file = 4 minutes total; Vercel Pro has 60-second timeout per request; must use background job queue (Vercel cron + status polling) or streaming response that maintains connection; validate timeout doesn't kill long-running imports
 
-- **Forecast accuracy validation:** Research shows MAPE 15-25% is typical for monthly forecasts, but actual accuracy depends on user subscription stability (high churn = lower accuracy); track actual vs predicted in `spending_forecasts` table, show accuracy metrics in UI after 3+ months
+- **Keyset pagination with filters:** Cursor-based pagination requires stable sort key; when filtering by merchant + date, cursor must include both fields; validate cursor serialization handles multi-column cursors correctly
 
-- **Multi-currency FX data source:** Research recommends transaction-time spot rates, but needs decision on FX data provider (e.g., exchangerate-api.io free tier: 1500 requests/month); confirm during implementation that free tier sufficient for user base growth projections
+- **TanStack Virtual row height:** Virtualization requires estimated row height (default: 50px); if transaction descriptions vary significantly, may need dynamic height measurement; validate scrolling feels smooth with real statement data
 
-- **Materialized view refresh performance:** Research shows concurrent refresh takes 5-10s for 100K subscriptions, but Vercel Pro has 60s timeout; validate refresh completes within timeout at target scale (1000 users × 200 subscriptions = 200K records); if timeout occurs, split into user-segmented views refreshed in sequence
+- **Tag preservation edge cases:** Research shows tag preservation should prevent overwrites, but what if user re-imports with conflicting data (e.g., amount changed)?; validate merge logic with production scenarios; may need conflict resolution UI
+
+- **Statement file hash uniqueness:** Using SHA-256 hash of PDF contents assumes byte-identical files are duplicates; some banks regenerate PDFs with different metadata but same transactions; validate file hash approach with multiple bank statement formats; may need content-based hashing (transactions only) instead of file-based
 
 ## Sources
 
 ### Primary (HIGH confidence)
 
-**Stack Research:**
-- [PostgreSQL fuzzystrmatch Documentation](https://www.postgresql.org/docs/current/fuzzystrmatch.html) - Official PostgreSQL fuzzy matching extension
-- [PostgreSQL Materialized Views Documentation](https://www.postgresql.org/docs/current/rules-materializedviews.html) - Official PostgreSQL materialized views feature
-- [fastest-levenshtein GitHub](https://github.com/ka-weihe/fastest-levenshtein) - Official npm package (1.6M weekly downloads)
-- [simple-statistics GitHub](https://github.com/simple-statistics/simple-statistics) - Official npm package (500K weekly downloads)
-- [Recharts vs Chart.js Performance](https://www.oreateai.com/blog/recharts-vs-chartjs-navigating-the-performance-maze-for-big-data-visualizations/) - Benchmarked 67.6% faster for large datasets
+**Stack:**
+- [TanStack Virtual Official Docs](https://tanstack.com/virtual/latest) - Official documentation for virtualized scrolling (3.13.18 stable)
+- [@tanstack/react-virtual npm](https://www.npmjs.com/package/@tanstack/react-virtual) - Package details, 15KB bundle size
+- [Drizzle ORM Batch API](https://orm.drizzle.team/docs/batch-api) - Batch inserts with chunking
+- [Next.js Streaming Guide](https://nextjs.org/learn/dashboard-app/streaming) - ReadableStream for progress updates
 
-**Features Research:**
-- [Brex: Prevent Duplicate Payments](https://www.brex.com/spend-trends/accounting/prevent-duplicate-payments-in-accounts-payable) - Duplicate detection patterns in financial apps
-- [PocketSmith: Duplicate Transactions](https://learn.pocketsmith.com/article/1419-duplicate-transactions-in-accounts-with-a-bank-feed) - Fuzzy matching in subscription tracking
-- [AWS Cost Anomaly Detection](https://aws.amazon.com/aws-cost-management/aws-cost-anomaly-detection/) - Anomaly detection patterns in spending analytics
+**Features:**
+- [Key Features Every Personal Finance App Needs in 2026](https://financialpanther.com/key-features-every-personal-finance-app-needs-in-2026/) - Table stakes validation
+- [MoneyWiz 2026](https://apps.apple.com/us/app/moneywiz-2026-personal-finance/id1511185140) - Transaction browsing patterns
+- [PocketGuard Features](https://pocketguard.com/) - Filtering and categorization UX
+- [Modern Treasury Transaction Tagging](https://www.moderntreasury.com/journal/transaction-tagging-transforming-raw-bank-data-into-real-insights) - Tagging system design, manual enrichment patterns
 
-**Architecture Research:**
-- [Fuzzy Name Matching in PostgreSQL - Crunchy Data](https://www.crunchydata.com/blog/fuzzy-name-matching-in-postgresql) - Production implementation patterns with Soundex pre-filtering
-- [Optimizing Materialized Views in PostgreSQL](https://medium.com/@ShivIyer/optimizing-materialized-views-in-postgresql-best-practices-for-performance-and-efficiency-3e8169c00dc1) - Concurrent refresh best practices
-- [Vercel Cron Jobs](https://vercel.com/templates/next.js/vercel-cron) - Official Vercel cron job implementation
+**Architecture:**
+- [PostgreSQL Partitioning Best Practices](https://oneuptime.com/blog/post/2026-01-25-postgresql-optimize-billion-row-tables/view) - Partitioning for large tables
+- [Keyset Pagination for Large Datasets](https://oneuptime.com/blog/post/2026-02-02-keyset-pagination/view) - Cursor-based pagination implementation
+- [Building Virtualized Table with TanStack](https://dev.to/ainayeem/building-an-efficient-virtualized-table-with-tanstack-virtual-and-react-query-with-shadcn-2hhl) - Integration patterns
+- [Financial Data Retention Policies](https://atlan.com/know/data-governance/data-retention-policies-in-finance/) - 24-month retention standards
 
-**Pitfalls Research:**
-- [Benchmarking Unsupervised Near-Duplicate Detection](https://arxiv.org/abs/1907.02821) - False positive rates grow quadratically with dataset size (peer-reviewed research)
-- [Cold Start Problem in Machine Learning](https://www.kdnuggets.com/2019/01/data-scientist-dilemma-cold-start-machine-learning.html) - Pattern recognition requires 100+ data points
-- [Alert Fatigue Is Killing Your SOC](https://torq.io/blog/cybersecurity-alert-management-2026/) - 59% of leaders report too many alerts as main inefficiency
-- [Multi-Currency Financial Management Challenges](https://controllerscouncil.org/navigating-the-challenges-of-multi-currency-financial-management/) - Transaction risk from exchange rate timing
+**Pitfalls:**
+- [Batch Processing Large Datasets in Node.js Without Running Out of Memory](https://dev.to/rabbitramang/batch-processing-large-datasets-in-nodejs-without-running-out-of-memory-9a1) - Memory exhaustion prevention
+- [How to Reduce Bloat in Large PostgreSQL Tables](https://www.tigerdata.com/learn/how-to-reduce-bloat-in-large-postgresql-tables) - Table bloat mitigation
+- [Handling Large Datasets: Optimizing Pagination, Sorting & Filtering](https://medium.com/@jatin.jain_69313/handling-large-datasets-high-traffic-queries-optimizing-pagination-sorting-filtering-bf9a2d5a9813) - Pagination performance
+- [Deduplication at Scale](https://www.moderntreasury.com/journal/deduplication-at-scale) - Deduplication strategies, fingerprinting patterns
 
 ### Secondary (MEDIUM confidence)
 
-- [Data Ladder: Fuzzy Matching 101](https://dataladder.com/fuzzy-matching-101/) - Duplicate detection best practices in CRM systems
-- [Subscription Market 2026: 76 Million Users](https://senalnews.com/en/data/subscription-market-2026-data-from-76-million-users-shows-retention-now-outweighs-acquisition) - Subscription spending seasonality patterns
-- [Evaluating Forecast Accuracy](https://otexts.com/fpp2/accuracy.html) - Time-series forecasting error metrics (MAPE 15-25% typical)
-- [Rocket Money Review](https://www.rocketmoney.com/) - Feature benchmark for competitive analysis
+- [File Upload UX Best Practices](https://uploadcare.com/blog/file-uploader-ux-best-practices/) - Drag-and-drop patterns
+- [Drag-and-Drop UX Guidelines](https://smart-interface-design-patterns.com/articles/drag-and-drop-ux/) - Interaction design best practices
+- [NetSuite Bank Statement Import](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_N1550803.html) - Enterprise import patterns
+- [Data Archiving in PostgreSQL](https://dataegret.com/2025/05/data-archiving-and-retention-in-postgresql-best-practices-for-large-datasets/) - Archival strategies
 
-### Tertiary (LOW confidence)
+### Codebase Analysis (HIGH confidence)
 
-- [Multi-Currency Support in Google Analytics - A Flawed Feature](https://brianclifton.com/blog/2013/02/15/multi-currency-support-in-google-analytics-a-flawed-feature/) - Pitfalls of daily rate adjustments (older but still relevant)
-- [Detecting Anomalies with Z-Scores](https://medium.com/@akashsri306/detecting-anomalies-with-z-scores-a-practical-approach-2f9a0f27458d) - Statistical anomaly detection tutorial (needs validation with production data)
+- `src/lib/db/schema.ts` - Existing schema structure, import_audits table, subscriptions table
+- `src/app/api/import/route.ts` - Current import flow, OpenAI integration
+- `src/lib/openai/pdf-parser.ts` - GPT-4 prompt structure, DetectedSubscription interface
+- `.planning/phases/06-statement-source-tracking/06-RESEARCH.md` - Statement source tracking patterns
+- `CLAUDE.md` - Tech stack (Next.js 16, Drizzle ORM, Supabase PostgreSQL, OpenAI GPT-4o)
 
 ---
-*Research completed: 2026-02-05*
+
+*Research completed: 2026-02-08*
 *Ready for roadmap: yes*
