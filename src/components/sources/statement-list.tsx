@@ -113,7 +113,7 @@ function StatementRow({ statement }: StatementRowProps) {
         </div>
       </div>
       <Link
-        href={`/transactions?statementId=${id}`}
+        href={`/statements/${id}`}
         className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
       >
         View details
