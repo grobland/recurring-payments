@@ -66,6 +66,8 @@ export function TransactionTable({
         <div className="w-[140px] px-4 py-3">Source</div>
         <div className="w-[120px] px-4 py-3">Category</div>
         <div className="w-[100px] px-4 py-3">Status</div>
+        <div className="w-[50px] px-2 py-3"></div>
+        <div className="w-[110px] px-2 py-3"></div>
       </div>
 
       {/* Virtualized Table Body */}
