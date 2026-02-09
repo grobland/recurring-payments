@@ -9,6 +9,7 @@ import {
   BarChart3,
   FileUp,
   FolderUp,
+  FileStack,
   Receipt,
   Bell,
   Settings,
@@ -84,6 +85,11 @@ const mainNavItems = [
     title: "Transactions",
     href: "/transactions",
     icon: Receipt,
+  },
+  {
+    title: "Sources",
+    href: "/sources",
+    icon: FileStack,
   },
   {
     title: "Reminders",
