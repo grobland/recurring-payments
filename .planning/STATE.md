@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-08)
 ## Current Position
 
 Phase: 23 of 23 (AI Suggestions & Pattern Detection)
-Plan: 01 of 03 (Bulk API & Suggestion Components)
+Plan: 02 of 04 (Bulk Hooks & Actions Bar)
 Status: In progress
-Last activity: 2026-02-09 - Completed 23-01-PLAN.md
+Last activity: 2026-02-09 - Completed 23-02-PLAN.md
 
-Progress: [========================] 96% (22 of 23 phases complete, 23-01 done)
+Progress: [========================] 97% (22 of 23 phases complete, 23-02 done)
 
 ## Milestone Summary
 
@@ -63,13 +63,14 @@ Progress: [========================] 96% (22 of 23 phases complete, 23-01 done)
 
 **Phase 23 in progress:**
 - 23-01: Bulk API & Suggestion Components (DONE)
+- 23-02: Bulk Hooks & Actions Bar (DONE)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 68
+- Total plans completed: 69
 - Average duration: ~6.3 min
-- Total execution time: ~426 min (~7.1 hours)
+- Total execution time: ~432 min (~7.2 hours)
 
 **By Milestone:**
 
@@ -79,7 +80,7 @@ Progress: [========================] 96% (22 of 23 phases complete, 23-01 done)
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
 | v1.3 Data & Intelligence | 21 | ~149 min | ~7.1 min |
-| v2.0 Statement Hub | 16 | ~80 min | ~5 min |
+| v2.0 Statement Hub | 17 | ~86 min | ~5 min |
 
 ## Accumulated Context
 
@@ -127,6 +128,7 @@ Progress: [========================] 96% (22 of 23 phases complete, 23-01 done)
 | Wizard queue state | queue/currentIndex/completed/skipped for sequential processing |
 | Bulk transaction locking | FOR UPDATE to prevent race conditions |
 | Variance threshold | 10% deviation flags significant price changes |
+| Query key factory | patternKeys with all/lists/suggestions for cache invalidation |
 
 ### v2.0 Architecture Notes
 
@@ -164,6 +166,7 @@ From research (2026-02-08):
 | FOR UPDATE locking | .for("update") in transaction | Prevent race conditions on bulk ops | 23-01 |
 | 10% variance threshold | Flag amounts >10% from average | Balance sensitivity vs false positives | 23-01 |
 | Scatter chart timeline | Recharts ScatterChart | Visual temporal pattern display | 23-01 |
+| Pattern keys factory | Export patternKeys from hook | Consistent cache invalidation | 23-02 |
 
 ### Blockers/Concerns
 
@@ -182,6 +185,6 @@ From research (2026-02-08):
 ## Session Continuity
 
 Last session: 2026-02-09
-Status: Completed 23-01-PLAN.md (Bulk API & Suggestion Components)
+Status: Completed 23-02-PLAN.md (Bulk Hooks & Actions Bar)
 Resume file: None
-Next step: Execute 23-02-PLAN.md (Suggestions Panel)
+Next step: Execute 23-03-PLAN.md (Suggestions Panel)
