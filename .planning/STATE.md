@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-08)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.0 Statement Hub - Phase 20 Complete
+**Current focus:** v2.0 Statement Hub - Phase 21 In Progress
 
 ## Current Position
 
-Phase: 20 of 23 (Statement Browser & Filtering)
-Plan: 02 of 02
-Status: Complete
-Last activity: 2026-02-09 - Completed Phase 20
+Phase: 21 of 23 (Manual Tagging & Conversion)
+Plan: 01 of 04
+Status: In progress
+Last activity: 2026-02-09 - Completed 21-01-PLAN.md
 
-Progress: [█████████████████████░] 87% (20 of 23 phases complete)
+Progress: [======================] 87% (20 of 23 phases complete, 21 in progress)
 
 ## Milestone Summary
 
@@ -35,7 +35,7 @@ Progress: [█████████████████████░] 8
 ### v2.0 Statement Hub (IN PROGRESS)
 
 **Phases:** 19-23 (5 phases)
-**Requirements:** 27 total (12 complete)
+**Requirements:** 27 total (13 complete)
 **Milestone goal:** Transform import to comprehensive statement management with batch uploads, full data retention, and manual enrichment
 
 **Phase 19 complete:**
@@ -49,12 +49,18 @@ Progress: [█████████████████████░] 8
 - 20-01: Transaction data layer (DONE)
 - 20-02: Virtualized table, filters, and page (DONE)
 
+**Phase 21 in progress:**
+- 21-01: Tags schema and CRUD foundation (DONE)
+- 21-02: Tag management UI
+- 21-03: Tag assignment interface
+- 21-04: Transaction to subscription conversion
+
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 60
+- Total plans completed: 61
 - Average duration: ~6.4 min
-- Total execution time: ~387 min (~6.5 hours)
+- Total execution time: ~392 min (~6.5 hours)
 
 **By Milestone:**
 
@@ -64,7 +70,7 @@ Progress: [█████████████████████░] 8
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
 | v1.3 Data & Intelligence | 21 | ~149 min | ~7.1 min |
-| v2.0 Statement Hub | 7 | ~37 min | ~5.3 min |
+| v2.0 Statement Hub | 8 | ~42 min | ~5.3 min |
 
 ## Accumulated Context
 
@@ -97,6 +103,7 @@ Progress: [█████████████████████░] 8
 | Debounce query key | Debounce state value, not queryFn |
 | Virtualized scrolling | useVirtualizer with IntersectionObserver for 10k+ items |
 | Responsive list layouts | useIsMobile to switch table/card views |
+| Many-to-many junction | transactionTags with composite primary key |
 
 ### v2.0 Architecture Notes
 
@@ -114,6 +121,7 @@ From research (2026-02-08):
 |----------|--------|-----|------|
 | Keyset over OFFSET | (transactionDate, id) cursor | O(1) performance at any depth | 20-01 |
 | TanStack Virtual | @tanstack/react-virtual | Lightweight, React-native API | 20-02 |
+| User-scoped tag names | uniqueIndex on (userId, name) | Different users can have same tag name | 21-01 |
 
 ### Blockers/Concerns
 
@@ -127,10 +135,11 @@ From research (2026-02-08):
 - 0003_old_azazel.sql - recurring_patterns table
 - 0004_modern_argent.sql - alerts table and alert_type enum
 - 0005_strange_triathlon.sql - statements and transactions tables
+- 0006_typical_captain_stacy.sql - tags and transaction_tags tables
 
 ## Session Continuity
 
 Last session: 2026-02-09
-Status: Completed Phase 20 (Statement Browser & Filtering)
+Status: Completed 21-01-PLAN.md (Tags Schema & CRUD Foundation)
 Resume file: None
-Next step: /gsd:discuss-phase 21 for Manual Tagging & Conversion
+Next step: Execute 21-02-PLAN.md (Tag Management UI)
