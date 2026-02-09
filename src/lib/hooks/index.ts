@@ -63,3 +63,8 @@ export {
 // Transaction hooks
 export { useDebouncedValue } from "./use-debounced-value";
 export { useTransactions, transactionKeys } from "./use-transactions";
+
+// Source coverage hooks
+export { useSources, sourceKeys } from "./use-sources";
+export { useSourceStatements, sourceStatementKeys } from "./use-source-statements";
+export { useStatementTransactions, statementTransactionKeys } from "./use-statement-transactions";
