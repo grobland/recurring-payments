@@ -9,6 +9,7 @@ import {
   BarChart3,
   FileUp,
   FolderUp,
+  Receipt,
   Bell,
   Settings,
   HelpCircle,
@@ -78,6 +79,11 @@ const mainNavItems = [
     title: "Batch Import",
     href: "/import/batch",
     icon: FolderUp,
+  },
+  {
+    title: "Transactions",
+    href: "/transactions",
+    icon: Receipt,
   },
   {
     title: "Reminders",
