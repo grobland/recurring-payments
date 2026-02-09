@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-08)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.0 Statement Hub - Phase 22 In Progress
+**Current focus:** v2.0 Statement Hub - Phase 22 Wave 2 Complete
 
 ## Current Position
 
 Phase: 22 of 23 (Source Dashboard & Re-import)
-Plan: 01 of 04
+Plan: 02 of 04
 Status: In progress
-Last activity: 2026-02-09 - Completed 22-01-PLAN.md (Source Coverage API)
+Last activity: 2026-02-09 - Completed 22-02-PLAN.md (Source Dashboard Component)
 
 Progress: [=======================] 91% (21 of 23 phases complete)
 
@@ -57,16 +57,16 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 
 **Phase 22 in progress:**
 - 22-01: Source coverage API (DONE)
-- 22-02: Source list component (TODO)
+- 22-02: Source dashboard component (DONE)
 - 22-03: Source detail page (TODO)
 - 22-04: Incomplete batch banner (DONE)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 64
+- Total plans completed: 65
 - Average duration: ~6.4 min
-- Total execution time: ~414 min (~6.9 hours)
+- Total execution time: ~423 min (~7.1 hours)
 
 **By Milestone:**
 
@@ -76,7 +76,7 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
 | v1.3 Data & Intelligence | 21 | ~149 min | ~7.1 min |
-| v2.0 Statement Hub | 13 | ~68 min | ~5.2 min |
+| v2.0 Statement Hub | 14 | ~77 min | ~5.5 min |
 
 ## Accumulated Context
 
@@ -119,6 +119,8 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 | Bulk mutations | Validate ownership, onSuccess clears selection |
 | SQL aggregation for stats | GROUP BY + CASE WHEN for status counts |
 | Gap detection | eachMonthOfInterval for coverage gaps |
+| Accordion-based list | Single-column expandable list for variable content |
+| Lazy-load on expand | Fetch child data only when accordion opens |
 
 ### v2.0 Architecture Notes
 
@@ -148,6 +150,9 @@ From research (2026-02-08):
 | SQL aggregation | GROUP BY + CASE WHEN | Avoid N+1 for source stats | 22-01 |
 | Gap detection via date-fns | eachMonthOfInterval | Reliable month range generation | 22-01 |
 | URL-encode sourceType | decodeURIComponent in API | Handle spaces in source names | 22-01 |
+| Accordion over card grid | Single-column accordion list | Better for variable content, cleaner UX | 22-02 |
+| Lazy load statements | Fetch on expand | Avoid loading all upfront | 22-02 |
+| Tooltip for gaps | Badge with hover tooltip | Compact, details on demand | 22-02 |
 
 ### Blockers/Concerns
 
@@ -166,6 +171,6 @@ From research (2026-02-08):
 ## Session Continuity
 
 Last session: 2026-02-09
-Status: Completed 22-01 (Source Coverage API)
+Status: Completed 22-02 (Source Dashboard Component)
 Resume file: None
-Next step: Execute 22-02-PLAN.md (Source Dashboard Component)
+Next step: Execute 22-03-PLAN.md (Source Detail Page)
