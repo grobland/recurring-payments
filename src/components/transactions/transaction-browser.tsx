@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { AlertCircle, RefreshCw, FileX2 } from "lucide-react";
 import { useTransactions } from "@/lib/hooks/use-transactions";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTags } from "@/lib/hooks/use-tags";
+import { useBulkTagTransactions } from "@/lib/hooks/use-bulk-tag-transactions";
 import { TransactionFilters } from "./transaction-filters";
 import { TransactionTable } from "./transaction-table";
 import { TransactionCardList } from "./transaction-card-list";
+import { BulkActionBar } from "./bulk-action-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import type { TransactionFilters as TransactionFiltersType } from "@/types/transaction";
@@ -18,6 +21,7 @@ import type { TransactionFilters as TransactionFiltersType } from "@/types/trans
  */
 export function TransactionBrowser() {
   const [filters, setFilters] = useState<TransactionFiltersType>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const isMobile = useIsMobile();
 
   // Debounce search input (300ms)
@@ -42,6 +46,84 @@ export function TransactionBrowser() {
     error,
     refetch,
   } = useTransactions(debouncedFilters);
+
+  const bulkTagMutation = useBulkTagTransactions();
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [debouncedFilters]);
+
+  // Selection state computations
+  const visibleIds = useMemo(
+    () => new Set(allTransactions.map((t) => t.id)),
+    [allTransactions]
+  );
+
+  const isAllVisibleSelected = useMemo(() => {
+    if (visibleIds.size === 0) return false;
+    for (const id of visibleIds) {
+      if (!selectedIds.has(id)) return false;
+    }
+    return true;
+  }, [visibleIds, selectedIds]);
+
+  const isSomeSelected = selectedIds.size > 0 && !isAllVisibleSelected;
+
+  // Selection handlers
+  const toggleAll = useCallback(() => {
+    if (isAllVisibleSelected) {
+      // Remove all visible ids from selection
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        for (const id of visibleIds) {
+          next.delete(id);
+        }
+        return next;
+      });
+    } else {
+      // Add all visible ids to selection
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        for (const id of visibleIds) {
+          next.add(id);
+        }
+        return next;
+      });
+    }
+  }, [isAllVisibleSelected, visibleIds]);
+
+  const toggleOne = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  // Bulk tag handler
+  const handleBulkTag = useCallback(
+    (tagId: string) => {
+      const transactionIds = Array.from(selectedIds);
+      bulkTagMutation.mutate(
+        { transactionIds, tagId, action: "add" },
+        {
+          onSuccess: () => {
+            setSelectedIds(new Set());
+          },
+        }
+      );
+    },
+    [selectedIds, bulkTagMutation]
+  );
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
 
   // Extract unique source types from loaded transactions
   const uniqueSourceTypes = useMemo(() => {
@@ -158,6 +240,8 @@ export function TransactionBrowser() {
           onLoadMore={() => fetchNextPage()}
           hasMore={hasNextPage ?? false}
           isLoading={isFetchingNextPage}
+          selectedIds={selectedIds}
+          onToggleOne={toggleOne}
         />
       ) : (
         <TransactionTable
@@ -165,6 +249,19 @@ export function TransactionBrowser() {
           onLoadMore={() => fetchNextPage()}
           hasMore={hasNextPage ?? false}
           isLoading={isFetchingNextPage}
+          selectedIds={selectedIds}
+          onToggleAll={toggleAll}
+          onToggleOne={toggleOne}
+          isAllSelected={isAllVisibleSelected}
+          isSomeSelected={isSomeSelected}
+        />
+      )}
+
+      {selectedIds.size > 0 && (
+        <BulkActionBar
+          count={selectedIds.size}
+          onTag={handleBulkTag}
+          onClear={handleClearSelection}
         />
       )}
     </div>

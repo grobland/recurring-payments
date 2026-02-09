@@ -7,6 +7,7 @@ import type { TransactionWithSource } from "@/types/transaction";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TagStatusBadge } from "./tag-status-badge";
 import { TagBadge } from "./tag-badge";
 import { TagCombobox } from "./tag-combobox";
@@ -18,6 +19,8 @@ import { cn } from "@/lib/utils";
 interface TransactionCardProps {
   transaction: TransactionWithSource;
   style: CSSProperties;
+  isSelected: boolean;
+  onToggle: () => void;
 }
 
 const MAX_VISIBLE_TAGS = 3;
@@ -26,7 +29,12 @@ const MAX_VISIBLE_TAGS = 3;
  * Card component for mobile transaction view.
  * Uses absolute positioning for virtualization.
  */
-export function TransactionCard({ transaction, style }: TransactionCardProps) {
+export function TransactionCard({
+  transaction,
+  style,
+  isSelected,
+  onToggle,
+}: TransactionCardProps) {
   const toggleTag = useToggleTransactionTag();
   const convertTransaction = useConvertTransaction();
 
@@ -57,10 +65,17 @@ export function TransactionCard({ transaction, style }: TransactionCardProps) {
 
   return (
     <div className="absolute left-0 right-0 px-2" style={style}>
-      <Card className={cn("p-4 py-3 gap-2")}>
-        {/* Top row: Date, Amount, and Tag button */}
+      <Card className={cn("p-4 py-3 gap-2", isSelected && "ring-2 ring-primary")}>
+        {/* Top row: Checkbox, Date, Amount, and Tag button */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">{formattedDate}</span>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={onToggle}
+              aria-label={`Select ${transaction.merchantName}`}
+            />
+            <span className="text-sm text-muted-foreground">{formattedDate}</span>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold">{formattedAmount}</span>
             <TagCombobox

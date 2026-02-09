@@ -11,6 +11,8 @@ interface TransactionCardListProps {
   onLoadMore: () => void;
   hasMore: boolean;
   isLoading: boolean;
+  selectedIds: Set<string>;
+  onToggleOne: (id: string) => void;
 }
 
 const CARD_HEIGHT = 120;
@@ -25,6 +27,8 @@ export function TransactionCardList({
   onLoadMore,
   hasMore,
   isLoading,
+  selectedIds,
+  onToggleOne,
 }: TransactionCardListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -80,6 +84,8 @@ export function TransactionCardList({
                 height: `${virtualRow.size}px`,
                 transform: `translateY(${virtualRow.start}px)`,
               }}
+              isSelected={selectedIds.has(transaction.id)}
+              onToggle={() => onToggleOne(transaction.id)}
             />
           );
         })}

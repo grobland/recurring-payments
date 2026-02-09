@@ -2,15 +2,22 @@
 
 import { useRef, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Minus } from "lucide-react";
 import type { TransactionWithSource } from "@/types/transaction";
 import { TransactionRow } from "./transaction-row";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface TransactionTableProps {
   transactions: TransactionWithSource[];
   onLoadMore: () => void;
   hasMore: boolean;
   isLoading: boolean;
+  selectedIds: Set<string>;
+  onToggleAll: () => void;
+  onToggleOne: (id: string) => void;
+  isAllSelected: boolean;
+  isSomeSelected: boolean;
 }
 
 const ROW_HEIGHT = 48;
@@ -25,6 +32,11 @@ export function TransactionTable({
   onLoadMore,
   hasMore,
   isLoading,
+  selectedIds,
+  onToggleAll,
+  onToggleOne,
+  isAllSelected,
+  isSomeSelected,
 }: TransactionTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -60,6 +72,17 @@ export function TransactionTable({
     <div className="flex-1 overflow-hidden border rounded-lg">
       {/* Table Header */}
       <div className="flex items-center bg-muted/50 border-b font-medium text-sm text-muted-foreground">
+        <div className="w-[44px] px-3 py-3 flex items-center justify-center">
+          <Checkbox
+            checked={isAllSelected}
+            onCheckedChange={onToggleAll}
+            aria-label="Select all transactions"
+            {...(isSomeSelected ? { "data-state": "indeterminate" } : {})}
+          />
+          {isSomeSelected && (
+            <Minus className="absolute h-3.5 w-3.5 pointer-events-none" />
+          )}
+        </div>
         <div className="w-[120px] px-4 py-3">Date</div>
         <div className="flex-1 px-4 py-3 min-w-0">Merchant</div>
         <div className="w-[100px] px-4 py-3 text-right">Amount</div>
@@ -95,6 +118,8 @@ export function TransactionTable({
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
+                  isSelected={selectedIds.has(transaction.id)}
+                  onToggle={() => onToggleOne(transaction.id)}
                 />
               );
             })}

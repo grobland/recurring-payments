@@ -9,6 +9,7 @@ import { TagBadge } from "./tag-badge";
 import { TagCombobox } from "./tag-combobox";
 import { ConvertedBadge } from "./converted-badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToggleTransactionTag } from "@/lib/hooks/use-transaction-tags";
 import { useConvertTransaction } from "@/lib/hooks/use-convert-transaction";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,8 @@ import { cn } from "@/lib/utils";
 interface TransactionRowProps {
   transaction: TransactionWithSource;
   style: CSSProperties;
+  isSelected: boolean;
+  onToggle: () => void;
 }
 
 const MAX_VISIBLE_TAGS = 2;
@@ -24,7 +27,12 @@ const MAX_VISIBLE_TAGS = 2;
  * Table row component for desktop transaction view.
  * Uses absolute positioning for virtualization.
  */
-export function TransactionRow({ transaction, style }: TransactionRowProps) {
+export function TransactionRow({
+  transaction,
+  style,
+  isSelected,
+  onToggle,
+}: TransactionRowProps) {
   const toggleTag = useToggleTransactionTag();
   const convertTransaction = useConvertTransaction();
 
@@ -56,10 +64,20 @@ export function TransactionRow({ transaction, style }: TransactionRowProps) {
   return (
     <tr
       className={cn(
-        "absolute left-0 right-0 flex items-center border-b border-border hover:bg-muted/50 transition-colors"
+        "absolute left-0 right-0 flex items-center border-b border-border hover:bg-muted/50 transition-colors",
+        isSelected && "bg-muted/30"
       )}
       style={style}
     >
+      {/* Checkbox */}
+      <td className="w-[44px] px-3 py-3 flex items-center justify-center">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={onToggle}
+          aria-label={`Select ${transaction.merchantName}`}
+        />
+      </td>
+
       {/* Date */}
       <td className="w-[120px] px-4 py-3 text-sm text-muted-foreground">
         {formattedDate}
