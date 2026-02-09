@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { hashFile } from "@/lib/utils/file-hash";
 
@@ -133,6 +134,7 @@ function clearQueueState(): void {
  */
 export function useBatchUpload(options: UseBatchUploadOptions) {
   const { sourceType, onComplete } = options;
+  const queryClient = useQueryClient();
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const processingRef = useRef(false);
@@ -382,9 +384,12 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
 
     onComplete?.(results);
 
+    // Invalidate import sources cache so new accounts appear in dropdown
+    queryClient.invalidateQueries({ queryKey: ["import-sources"] });
+
     // Clear persisted state on completion
     clearQueueState();
-  }, [processFile, onComplete]);
+  }, [processFile, onComplete, queryClient]);
 
   // Start processing when files are added
   const startProcessing = useCallback(() => {
