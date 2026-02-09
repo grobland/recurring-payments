@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import { hashFile } from "@/lib/utils/file-hash";
 
 // File status in the queue
@@ -137,6 +138,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
   const processingRef = useRef(false);
   const fileMapRef = useRef<Map<string, File>>(new Map());
   const queueRef = useRef<QueuedFile[]>([]);
+  const potentialCountRef = useRef(0);
 
   // Generate unique ID for each file
   const generateId = () => `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -301,6 +303,12 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
       }
 
       const processData = await processResponse.json();
+
+      // Accumulate potential subscription count for batch summary
+      if (processData.potentialCount) {
+        potentialCountRef.current += processData.potentialCount;
+      }
+
       updateFile(id, {
         status: "complete",
         progress: 100,
@@ -319,6 +327,9 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
     if (processingRef.current) return;
     processingRef.current = true;
     setIsProcessing(true);
+
+    // Reset potential count at start of batch
+    potentialCountRef.current = 0;
 
     while (processingRef.current) {
       // Find next pending file from the ref (always current)
@@ -346,6 +357,29 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
       skipped: finalQueue.filter(f => f.status === "duplicate").length,
       totalTransactions: finalQueue.reduce((sum, f) => sum + (f.transactionCount || 0), 0),
     };
+
+    // Trigger pattern detection (fire and forget)
+    fetch("/api/patterns/detect", { method: "POST" }).catch((e) => {
+      console.error("Pattern detection trigger failed:", e);
+    });
+
+    // Show toast if potential subscriptions were detected
+    const totalPotential = potentialCountRef.current;
+    if (totalPotential > 0) {
+      toast.success(
+        `${totalPotential} potential subscription${totalPotential !== 1 ? "s" : ""} detected`,
+        {
+          duration: 8000,
+          action: {
+            label: "View Suggestions",
+            onClick: () => {
+              window.location.href = "/suggestions";
+            },
+          },
+        }
+      );
+    }
+
     onComplete?.(results);
 
     // Clear persisted state on completion
