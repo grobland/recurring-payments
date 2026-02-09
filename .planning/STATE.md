@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-08)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.0 Statement Hub - Phase 21 Complete
+**Current focus:** v2.0 Statement Hub - Phase 22 In Progress
 
 ## Current Position
 
-Phase: 21 of 23 (Manual Tagging & Conversion)
+Phase: 22 of 23 (Source Dashboard & Re-import)
 Plan: 04 of 04
-Status: Phase complete
-Last activity: 2026-02-09 - Completed 21-04-PLAN.md (Bulk Operations)
+Status: In progress
+Last activity: 2026-02-09 - Completed 22-04-PLAN.md (Incomplete Batch Banner)
 
 Progress: [=======================] 91% (21 of 23 phases complete)
 
@@ -55,6 +55,12 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 - 21-03: Transaction conversion (DONE)
 - 21-04: Bulk operations (DONE)
 
+**Phase 22 in progress:**
+- 22-01: Source types schema (TODO)
+- 22-02: Sources list page (TODO)
+- 22-03: Source detail page (TODO)
+- 22-04: Incomplete batch banner (DONE)
+
 ## Performance Metrics
 
 **Velocity:**
@@ -70,7 +76,7 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
 | v1.3 Data & Intelligence | 21 | ~149 min | ~7.1 min |
-| v2.0 Statement Hub | 11 | ~58 min | ~5.3 min |
+| v2.0 Statement Hub | 12 | ~62 min | ~5.2 min |
 
 ## Accumulated Context
 
@@ -136,6 +142,7 @@ From research (2026-02-08):
 | Default monthly frequency | All conversions assume monthly | Most common, user can edit after | 21-03 |
 | Header checkbox scope | Visible (loaded) rows only | Clear UX expectation | 21-04 |
 | Clear selection on filter | Prevent stale selections | Avoids operating on wrong items | 21-04 |
+| Reuse localStorage key | Parse existing batch-upload-queue | No duplicate storage | 22-04 |
 
 ### Blockers/Concerns
 
@@ -154,6 +161,6 @@ From research (2026-02-08):
 ## Session Continuity
 
 Last session: 2026-02-09
-Status: Completed Phase 21 (Manual Tagging & Conversion)
+Status: Completed 22-04 (Incomplete Batch Banner)
 Resume file: None
-Next step: /gsd:discuss-phase 22 for Source Dashboard & Re-import
+Next step: Continue Phase 22 plans (22-01, 22-02, 22-03)
