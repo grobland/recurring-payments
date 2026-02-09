@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, ArrowRight } from "lucide-react";
 import { DashboardHeader } from "@/components/layout";
 import { BatchUploader } from "@/components/batch/batch-uploader";
+import { IncompleteBatchBanner } from "@/components/sources/incomplete-batch-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { BatchUploadResult } from "@/lib/hooks/use-batch-upload";
@@ -33,6 +34,9 @@ export default function BatchImportPage() {
       />
       <main className="flex-1 p-4 md:p-6">
         <div className="mx-auto max-w-3xl space-y-6">
+          {/* Incomplete batch warning */}
+          <IncompleteBatchBanner />
+
           {/* Header */}
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
