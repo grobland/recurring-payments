@@ -256,11 +256,13 @@ Plans:
   2. User can drill into specific statement to see all items (imported vs skipped)
   3. User can re-import items from previous statements they initially skipped
   4. Batch import that fails mid-process can be resumed from last successful file
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 22-01: TBD during phase planning
-- [ ] 22-02: TBD during phase planning
+- [ ] 22-01: Source coverage API + types + hooks
+- [ ] 22-02: Source dashboard UI + /sources page
+- [ ] 22-03: Statement detail + re-import wizard
+- [ ] 22-04: Incomplete batch banner
 
 ### Phase 23: AI Suggestions & Pattern Detection
 **Goal**: System proactively suggests subscriptions based on recurring patterns in statement data
@@ -302,5 +304,5 @@ Plans:
 | 19. Batch Upload Foundation | v2.0 | 5/5 | Complete | 2026-02-08 |
 | 20. Statement Browser & Filtering | v2.0 | 2/2 | Complete | 2026-02-09 |
 | 21. Manual Tagging & Conversion | v2.0 | 4/4 | Complete | 2026-02-09 |
-| 22. Source Dashboard & Re-import | v2.0 | 0/TBD | Not started | - |
+| 22. Source Dashboard & Re-import | v2.0 | 0/4 | Not started | - |
 | 23. AI Suggestions & Pattern Detection | v2.0 | 0/TBD | Not started | - |
