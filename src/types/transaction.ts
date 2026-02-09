@@ -42,11 +42,22 @@ export interface TransactionPage {
 }
 
 /**
+ * Tag attached to a transaction
+ */
+export interface TransactionTag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+/**
  * Transaction with joined statement source type
  */
 export type TransactionWithSource = Transaction & {
   /** Source type from joined statements table */
   sourceType: string | null;
+  /** Tags applied to this transaction */
+  tags?: TransactionTag[];
 };
 
 /**
