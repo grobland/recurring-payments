@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { transactions, statements, transactionTags, tags } from "@/lib/db/schema";
-import { and, eq, or, lt, gte, lte, ilike, desc, inArray } from "drizzle-orm";
+import { transactions, statements, transactionTags, tags, subscriptions, categories } from "@/lib/db/schema";
+import { and, eq, or, lt, gte, lte, ilike, desc, inArray, sql } from "drizzle-orm";
 import type { TransactionCursor, TransactionPage, TransactionTag } from "@/types/transaction";
 
 const PAGE_SIZE = 50;
@@ -114,30 +114,36 @@ export async function GET(request: Request) {
     // We need to handle sourceType filter in the WHERE clause if provided
     let results;
 
+    // Select fields including category from subscription (for converted transactions)
+    const selectFields = {
+      id: transactions.id,
+      statementId: transactions.statementId,
+      userId: transactions.userId,
+      transactionDate: transactions.transactionDate,
+      merchantName: transactions.merchantName,
+      amount: transactions.amount,
+      currency: transactions.currency,
+      description: transactions.description,
+      fingerprint: transactions.fingerprint,
+      tagStatus: transactions.tagStatus,
+      confidenceScore: transactions.confidenceScore,
+      // Use subscription's category name if converted, otherwise use categoryGuess
+      categoryGuess: sql<string | null>`COALESCE(${categories.name}, ${transactions.categoryGuess})`.as("category_guess"),
+      rawText: transactions.rawText,
+      aiMetadata: transactions.aiMetadata,
+      convertedToSubscriptionId: transactions.convertedToSubscriptionId,
+      createdAt: transactions.createdAt,
+      sourceType: statements.sourceType,
+    };
+
     if (sourceType) {
       // Filter by sourceType requires join condition
       results = await db
-        .select({
-          id: transactions.id,
-          statementId: transactions.statementId,
-          userId: transactions.userId,
-          transactionDate: transactions.transactionDate,
-          merchantName: transactions.merchantName,
-          amount: transactions.amount,
-          currency: transactions.currency,
-          description: transactions.description,
-          fingerprint: transactions.fingerprint,
-          tagStatus: transactions.tagStatus,
-          confidenceScore: transactions.confidenceScore,
-          categoryGuess: transactions.categoryGuess,
-          rawText: transactions.rawText,
-          aiMetadata: transactions.aiMetadata,
-          convertedToSubscriptionId: transactions.convertedToSubscriptionId,
-          createdAt: transactions.createdAt,
-          sourceType: statements.sourceType,
-        })
+        .select(selectFields)
         .from(transactions)
         .leftJoin(statements, eq(transactions.statementId, statements.id))
+        .leftJoin(subscriptions, eq(transactions.convertedToSubscriptionId, subscriptions.id))
+        .leftJoin(categories, eq(subscriptions.categoryId, categories.id))
         .where(
           and(...conditions, eq(statements.sourceType, sourceType))
         )
@@ -146,27 +152,11 @@ export async function GET(request: Request) {
     } else {
       // No sourceType filter, still join to get sourceType in results
       results = await db
-        .select({
-          id: transactions.id,
-          statementId: transactions.statementId,
-          userId: transactions.userId,
-          transactionDate: transactions.transactionDate,
-          merchantName: transactions.merchantName,
-          amount: transactions.amount,
-          currency: transactions.currency,
-          description: transactions.description,
-          fingerprint: transactions.fingerprint,
-          tagStatus: transactions.tagStatus,
-          confidenceScore: transactions.confidenceScore,
-          categoryGuess: transactions.categoryGuess,
-          rawText: transactions.rawText,
-          aiMetadata: transactions.aiMetadata,
-          convertedToSubscriptionId: transactions.convertedToSubscriptionId,
-          createdAt: transactions.createdAt,
-          sourceType: statements.sourceType,
-        })
+        .select(selectFields)
         .from(transactions)
         .leftJoin(statements, eq(transactions.statementId, statements.id))
+        .leftJoin(subscriptions, eq(transactions.convertedToSubscriptionId, subscriptions.id))
+        .leftJoin(categories, eq(subscriptions.categoryId, categories.id))
         .where(and(...conditions))
         .orderBy(desc(transactions.transactionDate), desc(transactions.id))
         .limit(PAGE_SIZE + 1);
