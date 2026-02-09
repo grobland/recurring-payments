@@ -6,7 +6,7 @@
 - ✅ **v1.1 Import Improvements** - Phases 5-8 (shipped 2026-02-02)
 - ✅ **v1.2 Production Polish** - Phases 9-12 (shipped 2026-02-05)
 - ✅ **v1.3 Data & Intelligence** - Phases 13-18 (shipped 2026-02-08)
-- 📋 **v2.0 Statement Hub** - Phases 19-23 (planned)
+- ✅ **v2.0 Statement Hub** - Phases 19-23 (shipped 2026-02-09)
 
 ## Phases
 
@@ -191,7 +191,8 @@ Plans:
 
 </details>
 
-## v2.0 Statement Hub (Planned)
+<details>
+<summary>v2.0 Statement Hub (Phases 19-23) - SHIPPED 2026-02-09</summary>
 
 **Milestone Goal:** Transform import from single-file extraction to comprehensive statement management system with batch uploads, full data retention, and manual enrichment capabilities.
 
@@ -276,10 +277,12 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 23-01: Bulk API + suggestion UI components (ConfidenceBadge, EvidenceList, SuggestionTimeline)
-- [ ] 23-02: Bulk hooks + BulkActionsBar component
-- [ ] 23-03: Dedicated /suggestions page + SuggestionCard + sidebar link
-- [ ] 23-04: Import auto-tagging integration + detection trigger + toast notification
+- [x] 23-01: Bulk API + suggestion UI components (ConfidenceBadge, EvidenceList, SuggestionTimeline)
+- [x] 23-02: Bulk hooks + BulkActionsBar component
+- [x] 23-03: Dedicated /suggestions page + SuggestionCard + sidebar link
+- [x] 23-04: Import auto-tagging integration + detection trigger + toast notification
+
+</details>
 
 ## Progress
 
@@ -307,4 +310,4 @@ Plans:
 | 20. Statement Browser & Filtering | v2.0 | 2/2 | Complete | 2026-02-09 |
 | 21. Manual Tagging & Conversion | v2.0 | 4/4 | Complete | 2026-02-09 |
 | 22. Source Dashboard & Re-import | v2.0 | 4/4 | Complete | 2026-02-09 |
-| 23. AI Suggestions & Pattern Detection | v2.0 | 0/4 | Not started | - |
+| 23. AI Suggestions & Pattern Detection | v2.0 | 4/4 | Complete | 2026-02-09 |
