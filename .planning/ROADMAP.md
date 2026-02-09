@@ -273,11 +273,13 @@ Plans:
   2. User sees suggestions dashboard showing potential subscriptions with evidence (dates, amounts, confidence scores)
   3. User can accept suggestion with one click (creates subscription) or dismiss permanently
   4. System auto-tags high-confidence items (>80%) as "potential_subscription" during import
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 23-01: TBD during phase planning
-- [ ] 23-02: TBD during phase planning
+- [ ] 23-01: Bulk API + suggestion UI components (ConfidenceBadge, EvidenceList, SuggestionTimeline)
+- [ ] 23-02: Bulk hooks + BulkActionsBar component
+- [ ] 23-03: Dedicated /suggestions page + SuggestionCard + sidebar link
+- [ ] 23-04: Import auto-tagging integration + detection trigger + toast notification
 
 ## Progress
 
@@ -305,4 +307,4 @@ Plans:
 | 20. Statement Browser & Filtering | v2.0 | 2/2 | Complete | 2026-02-09 |
 | 21. Manual Tagging & Conversion | v2.0 | 4/4 | Complete | 2026-02-09 |
 | 22. Source Dashboard & Re-import | v2.0 | 4/4 | Complete | 2026-02-09 |
-| 23. AI Suggestions & Pattern Detection | v2.0 | 0/TBD | Not started | - |
+| 23. AI Suggestions & Pattern Detection | v2.0 | 0/4 | Not started | - |
