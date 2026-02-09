@@ -31,7 +31,12 @@ async function extractPdfTextServer(buffer: Buffer): Promise<string> {
             for (const page of pdfData.Pages) {
               for (const textItem of page.Texts) {
                 for (const r of textItem.R) {
-                  fullText += decodeURIComponent(r.T) + " ";
+                  try {
+                    fullText += decodeURIComponent(r.T) + " ";
+                  } catch {
+                    // Fall back to raw text if URI decoding fails
+                    fullText += r.T + " ";
+                  }
                 }
               }
               fullText += "\n";
