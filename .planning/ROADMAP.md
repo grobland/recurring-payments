@@ -227,8 +227,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 20-01: API endpoint + useTransactions hook with keyset pagination
-- [ ] 20-02: Virtualized table/cards + filters + /transactions page
+- [x] 20-01: API endpoint + useTransactions hook with keyset pagination
+- [x] 20-02: Virtualized table/cards + filters + /transactions page
 
 ### Phase 21: Manual Tagging & Conversion
 **Goal**: Users can manually enrich statement data by tagging items and converting them to subscriptions
@@ -298,7 +298,7 @@ Plans:
 | 17. Spending Forecasting | v1.3 | 4/4 | Complete | 2026-02-07 |
 | 18. Anomaly Detection & Alerts | v1.3 | 4/4 | Complete | 2026-02-08 |
 | 19. Batch Upload Foundation | v2.0 | 5/5 | Complete | 2026-02-08 |
-| 20. Statement Browser & Filtering | v2.0 | 0/2 | Not started | - |
+| 20. Statement Browser & Filtering | v2.0 | 2/2 | Complete | 2026-02-09 |
 | 21. Manual Tagging & Conversion | v2.0 | 0/TBD | Not started | - |
 | 22. Source Dashboard & Re-import | v2.0 | 0/TBD | Not started | - |
 | 23. AI Suggestions & Pattern Detection | v2.0 | 0/TBD | Not started | - |
