@@ -6,3 +6,5 @@ export { TransactionFilters } from "./transaction-filters";
 export { TransactionRow } from "./transaction-row";
 export { TransactionCard } from "./transaction-card";
 export { TagStatusBadge } from "./tag-status-badge";
+export { TagBadge } from "./tag-badge";
+export { TagCombobox } from "./tag-combobox";
