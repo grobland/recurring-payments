@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-08)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.0 Statement Hub - Phase 21 In Progress
+**Current focus:** v2.0 Statement Hub - Phase 21 Complete
 
 ## Current Position
 
 Phase: 21 of 23 (Manual Tagging & Conversion)
-Plan: 03 of 04
-Status: In progress
-Last activity: 2026-02-09 - Completed 21-03-PLAN.md
+Plan: 04 of 04
+Status: Phase complete
+Last activity: 2026-02-09 - Completed 21-04-PLAN.md (Bulk Operations)
 
-Progress: [======================] 87% (20 of 23 phases complete, 21 in progress)
+Progress: [=======================] 91% (21 of 23 phases complete)
 
 ## Milestone Summary
 
@@ -35,7 +35,7 @@ Progress: [======================] 87% (20 of 23 phases complete, 21 in progress
 ### v2.0 Statement Hub (IN PROGRESS)
 
 **Phases:** 19-23 (5 phases)
-**Requirements:** 27 total (14 complete)
+**Requirements:** 27 total (18 complete)
 **Milestone goal:** Transform import to comprehensive statement management with batch uploads, full data retention, and manual enrichment
 
 **Phase 19 complete:**
@@ -49,18 +49,18 @@ Progress: [======================] 87% (20 of 23 phases complete, 21 in progress
 - 20-01: Transaction data layer (DONE)
 - 20-02: Virtualized table, filters, and page (DONE)
 
-**Phase 21 in progress:**
+**Phase 21 complete:**
 - 21-01: Tags schema and CRUD foundation (DONE)
 - 21-02: Inline tagging UI (DONE)
 - 21-03: Transaction conversion (DONE)
-- 21-04: Bulk operations
+- 21-04: Bulk operations (DONE)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 62
+- Total plans completed: 63
 - Average duration: ~6.4 min
-- Total execution time: ~400 min (~6.7 hours)
+- Total execution time: ~408 min (~6.8 hours)
 
 **By Milestone:**
 
@@ -70,7 +70,7 @@ Progress: [======================] 87% (20 of 23 phases complete, 21 in progress
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
 | v1.3 Data & Intelligence | 21 | ~149 min | ~7.1 min |
-| v2.0 Statement Hub | 10 | ~50 min | ~5 min |
+| v2.0 Statement Hub | 11 | ~58 min | ~5.3 min |
 
 ## Accumulated Context
 
@@ -108,6 +108,9 @@ Progress: [======================] 87% (20 of 23 phases complete, 21 in progress
 | Tag badges | Limited display with +N overflow indicator |
 | Undo toast pattern | 8-second duration with inline action callback |
 | Conversion with cleanup | Undo deletes created subscription |
+| Checkbox selection | Set<string> state with toggleOne/toggleAll |
+| Floating action bar | Fixed bottom-center z-50 for bulk actions |
+| Bulk mutations | Validate ownership, onSuccess clears selection |
 
 ### v2.0 Architecture Notes
 
@@ -131,6 +134,8 @@ From research (2026-02-08):
 | 8-second undo toast | Long window for safe conversions | User needs time to click undo | 21-03 |
 | Delete subscription on undo | Hard delete created subscription | Simplifies undo logic | 21-03 |
 | Default monthly frequency | All conversions assume monthly | Most common, user can edit after | 21-03 |
+| Header checkbox scope | Visible (loaded) rows only | Clear UX expectation | 21-04 |
+| Clear selection on filter | Prevent stale selections | Avoids operating on wrong items | 21-04 |
 
 ### Blockers/Concerns
 
@@ -149,6 +154,6 @@ From research (2026-02-08):
 ## Session Continuity
 
 Last session: 2026-02-09
-Status: Completed 21-03-PLAN.md (Transaction Conversion)
+Status: Completed Phase 21 (Manual Tagging & Conversion)
 Resume file: None
-Next step: Execute 21-04-PLAN.md (Bulk Operations)
+Next step: Execute Phase 22 (Tag Management)
