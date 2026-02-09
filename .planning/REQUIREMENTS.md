@@ -108,10 +108,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SRC-02 | Phase 22 | Complete |
 | SRC-03 | Phase 22 | Complete |
 | SRC-04 | Phase 22 | Complete |
-| AI-01 | Phase 23 | Pending |
-| AI-02 | Phase 23 | Pending |
-| AI-03 | Phase 23 | Pending |
-| AI-04 | Phase 23 | Pending |
+| AI-01 | Phase 23 | Complete |
+| AI-02 | Phase 23 | Complete |
+| AI-03 | Phase 23 | Complete |
+| AI-04 | Phase 23 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 27 total
