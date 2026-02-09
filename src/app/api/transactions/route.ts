@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { transactions, statements } from "@/lib/db/schema";
-import { and, eq, or, lt, gte, lte, ilike, desc } from "drizzle-orm";
-import type { TransactionCursor, TransactionPage } from "@/types/transaction";
+import { transactions, statements, transactionTags, tags } from "@/lib/db/schema";
+import { and, eq, or, lt, gte, lte, ilike, desc, inArray } from "drizzle-orm";
+import type { TransactionCursor, TransactionPage, TransactionTag } from "@/types/transaction";
 
 const PAGE_SIZE = 50;
 
@@ -178,6 +178,40 @@ export async function GET(request: Request) {
     // Slice to PAGE_SIZE
     const page = hasMore ? results.slice(0, PAGE_SIZE) : results;
 
+    // Fetch tags for all transactions in this page
+    const transactionIds = page.map((t) => t.id);
+    let tagsMap: Map<string, TransactionTag[]> = new Map();
+
+    if (transactionIds.length > 0) {
+      const tagResults = await db
+        .select({
+          transactionId: transactionTags.transactionId,
+          tagId: tags.id,
+          tagName: tags.name,
+          tagColor: tags.color,
+        })
+        .from(transactionTags)
+        .innerJoin(tags, eq(transactionTags.tagId, tags.id))
+        .where(inArray(transactionTags.transactionId, transactionIds));
+
+      // Group tags by transaction ID
+      for (const row of tagResults) {
+        const existingTags = tagsMap.get(row.transactionId) || [];
+        existingTags.push({
+          id: row.tagId,
+          name: row.tagName,
+          color: row.tagColor,
+        });
+        tagsMap.set(row.transactionId, existingTags);
+      }
+    }
+
+    // Add tags to each transaction
+    const transactionsWithTags = page.map((t) => ({
+      ...t,
+      tags: tagsMap.get(t.id) || [],
+    }));
+
     // Build next cursor from last item
     let nextCursor: TransactionCursor | null = null;
     if (hasMore && page.length > 0) {
@@ -189,7 +223,7 @@ export async function GET(request: Request) {
     }
 
     const response: TransactionPage = {
-      transactions: page,
+      transactions: transactionsWithTags,
       nextCursor,
       hasMore,
     };
