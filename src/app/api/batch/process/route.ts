@@ -148,6 +148,11 @@ export async function POST(request: Request) {
         };
       });
 
+      // Count high-confidence items tagged as potential_subscription
+      const potentialCount = transactionRecords.filter(
+        (t) => t.tagStatus === "potential_subscription"
+      ).length;
+
       // Insert transactions (if any)
       if (transactionRecords.length > 0) {
         await db.insert(transactions).values(transactionRecords);
@@ -167,6 +172,7 @@ export async function POST(request: Request) {
         success: true,
         statementId,
         transactionCount: transactionRecords.length,
+        potentialCount,
         processingTime: parseResult.processingTime,
       });
     } catch (parseError) {
