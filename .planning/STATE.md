@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-08)
 ## Current Position
 
 Phase: 22 of 23 (Source Dashboard & Re-import)
-Plan: 04 of 04
+Plan: 01 of 04
 Status: In progress
-Last activity: 2026-02-09 - Completed 22-04-PLAN.md (Incomplete Batch Banner)
+Last activity: 2026-02-09 - Completed 22-01-PLAN.md (Source Coverage API)
 
 Progress: [=======================] 91% (21 of 23 phases complete)
 
@@ -35,7 +35,7 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 ### v2.0 Statement Hub (IN PROGRESS)
 
 **Phases:** 19-23 (5 phases)
-**Requirements:** 27 total (18 complete)
+**Requirements:** 27 total (19 complete)
 **Milestone goal:** Transform import to comprehensive statement management with batch uploads, full data retention, and manual enrichment
 
 **Phase 19 complete:**
@@ -56,17 +56,17 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 - 21-04: Bulk operations (DONE)
 
 **Phase 22 in progress:**
-- 22-01: Source types schema (TODO)
-- 22-02: Sources list page (TODO)
+- 22-01: Source coverage API (DONE)
+- 22-02: Source list component (TODO)
 - 22-03: Source detail page (TODO)
 - 22-04: Incomplete batch banner (DONE)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 63
+- Total plans completed: 64
 - Average duration: ~6.4 min
-- Total execution time: ~408 min (~6.8 hours)
+- Total execution time: ~414 min (~6.9 hours)
 
 **By Milestone:**
 
@@ -76,7 +76,7 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
 | v1.3 Data & Intelligence | 21 | ~149 min | ~7.1 min |
-| v2.0 Statement Hub | 12 | ~62 min | ~5.2 min |
+| v2.0 Statement Hub | 13 | ~68 min | ~5.2 min |
 
 ## Accumulated Context
 
@@ -117,6 +117,8 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 | Checkbox selection | Set<string> state with toggleOne/toggleAll |
 | Floating action bar | Fixed bottom-center z-50 for bulk actions |
 | Bulk mutations | Validate ownership, onSuccess clears selection |
+| SQL aggregation for stats | GROUP BY + CASE WHEN for status counts |
+| Gap detection | eachMonthOfInterval for coverage gaps |
 
 ### v2.0 Architecture Notes
 
@@ -143,6 +145,9 @@ From research (2026-02-08):
 | Header checkbox scope | Visible (loaded) rows only | Clear UX expectation | 21-04 |
 | Clear selection on filter | Prevent stale selections | Avoids operating on wrong items | 21-04 |
 | Reuse localStorage key | Parse existing batch-upload-queue | No duplicate storage | 22-04 |
+| SQL aggregation | GROUP BY + CASE WHEN | Avoid N+1 for source stats | 22-01 |
+| Gap detection via date-fns | eachMonthOfInterval | Reliable month range generation | 22-01 |
+| URL-encode sourceType | decodeURIComponent in API | Handle spaces in source names | 22-01 |
 
 ### Blockers/Concerns
 
@@ -161,6 +166,6 @@ From research (2026-02-08):
 ## Session Continuity
 
 Last session: 2026-02-09
-Status: Completed 22-04 (Incomplete Batch Banner)
+Status: Completed 22-01 (Source Coverage API)
 Resume file: None
-Next step: Continue Phase 22 plans (22-01, 22-02, 22-03)
+Next step: Execute 22-02-PLAN.md (Source Dashboard Component)
