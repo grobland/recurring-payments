@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-08)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.0 Statement Hub - Phase 22 Wave 2 Complete
+**Current focus:** v2.0 Statement Hub - Phase 22 Complete
 
 ## Current Position
 
 Phase: 22 of 23 (Source Dashboard & Re-import)
-Plan: 02 of 04
-Status: In progress
-Last activity: 2026-02-09 - Completed 22-02-PLAN.md (Source Dashboard Component)
+Plan: 04 of 04 (Phase Complete)
+Status: Phase complete
+Last activity: 2026-02-09 - Completed 22-03-PLAN.md (Statement Detail & Re-import)
 
 Progress: [=======================] 91% (21 of 23 phases complete)
 
@@ -58,13 +58,13 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 **Phase 22 in progress:**
 - 22-01: Source coverage API (DONE)
 - 22-02: Source dashboard component (DONE)
-- 22-03: Source detail page (TODO)
+- 22-03: Statement detail & re-import (DONE)
 - 22-04: Incomplete batch banner (DONE)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 65
+- Total plans completed: 66
 - Average duration: ~6.4 min
 - Total execution time: ~423 min (~7.1 hours)
 
@@ -76,7 +76,7 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
 | v1.3 Data & Intelligence | 21 | ~149 min | ~7.1 min |
-| v2.0 Statement Hub | 14 | ~77 min | ~5.5 min |
+| v2.0 Statement Hub | 15 | ~77 min | ~5.5 min |
 
 ## Accumulated Context
 
@@ -121,6 +121,7 @@ Progress: [=======================] 91% (21 of 23 phases complete)
 | Gap detection | eachMonthOfInterval for coverage gaps |
 | Accordion-based list | Single-column expandable list for variable content |
 | Lazy-load on expand | Fetch child data only when accordion opens |
+| Wizard queue state | queue/currentIndex/completed/skipped for sequential processing |
 
 ### v2.0 Architecture Notes
 
@@ -153,6 +154,8 @@ From research (2026-02-08):
 | Accordion over card grid | Single-column accordion list | Better for variable content, cleaner UX | 22-02 |
 | Lazy load statements | Fetch on expand | Avoid loading all upfront | 22-02 |
 | Tooltip for gaps | Badge with hover tooltip | Compact, details on demand | 22-02 |
+| Queue-based wizard | Process one transaction at a time | Wizard-style per CONTEXT.md | 22-03 |
+| Skip marks not_subscription | Update tagStatus on skip | Consistent with tagging pattern | 22-03 |
 
 ### Blockers/Concerns
 
@@ -173,4 +176,4 @@ From research (2026-02-08):
 Last session: 2026-02-09
 Status: Completed 22-02 (Source Dashboard Component)
 Resume file: None
-Next step: Execute 22-03-PLAN.md (Source Detail Page)
+Next step: Phase 22 complete - proceed to Phase 23
