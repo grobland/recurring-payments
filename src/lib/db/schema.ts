@@ -581,6 +581,48 @@ export const transactions = pgTable(
   ]
 );
 
+// ============ TAGS TABLE ============
+
+export const tags = pgTable(
+  "tags",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 50 }).notNull(),
+    color: varchar("color", { length: 7 }).notNull(), // Hex color like "#3B82F6"
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("tags_user_name_idx").on(table.userId, table.name),
+  ]
+);
+
+// ============ TRANSACTION TAGS JUNCTION TABLE ============
+
+export const transactionTags = pgTable(
+  "transaction_tags",
+  {
+    transactionId: uuid("transaction_id")
+      .notNull()
+      .references(() => transactions.id, { onDelete: "cascade" }),
+    tagId: uuid("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.transactionId, table.tagId] }),
+    index("transaction_tags_transaction_id_idx").on(table.transactionId),
+    index("transaction_tags_tag_id_idx").on(table.tagId),
+  ]
+);
+
 // ============ RELATIONS ============
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -595,6 +637,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   alerts: many(alerts),
   statements: many(statements),
   transactions: many(transactions),
+  tags: many(tags),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -708,7 +751,7 @@ export const statementsRelations = relations(statements, ({ one, many }) => ({
   transactions: many(transactions),
 }));
 
-export const transactionsRelations = relations(transactions, ({ one }) => ({
+export const transactionsRelations = relations(transactions, ({ one, many }) => ({
   statement: one(statements, {
     fields: [transactions.statementId],
     references: [statements.id],
@@ -720,6 +763,26 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   convertedToSubscription: one(subscriptions, {
     fields: [transactions.convertedToSubscriptionId],
     references: [subscriptions.id],
+  }),
+  transactionTags: many(transactionTags),
+}));
+
+export const tagsRelations = relations(tags, ({ one, many }) => ({
+  user: one(users, {
+    fields: [tags.userId],
+    references: [users.id],
+  }),
+  transactionTags: many(transactionTags),
+}));
+
+export const transactionTagsRelations = relations(transactionTags, ({ one }) => ({
+  transaction: one(transactions, {
+    fields: [transactionTags.transactionId],
+    references: [transactions.id],
+  }),
+  tag: one(tags, {
+    fields: [transactionTags.tagId],
+    references: [tags.id],
   }),
 }));
 
@@ -758,3 +821,8 @@ export type Statement = typeof statements.$inferSelect;
 export type NewStatement = typeof statements.$inferInsert;
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
+
+export type Tag = typeof tags.$inferSelect;
+export type NewTag = typeof tags.$inferInsert;
+export type TransactionTag = typeof transactionTags.$inferSelect;
+export type NewTransactionTag = typeof transactionTags.$inferInsert;
