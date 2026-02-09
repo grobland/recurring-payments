@@ -100,10 +100,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BRWS-04 | Phase 20 | Complete |
 | BRWS-05 | Phase 20 | Complete |
 | BRWS-06 | Phase 20 | Complete |
-| ENRCH-01 | Phase 21 | Pending |
-| ENRCH-02 | Phase 21 | Pending |
-| ENRCH-03 | Phase 21 | Pending |
-| ENRCH-04 | Phase 21 | Pending |
+| ENRCH-01 | Phase 21 | Complete |
+| ENRCH-02 | Phase 21 | Complete |
+| ENRCH-03 | Phase 21 | Complete |
+| ENRCH-04 | Phase 21 | Complete |
 | SRC-01 | Phase 22 | Pending |
 | SRC-02 | Phase 22 | Pending |
 | SRC-03 | Phase 22 | Pending |
@@ -127,4 +127,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-08*
-*Last updated: 2026-02-09 after Phase 20 completion*
+*Last updated: 2026-02-09 after Phase 21 completion*

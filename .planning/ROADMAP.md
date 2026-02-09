@@ -242,10 +242,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 21-01-PLAN.md — Tags schema, CRUD API, and hooks
-- [ ] 21-02-PLAN.md — Tag UI components and inline tagging
-- [ ] 21-03-PLAN.md — Conversion API and one-click flow
-- [ ] 21-04-PLAN.md — Bulk selection and action bar
+- [x] 21-01: Tags schema, CRUD API, and hooks
+- [x] 21-02: Tag UI components and inline tagging
+- [x] 21-03: Conversion API and one-click flow
+- [x] 21-04: Bulk selection and action bar
 
 ### Phase 22: Source Dashboard & Re-import
 **Goal**: Users can see overview of statement coverage and re-import items they initially skipped
@@ -301,6 +301,6 @@ Plans:
 | 18. Anomaly Detection & Alerts | v1.3 | 4/4 | Complete | 2026-02-08 |
 | 19. Batch Upload Foundation | v2.0 | 5/5 | Complete | 2026-02-08 |
 | 20. Statement Browser & Filtering | v2.0 | 2/2 | Complete | 2026-02-09 |
-| 21. Manual Tagging & Conversion | v2.0 | 0/4 | Planned | - |
+| 21. Manual Tagging & Conversion | v2.0 | 4/4 | Complete | 2026-02-09 |
 | 22. Source Dashboard & Re-import | v2.0 | 0/TBD | Not started | - |
 | 23. AI Suggestions & Pattern Detection | v2.0 | 0/TBD | Not started | - |
