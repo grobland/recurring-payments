@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-08)
 ## Current Position
 
 Phase: 21 of 23 (Manual Tagging & Conversion)
-Plan: 01 of 04
+Plan: 02 of 04
 Status: In progress
-Last activity: 2026-02-09 - Completed 21-01-PLAN.md
+Last activity: 2026-02-09 - Completed 21-02-PLAN.md
 
 Progress: [======================] 87% (20 of 23 phases complete, 21 in progress)
 
@@ -51,7 +51,7 @@ Progress: [======================] 87% (20 of 23 phases complete, 21 in progress
 
 **Phase 21 in progress:**
 - 21-01: Tags schema and CRUD foundation (DONE)
-- 21-02: Tag management UI
+- 21-02: Inline tagging UI (DONE)
 - 21-03: Tag assignment interface
 - 21-04: Transaction to subscription conversion
 
@@ -104,6 +104,8 @@ Progress: [======================] 87% (20 of 23 phases complete, 21 in progress
 | Virtualized scrolling | useVirtualizer with IntersectionObserver for 10k+ items |
 | Responsive list layouts | useIsMobile to switch table/card views |
 | Many-to-many junction | transactionTags with composite primary key |
+| Inline tag toggle | TagCombobox with useTags() + useToggleTransactionTag() |
+| Tag badges | Limited display with +N overflow indicator |
 
 ### v2.0 Architecture Notes
 
@@ -122,6 +124,8 @@ From research (2026-02-08):
 | Keyset over OFFSET | (transactionDate, id) cursor | O(1) performance at any depth | 20-01 |
 | TanStack Virtual | @tanstack/react-virtual | Lightweight, React-native API | 20-02 |
 | User-scoped tag names | uniqueIndex on (userId, name) | Different users can have same tag name | 21-01 |
+| Batch tag fetch | inArray() query per page | Avoid N+1 queries for tags | 21-02 |
+| Limited tag display | Max 2-3 visible with +N overflow | Prevent row overflow in virtualized list | 21-02 |
 
 ### Blockers/Concerns
 
@@ -140,6 +144,6 @@ From research (2026-02-08):
 ## Session Continuity
 
 Last session: 2026-02-09
-Status: Completed 21-01-PLAN.md (Tags Schema & CRUD Foundation)
+Status: Completed 21-02-PLAN.md (Inline Tagging UI)
 Resume file: None
-Next step: Execute 21-02-PLAN.md (Tag Management UI)
+Next step: Execute 21-03-PLAN.md (Bulk Selection & Tagging)
