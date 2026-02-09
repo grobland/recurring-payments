@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-08)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.0 Statement Hub - Phase 23 In Progress
+**Current focus:** v2.0 Statement Hub - Phase 23 Complete
 
 ## Current Position
 
 Phase: 23 of 23 (AI Suggestions & Pattern Detection)
-Plan: 02 of 04 (Bulk Hooks & Actions Bar)
-Status: In progress
-Last activity: 2026-02-09 - Completed 23-02-PLAN.md
+Plan: 04 of 04 (Auto-tagging & Detection Trigger)
+Status: Complete
+Last activity: 2026-02-09 - Completed 23-04-PLAN.md
 
-Progress: [========================] 97% (22 of 23 phases complete, 23-02 done)
+Progress: [=========================] 100% (23 of 23 phases complete)
 
 ## Milestone Summary
 
@@ -32,10 +32,10 @@ Progress: [========================] 97% (22 of 23 phases complete, 23-02 done)
 - Pattern recognition with subscription suggestions
 - Anomaly alerts with notification bell and weekly digest
 
-### v2.0 Statement Hub (IN PROGRESS)
+### v2.0 Statement Hub (COMPLETE)
 
 **Phases:** 19-23 (5 phases)
-**Requirements:** 27 total (23 complete)
+**Requirements:** 27 total (27 complete)
 **Milestone goal:** Transform import to comprehensive statement management with batch uploads, full data retention, and manual enrichment
 
 **Phase 19 complete:**
@@ -61,16 +61,18 @@ Progress: [========================] 97% (22 of 23 phases complete, 23-02 done)
 - 22-03: Statement detail & re-import (DONE)
 - 22-04: Incomplete batch banner (DONE)
 
-**Phase 23 in progress:**
+**Phase 23 complete:**
 - 23-01: Bulk API & Suggestion Components (DONE)
 - 23-02: Bulk Hooks & Actions Bar (DONE)
+- 23-03: Suggestions Page & SuggestionCard (DONE)
+- 23-04: Auto-tagging & Detection Trigger (DONE)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 69
-- Average duration: ~6.3 min
-- Total execution time: ~432 min (~7.2 hours)
+- Total plans completed: 71
+- Average duration: ~6.2 min
+- Total execution time: ~442 min (~7.4 hours)
 
 **By Milestone:**
 
@@ -80,7 +82,7 @@ Progress: [========================] 97% (22 of 23 phases complete, 23-02 done)
 | v1.1 Import Improvements | 11 | ~70 min | ~6 min |
 | v1.2 Production Polish | 10 | ~70 min | ~7 min |
 | v1.3 Data & Intelligence | 21 | ~149 min | ~7.1 min |
-| v2.0 Statement Hub | 17 | ~86 min | ~5 min |
+| v2.0 Statement Hub | 22 | ~96 min | ~4.4 min |
 
 ## Accumulated Context
 
@@ -129,6 +131,8 @@ Progress: [========================] 97% (22 of 23 phases complete, 23-02 done)
 | Bulk transaction locking | FOR UPDATE to prevent race conditions |
 | Variance threshold | 10% deviation flags significant price changes |
 | Query key factory | patternKeys with all/lists/suggestions for cache invalidation |
+| Fire-and-forget API | fetch().catch() without await for non-blocking operations |
+| Batch count accumulation | potentialCountRef to track metrics across multi-file batch |
 
 ### v2.0 Architecture Notes
 
@@ -167,6 +171,8 @@ From research (2026-02-08):
 | 10% variance threshold | Flag amounts >10% from average | Balance sensitivity vs false positives | 23-01 |
 | Scatter chart timeline | Recharts ScatterChart | Visual temporal pattern display | 23-01 |
 | Pattern keys factory | Export patternKeys from hook | Consistent cache invalidation | 23-02 |
+| Fire-and-forget detection | Don't await pattern detection | Batch completion shouldn't wait for detection | 23-04 |
+| potentialCount accumulation | Track across batch files via ref | Total count for toast notification | 23-04 |
 
 ### Blockers/Concerns
 
@@ -185,6 +191,6 @@ From research (2026-02-08):
 ## Session Continuity
 
 Last session: 2026-02-09
-Status: Completed 23-02-PLAN.md (Bulk Hooks & Actions Bar)
+Status: Completed 23-04-PLAN.md (Auto-tagging & Detection Trigger)
 Resume file: None
-Next step: Execute 23-03-PLAN.md (Suggestions Panel)
+Next step: v2.0 Statement Hub milestone complete - all 23 phases done
