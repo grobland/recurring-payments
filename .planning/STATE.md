@@ -194,11 +194,12 @@ From research (2026-02-08):
 
 | Plan | Issue | Fix | Commit |
 |------|-------|-----|--------|
+| 21-05 | No UI for creating tags (UAT Test 5) | TagManager component on Settings page | 5f84f78 |
 | 21-06 | Bulk tag only affected 1 transaction (UAT Test 10) | selectedIdsRef pattern for sync access | 7980c00 |
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Status: Gap closure 21-06 complete
+Status: Gap closure 21-05 complete (Tag Management UI)
 Resume file: None
 Next step: Continue gap closures or /gsd:audit-milestone
