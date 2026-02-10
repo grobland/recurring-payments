@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-08)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.0 Statement Hub - Phase 23 Complete
+**Current focus:** v2.0 Statement Hub - Gap Closure
 
 ## Current Position
 
-Phase: 23 of 23 (AI Suggestions & Pattern Detection)
-Plan: 04 of 04 (Auto-tagging & Detection Trigger)
+Phase: 21 (Manual Tagging & Conversion) - Gap Closure
+Plan: 06 of 06 (Fix Stale Closure in Bulk Tag)
 Status: Complete
-Last activity: 2026-02-09 - Completed 23-04-PLAN.md
+Last activity: 2026-02-10 - Completed 21-06-PLAN.md (gap closure)
 
-Progress: [=========================] 100% (23 of 23 phases complete)
+Progress: [=========================] 100% (23 of 23 phases + gap closures)
 
 ## Milestone Summary
 
@@ -188,9 +188,17 @@ From research (2026-02-08):
 - 0005_strange_triathlon.sql - statements and transactions tables
 - 0006_typical_captain_stacy.sql - tags and transaction_tags tables
 
+## Gap Closures
+
+### Phase 21 Gap Closures
+
+| Plan | Issue | Fix | Commit |
+|------|-------|-----|--------|
+| 21-06 | Bulk tag only affected 1 transaction (UAT Test 10) | selectedIdsRef pattern for sync access | 7980c00 |
+
 ## Session Continuity
 
-Last session: 2026-02-09
-Status: v2.0 Statement Hub COMPLETE - All 23 phases shipped
+Last session: 2026-02-10
+Status: Gap closure 21-06 complete
 Resume file: None
-Next step: /gsd:audit-milestone for v2.0 Statement Hub
+Next step: Continue gap closures or /gsd:audit-milestone
