@@ -2,6 +2,60 @@
 
 ## Completed Milestones
 
+### v2.0 "Statement Hub" (2026-02-08 → 2026-02-10)
+
+**Goal:** Comprehensive statement management with batch uploads, full data retention, and manual enrichment.
+
+**What shipped:**
+- Batch PDF upload with drag-and-drop, sequential processing, and duplicate detection
+- Virtualized transaction browser with keyset pagination for 10k+ items at 60fps
+- Manual tagging with inline combobox and bulk operations
+- One-click subscription conversion with 8-second undo
+- Source dashboard with coverage visualization and gap detection
+- Statement detail view with re-import capability for skipped items
+- AI-powered pattern detection with auto-tagging during import
+- Suggestions page with accept/dismiss and bulk operations
+- Tag management UI in Settings page
+
+**Phases completed:** 5 (Phases 19-23)
+- Phase 19: Batch Upload Foundation (5 plans)
+- Phase 20: Statement Browser & Filtering (2 plans)
+- Phase 21: Manual Tagging & Conversion (4 plans + 2 gap closures)
+- Phase 22: Source Dashboard & Re-import (4 plans)
+- Phase 23: AI Suggestions & Pattern Detection (4 plans)
+
+**Stats:**
+- 21 plans total (19 + 2 gap closures)
+- 82 files modified, 10,886 insertions
+- ~36,050 lines TypeScript (up from ~27,350)
+- 3 days development
+
+**Requirements:** 27/27 complete
+- BATCH-01 through BATCH-05 (Batch Import)
+- DATA-01 through DATA-04 (Statement Data)
+- BRWS-01 through BRWS-06 (Statement Browser)
+- ENRCH-01 through ENRCH-04 (Manual Enrichment)
+- SRC-01 through SRC-04 (Source Management)
+- AI-01 through AI-04 (AI Suggestions)
+
+**Key decisions:**
+- Sequential PDF processing to prevent memory exhaustion (50-100MB per file)
+- Keyset pagination (date, id) cursor for O(1) performance at any depth
+- TanStack Virtual for virtualized scrolling with IntersectionObserver
+- Many-to-many junction table for tags (transactionTags)
+- 8-second undo toast pattern for conversions (matches v1.3 patterns)
+- Fire-and-forget pattern detection trigger (non-blocking)
+- selectedIdsRef pattern for sync access in async callbacks
+
+**Tech debt:**
+- TODO: Blob storage for PDF persistence (currently processed in-memory)
+- TODO: Parser improvements (current parser meets requirements)
+- EvidenceList URL params don't pre-filter (minor UX enhancement)
+
+**What's next:** v2.1 Stripe billing and monetization via `/gsd:new-milestone`
+
+---
+
 ### v1.3 "Data & Intelligence" (2026-02-05 → 2026-02-08)
 
 **Goal:** Transform raw subscription data into actionable insights with duplicate detection, pattern recognition, and comprehensive spending analytics.
@@ -163,4 +217,4 @@
 - PDF import E2E tests need TEST_USER credentials
 
 ---
-*Last updated: 2026-02-08*
+*Last updated: 2026-02-10*

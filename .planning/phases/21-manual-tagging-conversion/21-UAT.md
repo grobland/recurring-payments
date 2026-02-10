@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 21-manual-tagging-conversion
 source: 21-01-SUMMARY.md, 21-02-SUMMARY.md, 21-03-SUMMARY.md, 21-04-SUMMARY.md
 started: 2026-02-10T10:00:00Z
-updated: 2026-02-10T10:30:00Z
+updated: 2026-02-10T10:35:00Z
 ---
 
 ## Current Test
@@ -80,13 +80,30 @@ skipped: 0
   reason: "User reported: no UI exists to create tags - must use API directly"
   severity: major
   test: 5
-  artifacts: []
-  missing: []
+  root_cause: "Phase 21 implemented complete tags backend (schema, API, hooks) but never created TagManager UI. Settings page has CategoryManager but no TagManager."
+  artifacts:
+    - path: "src/app/(dashboard)/settings/page.tsx"
+      issue: "Missing TagManager component import and usage"
+    - path: "src/components/tags/"
+      issue: "Directory does not exist - TagManager components never created"
+    - path: "src/components/transactions/tag-combobox.tsx:72"
+      issue: "References nonexistent Settings page"
+  missing:
+    - "Create src/components/tags/tag-manager.tsx (list/create/edit/delete)"
+    - "Create src/components/tags/tag-form.tsx (name/color input)"
+    - "Add TagManager to settings page"
+  debug_session: ".planning/debug/missing-tag-management-ui.md"
 
 - truth: "Bulk tagging applies tag to all selected transactions"
   status: failed
   reason: "User reported: only 1 is checked or unchecked with multiple or all selections"
   severity: major
   test: 10
-  artifacts: []
-  missing: []
+  root_cause: "Stale closure in handleBulkTag callback - selectedIds captured at wrong render cycle"
+  artifacts:
+    - path: "src/components/transactions/transaction-browser.tsx:109-122"
+      issue: "handleBulkTag useCallback captures stale selectedIds state"
+  missing:
+    - "Use ref pattern: selectedIdsRef.current = selectedIds, then read from ref in callback"
+    - "Remove selectedIds from useCallback dependencies"
+  debug_session: ".planning/debug/bulk-tagging-single-transaction.md"
