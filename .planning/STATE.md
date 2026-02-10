@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-10)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.0 Complete - Ready for v2.1 planning
+**Current focus:** v2.1 Billing & Monetization
 
 ## Current Position
 
-Phase: (none active)
-Plan: (none active)
-Status: Milestone complete
-Last activity: 2026-02-10 — v2.0 Statement Hub shipped
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-10 — Milestone v2.1 started
 
-Progress: [=========================] 100% (5 milestones complete)
+Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░ 0%
 
 ## Milestone Summary
 
@@ -130,6 +130,6 @@ Progress: [=========================] 100% (5 milestones complete)
 ## Session Continuity
 
 Last session: 2026-02-10
-Status: v2.0 milestone complete, tagged
+Status: v2.1 milestone started, defining requirements
 Resume file: None
-Next step: /gsd:new-milestone for v2.1 (Stripe billing and monetization)
+Next step: Complete requirements and roadmap, then /gsd:plan-phase 24

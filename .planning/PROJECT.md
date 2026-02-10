@@ -8,6 +8,22 @@ A web application for tracking and managing recurring subscriptions. Users can a
 
 Users can see all their subscriptions in one place and never get surprised by a renewal again.
 
+## Current Milestone: v2.1 Billing & Monetization
+
+**Goal:** Enable paid subscriptions with tiered feature access and Stripe integration.
+
+**Target features:**
+- Three paid tiers (Primary, Enhanced, Advanced) with feature gating
+- Stripe Checkout with monthly and annual billing periods
+- Voucher code system for free months
+- Upgrade prompts for locked features
+- Customer portal for subscription management
+
+**Tier structure:**
+- **Primary**: Current product (PDF import, patterns, subscriptions, analytics)
+- **Enhanced**: Future banking features (placeholder in v2.1)
+- **Advanced**: Future investing features (placeholder in v2.1)
+
 ## Current State
 
 **Version:** v2.0 Statement Hub (shipped 2026-02-10)
@@ -105,13 +121,21 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ### Active
 
-(None - v2.1 requirements to be defined via /gsd:new-milestone)
+**v2.1 Billing & Monetization:**
+- [ ] Tier system with Primary/Enhanced/Advanced levels
+- [ ] Stripe product and price configuration
+- [ ] Stripe Checkout integration (monthly + annual)
+- [ ] Webhook handling for subscription events
+- [ ] Voucher code system for free months
+- [ ] Feature gating with upgrade prompts
+- [ ] Customer portal for subscription management
 
 ### Out of Scope
 
-- Stripe billing flows — planned for v2.1
-- Production domain setup — planned for v2.1
+- Production domain setup — planned for future milestone
 - Mobile app — web-first approach (web responsiveness is in scope)
+- Banking features — planned for v2.2 (Enhanced tier)
+- Investing features — planned for v2.3 (Advanced tier)
 - AI confidence calibration dashboard — complexity; defer until usage data collected
 - Real-time anomaly alerts — alert fatigue risk; weekly batching preferred
 - ML-based pattern detection — cold start problem; heuristics sufficient
@@ -171,4 +195,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | selectedIdsRef pattern | Sync access in async callbacks prevents stale closures | ✓ Good |
 
 ---
-*Last updated: 2026-02-10 after v2.0 milestone*
+*Last updated: 2026-02-10 after v2.1 milestone started*
