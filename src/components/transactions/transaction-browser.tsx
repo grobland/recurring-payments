@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { AlertCircle, RefreshCw, FileX2 } from "lucide-react";
 import { useTransactions } from "@/lib/hooks/use-transactions";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
@@ -22,7 +22,13 @@ import type { TransactionFilters as TransactionFiltersType } from "@/types/trans
 export function TransactionBrowser() {
   const [filters, setFilters] = useState<TransactionFiltersType>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectedIdsRef = useRef(selectedIds);
   const isMobile = useIsMobile();
+
+  // Sync ref with state for handleBulkTag callback
+  useEffect(() => {
+    selectedIdsRef.current = selectedIds;
+  }, [selectedIds]);
 
   // Debounce search input (300ms)
   const debouncedSearch = useDebouncedValue(filters.search, 300);
@@ -105,10 +111,10 @@ export function TransactionBrowser() {
     });
   }, []);
 
-  // Bulk tag handler
+  // Bulk tag handler - uses ref to avoid stale closure on selectedIds
   const handleBulkTag = useCallback(
     (tagId: string) => {
-      const transactionIds = Array.from(selectedIds);
+      const transactionIds = Array.from(selectedIdsRef.current);
       bulkTagMutation.mutate(
         { transactionIds, tagId, action: "add" },
         {
@@ -118,7 +124,7 @@ export function TransactionBrowser() {
         }
       );
     },
-    [selectedIds, bulkTagMutation]
+    [bulkTagMutation]
   );
 
   const handleClearSelection = useCallback(() => {
