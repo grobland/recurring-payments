@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, webhookEvents } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getStripeClient } from "@/lib/stripe/client";
 import type Stripe from "stripe";
+import { addDays } from "date-fns";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -34,6 +35,32 @@ export async function POST(request: Request) {
     );
   }
 
+  // Record start time for metrics
+  const startTime = Date.now();
+  const expiresAt = addDays(new Date(), 30);
+
+  // Check idempotency with insert-on-conflict pattern
+  try {
+    await db.insert(webhookEvents).values({
+      eventId: event.id,
+      eventType: event.type,
+      status: 'processing',
+      expiresAt,
+    });
+  } catch (error: any) {
+    if (error?.code === '23505') { // Unique violation
+      console.log(`Duplicate event: ${event.id} (${event.type})`);
+      return NextResponse.json({ received: true });
+    }
+    // Database connection issue - return 500 for retry
+    console.error("Failed to record webhook event:", error);
+    return NextResponse.json(
+      { error: "Database error" },
+      { status: 500 }
+    );
+  }
+
+  // Process the event
   try {
     switch (event.type) {
       case "checkout.session.completed":
@@ -61,13 +88,32 @@ export async function POST(request: Request) {
         console.log(`Unhandled event type: ${event.type}`);
     }
 
+    // Update webhook event as processed
+    const processingTimeMs = Date.now() - startTime;
+    await db
+      .update(webhookEvents)
+      .set({
+        status: 'processed',
+        processingTimeMs,
+      })
+      .where(eq(webhookEvents.eventId, event.id));
+
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Webhook handler error:", error);
-    return NextResponse.json(
-      { error: "Webhook handler failed" },
-      { status: 500 }
-    );
+
+    // Update webhook event as failed
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    await db
+      .update(webhookEvents)
+      .set({
+        status: 'failed',
+        errorMessage,
+      })
+      .where(eq(webhookEvents.eventId, event.id));
+
+    // Return 200 to prevent retries for non-retriable errors
+    return NextResponse.json({ received: true });
   }
 }
 
