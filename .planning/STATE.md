@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 24 of 28 (Webhook Infrastructure Hardening)
-Plan: 1 of TBD in current phase
+Plan: 2 of 3 in current phase (24-02 complete)
 Status: In progress
-Last activity: 2026-02-11 - Completed 24-01-PLAN.md
+Last activity: 2026-02-11 - Completed 24-02-PLAN.md
 
-Progress: [========================] v2.0 complete | v2.1 [█----] 20%
+Progress: [========================] v2.0 complete | v2.1 [██---] 40%
 
 ## Milestone Summary
 
@@ -60,10 +60,13 @@ Progress: [========================] v2.0 complete | v2.1 [█----] 20%
 |---------|-------------|
 | Webhook handler | Verify signature, parse event, switch on type |
 | Webhook idempotency | Insert-on-conflict pattern with unique constraint (24-01) |
+| Email templates | Consistent layout with base emailLayout wrapper |
+| Cron auth | CRON_SECRET bearer token pattern |
 | Stripe Customer ID | Stored on users.stripeCustomerId |
 | Trial system | 14-day trial with billingStatus enum |
 | Checkout flow | Create session, redirect, handle webhook |
 | Portal redirect | Create portal session, redirect to Stripe |
+| Billing portal flow | Payment method update via Stripe-hosted portal (24-02) |
 
 ### Blockers/Concerns
 
@@ -72,8 +75,9 @@ Progress: [========================] v2.0 complete | v2.1 [█----] 20%
 - NEXT_PUBLIC_SENTRY_DSN needed for Sentry error tracking
 
 **Billing-specific:**
-- Webhook events need TTL cleanup cron job (30-day retention)
-- allow_promotion_codes already enabled in checkout (promo codes work from day one)
+- Payment failure emails require RESEND_API_KEY configuration
+- Health check needs actual webhook traffic for meaningful metrics
+- Cron jobs require CRON_SECRET environment variable in production
 
 ## Decisions Log
 
@@ -82,10 +86,14 @@ Progress: [========================] v2.0 complete | v2.1 [█----] 20%
 | 24-01 | Insert-on-conflict idempotency pattern | Atomic check-and-insert via PostgreSQL unique constraint | Eliminates race conditions, no external dependencies |
 | 24-01 | Return 200 for failed events | Prevents Stripe retry storms for non-retriable errors | Only database connection errors return 500 |
 | 24-01 | 30-day webhook event TTL | Matches Stripe event retention window | Bounded storage, requires cleanup cron |
+| 24-02 | Payment email on first attempt only | Avoid email spam during Stripe's automatic retry cycle | Users get one notification per payment issue |
+| 24-02 | Stripe billing portal for payment updates | Secure, Stripe-hosted flow eliminates custom UI | No PCI compliance burden, better UX |
+| 24-02 | Public health check endpoint | For use by load balancers and monitoring tools | Exposes basic metrics but no sensitive data |
+| 24-02 | Daily webhook cleanup at 4 AM UTC | Low-traffic time, 1 hour after general cleanup | Automated data retention management |
 
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 24-01-PLAN.md
+Stopped at: Completed 24-02-PLAN.md
 Resume file: None
-Next step: Continue Phase 24 webhook hardening plans
+Next step: Continue Phase 24 webhook hardening (24-03)
