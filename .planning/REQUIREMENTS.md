@@ -78,8 +78,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HOOK-01 | Phase 24 | Pending |
-| HOOK-02 | Phase 24 | Pending |
+| HOOK-01 | Phase 24 | Complete |
+| HOOK-02 | Phase 24 | Complete |
 | TIER-01 | Phase 25 | Pending |
 | TIER-02 | Phase 25 | Pending |
 | TIER-03 | Phase 25 | Pending |

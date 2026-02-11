@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.1 Billing & Monetization - Phase 24 Webhook Hardening
+**Current focus:** v2.1 Billing & Monetization - Phase 25 Multi-Tier Setup
 
 ## Current Position
 
-Phase: 24 of 28 (Webhook Infrastructure Hardening)
-Plan: 3 of 3 in current phase (24-03 complete)
-Status: Phase complete
-Last activity: 2026-02-11 - Completed 24-03-PLAN.md
+Phase: 25 of 28 (Multi-Tier Product Setup)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-02-11 - Completed Phase 24 Webhook Hardening (3 plans, all verified)
 
-Progress: [========================] v2.0 complete | v2.1 [███--] 60%
+Progress: [========================] v2.0 complete | v2.1 [█----] 20%
 
 ## Milestone Summary
 
@@ -43,14 +43,14 @@ Progress: [========================] v2.0 complete | v2.1 [███--] 60%
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 71 plans completed, 96 requirements validated
+**Total:** 73 plans completed, 98 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 71
+- Total plans completed: 73
 - Average duration: ~6 min
-- Total execution time: ~445 min (~7.4 hours)
+- Total execution time: ~460 min (~7.7 hours)
 
 ## Accumulated Context
 
@@ -102,6 +102,6 @@ Progress: [========================] v2.0 complete | v2.1 [███--] 60%
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 24-03-PLAN.md (Phase 24 complete)
+Stopped at: Phase 24 complete (3/3 plans, verified)
 Resume file: None
-Next step: Begin Phase 25 feature gating
+Next step: /gsd:discuss-phase 25
