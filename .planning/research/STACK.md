@@ -1,746 +1,625 @@
-# Technology Stack - Statement Hub Features
+# Stack Research: Billing & Monetization
 
-**Project:** Subscription Manager - Statement Hub Milestone
-**Researched:** 2026-02-08
+**Project:** Subscription Manager - Billing Milestone
+**Researched:** 2026-02-11
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The Statement Hub milestone adds batch PDF import, statement data retention, and statement browser capabilities to the existing subscription manager. The validated stack already handles single-file PDF processing excellently. New capabilities require:
+The billing milestone adds three paid tiers (Primary, Enhanced, Advanced), Stripe Checkout with monthly/annual billing, voucher codes, feature gating, and customer portal integration. The existing stack is already well-suited for this:
 
-1. **Batch file processing** - Already supported by react-dropzone (installed), no new library needed
-2. **Statement line item storage** - New database table with PostgreSQL partitioning for millions of rows
-3. **Statement browser** - TanStack Table (installed) + TanStack Virtual (NEW) for efficient large dataset rendering
+1. **Stripe SDK** - Already installed (stripe@20.2.0, @stripe/stripe-js@8.6.3), webhooks configured
+2. **Database schema** - Already has billing fields on users table (billingStatus, stripeCustomerId, etc.)
+3. **Existing UI** - Billing page, trial banner, and checkout flow already implemented
 
-**Key decision:** Do NOT use OpenAI Batch API (50% cost savings but 24-hour latency). Users uploading 12 months of statements expect real-time feedback, not batch jobs. Process PDFs sequentially with progress streaming instead.
+**Key decision:** Extend the existing single-tier setup to multi-tier. NO new libraries needed. This is an architectural expansion, not a technology addition.
 
-**Stack additions:** Only @tanstack/react-virtual needed. Everything else uses existing validated libraries with architectural changes.
-
----
-
-## New Capabilities Breakdown
-
-### 1. Batch File Upload (Multiple PDFs at Once)
-
-**Current state:** Import flow accepts `multiple` files via react-dropzone, but processes them serially and only extracts subscriptions (not all line items).
-
-**What's needed:** Architectural changes, not new libraries.
-
-| Capability | Existing Stack | Change Required | New Library? |
-|------------|----------------|-----------------|--------------|
-| Multiple file selection | react-dropzone 14.3.8 (installed) | None - already supports `multiple` prop | NO |
-| File validation (type, size) | Custom validation in API route | Extend limits: 10MB → 20MB per file, 12 files max | NO |
-| Progress tracking | None | Add streaming progress updates via SSE or ReadableStream | NO |
-| Sequential processing | Implicit (single file) | Explicit loop with progress callbacks | NO |
-
-**Recommendation:** Use existing react-dropzone. Add progress streaming to API route using Next.js ReadableStream pattern.
-
-**Installation:** None required (already installed)
+**Stack additions:** None. All required packages are installed. Implementation involves:
+- Extending products.ts with three tiers and their feature definitions
+- Adding feature gating utilities (server + client)
+- Extending schema for tier tracking (stripePriceId already captures this)
 
 ---
 
-### 2. Statement Line Item Storage
+## Current State Analysis
 
-**Current state:** Only subscription-detected items stored. Raw transaction data discarded after AI extraction.
+### Already Implemented (No Changes Needed)
 
-**What's needed:** New database table + indexing strategy for millions of rows.
+| Capability | Location | Status |
+|------------|----------|--------|
+| Stripe server SDK | stripe@20.2.0 | Installed, client initialized |
+| Stripe JS | @stripe/stripe-js@8.6.3 | Installed |
+| Webhook handling | src/app/api/webhooks/stripe/route.ts | Handles checkout.session.completed, subscription.*, invoice.* |
+| Checkout session creation | src/app/api/billing/create-checkout/route.ts | Working with allow_promotion_codes: true |
+| Customer portal | src/app/api/billing/portal/route.ts | Working |
+| Billing status tracking | users table | billingStatus, stripeCustomerId, stripeSubscriptionId, stripePriceId, currentPeriodEnd |
+| Trial management | useUserStatus hook | isTrialActive, isPaid, daysLeftInTrial |
+| Billing UI | src/app/(dashboard)/settings/billing/page.tsx | Shows current plan, checkout buttons |
+| Trial banners | src/components/billing/trial-banner.tsx | Urgent + expired states |
 
-| Capability | Technology | Version | Why |
-|------------|-----------|---------|-----|
-| Schema definition | Drizzle ORM | 0.45.1 (installed) | Already managing schema, add new table |
-| Table partitioning | PostgreSQL (Supabase) | Built-in | Partition by user_id + statement_date for query performance |
-| Batch inserts | Drizzle batch API | Built-in | Insert 1000 rows per batch with chunking |
-| Indexes | PostgreSQL | Built-in | BRIN index on date (ordered data), B-tree on merchant name |
-| Line item extraction | OpenAI GPT-4o | 6.16.0 (installed) | Extend prompt to return ALL transactions, not just subscriptions |
+### Needs Extension (Architectural Changes)
 
-**Schema design:**
+| Capability | What's Missing | Effort |
+|------------|----------------|--------|
+| Multi-tier products | Currently only monthly/annual for single tier | Low - extend products.ts |
+| Feature definitions per tier | No feature-to-tier mapping | Low - add constants |
+| Feature gating (server) | No middleware/utility for tier checks | Medium - add utility |
+| Feature gating (client) | No React component for upgrade prompts | Medium - add component |
+| Voucher code creation | Stripe coupons/promotion codes (Stripe Dashboard + API) | Low - Stripe handles this |
+| Tier display in UI | Pricing page shows single tier | Low - update UI |
 
+---
+
+## Recommended Stack (No Additions)
+
+### Core Technologies (Already Installed)
+
+| Technology | Version | Purpose | Why Sufficient |
+|------------|---------|---------|----------------|
+| stripe | 20.2.0 | Server-side Stripe API | Latest version, handles all billing operations |
+| @stripe/stripe-js | 8.6.3 | Client-side Stripe elements | Redirect to Checkout, no embedded elements needed |
+| Drizzle ORM | 0.45.1 | Database operations | Schema already has billing fields |
+| NextAuth.js | 5.0.0-beta.30 | Session management | User context available for tier checks |
+| TanStack Query | 5.90.19 | State management | useUserStatus already implemented |
+
+### What NOT to Add
+
+| Library | Why NOT |
+|---------|---------|
+| @stripe/react-stripe-js | Not needed - using Stripe Checkout redirect, not embedded elements |
+| zustand/jotai for billing state | useUserStatus hook already provides billing state via TanStack Query |
+| Feature flag service (LaunchDarkly, etc.) | Over-engineering - simple tier-based gating is sufficient |
+| clerk/use-stripe-subscription | Adds Clerk dependency we don't need - we have NextAuth.js |
+
+---
+
+## Implementation Patterns
+
+### Pattern 1: Multi-Tier Product Configuration
+
+**What:** Extend products.ts to define three tiers with features.
+
+**Current state:**
 ```typescript
-// src/lib/db/schema.ts - NEW TABLE
-export const statementLineItems = pgTable(
-  "statement_line_items",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    importAuditId: uuid("import_audit_id")
-      .notNull()
-      .references(() => importAudits.id, { onDelete: "cascade" }),
+export const STRIPE_PRICES = {
+  monthly: process.env.STRIPE_MONTHLY_PRICE_ID ?? "",
+  annual: process.env.STRIPE_ANNUAL_PRICE_ID ?? "",
+} as const;
+```
 
-    // Transaction details
-    transactionDate: timestamp("transaction_date", { withTimezone: true }).notNull(),
-    merchantName: varchar("merchant_name", { length: 255 }).notNull(),
-    amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-    currency: varchar("currency", { length: 3 }).notNull(),
-    description: text("description"), // Full transaction description
-    category: varchar("category", { length: 100 }), // Bank's category if available
+**Extended pattern:**
+```typescript
+// src/lib/stripe/products.ts
 
-    // Tagging
-    taggedAsSubscription: boolean("tagged_as_subscription").default(false).notNull(),
-    taggedSubscriptionId: uuid("tagged_subscription_id").references(() => subscriptions.id, {
-      onDelete: "set null",
-    }),
-
-    // Raw data
-    rawText: text("raw_text"), // Original text from statement
-
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+export const TIERS = {
+  primary: {
+    name: "Primary",
+    priceIds: {
+      monthly: process.env.STRIPE_PRIMARY_MONTHLY_PRICE_ID ?? "",
+      annual: process.env.STRIPE_PRIMARY_ANNUAL_PRICE_ID ?? "",
+    },
+    pricing: {
+      monthly: 499,  // $4.99
+      annual: 3999,  // $39.99 (33% savings)
+    },
+    features: [
+      "unlimited_subscriptions",
+      "email_reminders",
+      "spending_analytics",
+      "data_export",
+    ],
+    limits: {
+      pdfImportsPerMonth: 5,
+      categories: 10,
+    },
   },
-  (table) => [
-    // Partition key: userId + date range
-    index("statement_line_items_user_date_idx").on(table.userId, table.transactionDate),
-    // BRIN index for date range queries (PostgreSQL-specific, highly efficient for ordered data)
-    index("statement_line_items_date_brin_idx").using("brin", table.transactionDate),
-    // Merchant name lookup
-    index("statement_line_items_merchant_idx").on(table.merchantName),
-    // Import audit lookup
-    index("statement_line_items_import_audit_idx").on(table.importAuditId),
-  ]
-);
-```
+  enhanced: {
+    name: "Enhanced",
+    priceIds: {
+      monthly: process.env.STRIPE_ENHANCED_MONTHLY_PRICE_ID ?? "",
+      annual: process.env.STRIPE_ENHANCED_ANNUAL_PRICE_ID ?? "",
+    },
+    pricing: {
+      monthly: 999,  // $9.99
+      annual: 7999,  // $79.99 (33% savings)
+    },
+    features: [
+      "unlimited_subscriptions",
+      "email_reminders",
+      "spending_analytics",
+      "data_export",
+      "pdf_import",
+      "pattern_detection",
+      "multi_currency",
+    ],
+    limits: {
+      pdfImportsPerMonth: 25,
+      categories: 50,
+    },
+  },
+  advanced: {
+    name: "Advanced",
+    priceIds: {
+      monthly: process.env.STRIPE_ADVANCED_MONTHLY_PRICE_ID ?? "",
+      annual: process.env.STRIPE_ADVANCED_ANNUAL_PRICE_ID ?? "",
+    },
+    pricing: {
+      monthly: 1999,  // $19.99
+      annual: 15999,  // $159.99 (33% savings)
+    },
+    features: [
+      "unlimited_subscriptions",
+      "email_reminders",
+      "spending_analytics",
+      "data_export",
+      "pdf_import",
+      "pattern_detection",
+      "multi_currency",
+      "statement_browser",
+      "forecasting",
+      "alerts",
+      "priority_support",
+    ],
+    limits: {
+      pdfImportsPerMonth: Infinity,
+      categories: Infinity,
+    },
+  },
+} as const;
 
-**Partitioning strategy (PostgreSQL native):**
+export type TierName = keyof typeof TIERS;
+export type Feature = typeof TIERS[TierName]["features"][number];
 
-Partition by RANGE on `transaction_date` (monthly partitions). Supabase supports this via SQL migrations:
-
-```sql
-CREATE TABLE statement_line_items_y2024m01 PARTITION OF statement_line_items
-  FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
-CREATE TABLE statement_line_items_y2024m02 PARTITION OF statement_line_items
-  FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
--- etc.
-```
-
-**Why partitioning:** Query "show me January 2025 transactions" only scans one partition (12x faster than full table scan). Users typically filter by date range, making this optimal.
-
-**Batch insert pattern:**
-
-```typescript
-// Process in chunks of 1000 rows
-const BATCH_SIZE = 1000;
-for (let i = 0; i < lineItems.length; i += BATCH_SIZE) {
-  const chunk = lineItems.slice(i, i + BATCH_SIZE);
-  await db.insert(statementLineItems).values(chunk);
-  // Stream progress: `${i + chunk.length} / ${lineItems.length} items saved`
+// Lookup tier from Stripe Price ID
+export function getTierFromPriceId(priceId: string): TierName | null {
+  for (const [tierName, tier] of Object.entries(TIERS)) {
+    if (tier.priceIds.monthly === priceId || tier.priceIds.annual === priceId) {
+      return tierName as TierName;
+    }
+  }
+  return null;
 }
 ```
 
-**Installation:** None required (Drizzle already installed)
+**Environment variables (add to .env.example):**
+```bash
+# Stripe Price IDs - Primary Tier
+STRIPE_PRIMARY_MONTHLY_PRICE_ID=""
+STRIPE_PRIMARY_ANNUAL_PRICE_ID=""
+
+# Stripe Price IDs - Enhanced Tier
+STRIPE_ENHANCED_MONTHLY_PRICE_ID=""
+STRIPE_ENHANCED_ANNUAL_PRICE_ID=""
+
+# Stripe Price IDs - Advanced Tier
+STRIPE_ADVANCED_MONTHLY_PRICE_ID=""
+STRIPE_ADVANCED_ANNUAL_PRICE_ID=""
+```
 
 ---
 
-### 3. Statement Browser (Filtering, Searching, Sorting)
+### Pattern 2: Server-Side Feature Gating
 
-**Current state:** No UI for browsing statement data. Subscription list uses basic Table component with TanStack Query.
+**What:** Utility function to check if user has access to a feature.
 
-**What's needed:** Data table with virtualization for large datasets (10k+ rows client-side).
+**Implementation:**
+```typescript
+// src/lib/billing/feature-gate.ts
 
-| Capability | Technology | Version | Why |
-|------------|-----------|---------|-----|
-| Table logic | @tanstack/react-table | 5.90.19 (installed as @tanstack/react-query, need table) | Headless table with sorting, filtering, pagination |
-| Virtualization | @tanstack/react-virtual | **3.13.18** (NEW) | Render 10k+ rows at 60fps, only visible rows in DOM |
-| UI components | shadcn/ui Table + custom DataTable | Installed | Build custom DataTable following shadcn pattern |
-| Server-side filtering | TanStack Query | 5.90.19 (installed) | Fetch filtered data from API, not all rows upfront |
-| Date range picker | react-day-picker | 9.13.0 (installed) | Filter by statement date range |
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { getTierFromPriceId, TIERS, type Feature } from "@/lib/stripe/products";
 
-**Client-side vs Server-side decision matrix:**
+export async function hasFeature(feature: Feature): Promise<boolean> {
+  const session = await auth();
+  if (!session?.user?.id) return false;
 
-| Dataset Size | Approach | Why |
-|--------------|----------|-----|
-| < 5,000 rows | Client-side filtering + virtualization | Fast, no API latency, works offline |
-| 5,000 - 50,000 rows | Client-side with virtualization | Still performant, TanStack Table handles it |
-| 50,000+ rows | Server-side filtering + pagination | Too much data to load upfront |
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+    columns: {
+      billingStatus: true,
+      stripePriceId: true,
+      trialEndDate: true,
+    },
+  });
 
-**Recommendation:** Start with client-side for MVP. User with 12 months of statements = ~3,600 transactions (300/month average). Well within client-side range. Add server-side filtering in Phase 2 if users have 5+ years of data.
+  if (!user) return false;
 
-**Why TanStack Virtual:**
-- Renders only visible rows (10-20 at a time) + buffer
-- Reuses DOM elements as user scrolls
-- Smooth 60fps scrolling with 10k+ rows
-- 10-15kb bundle size, tree-shakeable
+  // Trial users get Enhanced tier features
+  if (user.billingStatus === "trial" && user.trialEndDate && new Date(user.trialEndDate) > new Date()) {
+    return TIERS.enhanced.features.includes(feature);
+  }
 
-**Installation:**
+  // Paid users get features based on their tier
+  if (user.billingStatus === "active" && user.stripePriceId) {
+    const tier = getTierFromPriceId(user.stripePriceId);
+    if (tier) {
+      return TIERS[tier].features.includes(feature);
+    }
+  }
 
-```bash
-npm install @tanstack/react-virtual@^3.13.18
+  return false;
+}
+
+export async function requireFeature(feature: Feature): Promise<void> {
+  const allowed = await hasFeature(feature);
+  if (!allowed) {
+    throw new Error(`Feature "${feature}" requires an upgraded plan`);
+  }
+}
+
+export async function getUserTier(): Promise<TierName | "trial" | "free"> {
+  const session = await auth();
+  if (!session?.user?.id) return "free";
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+    columns: {
+      billingStatus: true,
+      stripePriceId: true,
+      trialEndDate: true,
+    },
+  });
+
+  if (!user) return "free";
+
+  if (user.billingStatus === "trial" && user.trialEndDate && new Date(user.trialEndDate) > new Date()) {
+    return "trial";
+  }
+
+  if (user.billingStatus === "active" && user.stripePriceId) {
+    const tier = getTierFromPriceId(user.stripePriceId);
+    return tier ?? "free";
+  }
+
+  return "free";
+}
 ```
 
-**Usage pattern (virtualized table):**
-
+**Usage in API route:**
 ```typescript
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
+// src/app/api/patterns/detect/route.ts
+import { requireFeature } from "@/lib/billing/feature-gate";
 
-function StatementBrowser({ lineItems }) {
-  const table = useReactTable({
-    data: lineItems,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    // Sorting, filtering built-in
-  });
+export async function POST(request: Request) {
+  // Gate the feature
+  await requireFeature("pattern_detection");
 
-  const rows = table.getRowModel().rows;
+  // ... rest of the route
+}
+```
 
-  const parentRef = React.useRef();
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 50, // Row height in px
-    overscan: 10, // Render 10 extra rows above/below viewport
-  });
+---
+
+### Pattern 3: Client-Side Feature Gate Component
+
+**What:** React component to conditionally render content based on tier.
+
+**Implementation:**
+```typescript
+// src/components/billing/feature-gate.tsx
+"use client";
+
+import { useUserStatus } from "@/lib/hooks";
+import { getTierFromPriceId, TIERS, type Feature } from "@/lib/stripe/products";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Lock } from "lucide-react";
+
+interface FeatureGateProps {
+  feature: Feature;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+export function FeatureGate({ feature, children, fallback }: FeatureGateProps) {
+  const { user, isTrialActive, isPaid, isLoading } = useUserStatus();
+
+  if (isLoading) {
+    return null; // Or skeleton loader
+  }
+
+  // Trial users get Enhanced tier features
+  if (isTrialActive && TIERS.enhanced.features.includes(feature)) {
+    return <>{children}</>;
+  }
+
+  // Paid users get features based on their tier
+  if (isPaid && user?.stripePriceId) {
+    const tier = getTierFromPriceId(user.stripePriceId);
+    if (tier && TIERS[tier].features.includes(feature)) {
+      return <>{children}</>;
+    }
+  }
+
+  // Show fallback or default upgrade prompt
+  return (
+    <>
+      {fallback ?? (
+        <UpgradePrompt feature={feature} />
+      )}
+    </>
+  );
+}
+
+function UpgradePrompt({ feature }: { feature: Feature }) {
+  // Find which tier has this feature
+  const requiredTier = Object.entries(TIERS).find(([_, tier]) =>
+    tier.features.includes(feature)
+  )?.[0];
 
   return (
-    <div ref={parentRef} style={{ height: '600px', overflow: 'auto' }}>
-      <div style={{ height: `${virtualizer.getTotalSize()}px` }}>
-        {virtualizer.getVirtualItems().map((virtualRow) => {
-          const row = rows[virtualRow.index];
-          return (
-            <div
-              key={row.id}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: `${virtualRow.size}px`,
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              {/* Render row cells */}
-            </div>
-          );
-        })}
+    <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-8 text-center">
+      <Lock className="h-8 w-8 text-muted-foreground" />
+      <div>
+        <h3 className="font-semibold">Upgrade Required</h3>
+        <p className="text-sm text-muted-foreground">
+          This feature is available on the {requiredTier ? TIERS[requiredTier as keyof typeof TIERS].name : "paid"} plan and above.
+        </p>
       </div>
+      <Button asChild>
+        <Link href="/settings/billing">Upgrade Now</Link>
+      </Button>
     </div>
   );
 }
 ```
 
-**shadcn/ui DataTable pattern:** Use official shadcn DataTable guide as reference, add virtualization layer.
+**Usage in component:**
+```tsx
+<FeatureGate feature="pattern_detection">
+  <PatternSuggestionsCard patterns={patterns} />
+</FeatureGate>
+```
 
 ---
 
-## Alternatives Considered
+### Pattern 4: Extend useUserStatus Hook
 
-### Batch Upload Processing
+**What:** Add tier and feature information to existing hook.
 
-| Instead of | Could Use | Tradeoff | Decision |
-|------------|-----------|----------|----------|
-| Sequential processing with progress streaming | OpenAI Batch API | 50% cost savings, but 24-hour latency. Users expect instant feedback. | **Rejected** - UX >> cost |
-| Sequential processing | Parallel processing (Promise.all) | Faster, but OpenAI rate limits (500 RPM) will throttle. Complex error handling. | **Rejected** - Sequential is simpler |
-| ReadableStream progress | WebSockets | Real-time bidirectional, but requires separate WebSocket server. Over-engineered. | **Rejected** - SSE/Streams sufficient |
+**Extended hook:**
+```typescript
+// Add to src/lib/hooks/use-user.ts
 
-### Statement Storage
+export function useUserStatus() {
+  const { data, isLoading, error } = useUser();
 
-| Instead of | Could Use | Tradeoff | Decision |
-|------------|-----------|----------|----------|
-| PostgreSQL partitioning | MongoDB (document store) | Better for unstructured data, but adds new database. Overkill. | **Rejected** - PostgreSQL handles it |
-| New table (statement_line_items) | Store in JSONB on import_audits | Simpler schema, but unqueryable. Can't filter by merchant or date. | **Rejected** - Need structured data |
-| Drizzle batch insert | ORMs typically batch automatically | - | **Accepted** - Drizzle has explicit batch API |
+  const user = data?.user;
+  const now = new Date();
+  const trialEndDate = user?.trialEndDate ? new Date(user.trialEndDate) : null;
 
-### Statement Browser
+  const isTrialActive =
+    user?.billingStatus === "trial" && trialEndDate && trialEndDate > now;
 
-| Instead of | Could Use | Tradeoff | Decision |
-|------------|-----------|----------|----------|
-| TanStack Virtual | react-window | Older library (maintenance mode), less TypeScript support | **Rejected** - TanStack is successor |
-| TanStack Virtual | AG Grid (enterprise data grid) | Feature-rich, but $1,000+/year license. Overkill for MVP. | **Rejected** - Cost prohibitive |
-| Client-side filtering | Server-side filtering | Better for 50k+ rows, but requires more API work. Premature optimization. | **Deferred** - Start client-side |
-| Custom virtualization | TanStack Virtual | Could build ourselves, but reinventing wheel. | **Rejected** - Use battle-tested library |
+  const isPaid = user?.billingStatus === "active";
+  const isActive = isTrialActive || isPaid;
+
+  const daysLeftInTrial = trialEndDate
+    ? Math.max(0, Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  // NEW: Get current tier
+  const tier = useMemo(() => {
+    if (isTrialActive) return "trial";
+    if (isPaid && user?.stripePriceId) {
+      return getTierFromPriceId(user.stripePriceId) ?? "free";
+    }
+    return "free";
+  }, [isTrialActive, isPaid, user?.stripePriceId]);
+
+  // NEW: Feature check helper
+  const hasFeature = useCallback((feature: Feature): boolean => {
+    if (tier === "trial") {
+      return TIERS.enhanced.features.includes(feature);
+    }
+    if (tier !== "free" && tier !== "trial") {
+      return TIERS[tier].features.includes(feature);
+    }
+    return false;
+  }, [tier]);
+
+  return {
+    user,
+    isLoading,
+    error,
+    isTrialActive,
+    isPaid,
+    isActive,
+    daysLeftInTrial,
+    billingStatus: user?.billingStatus,
+    needsOnboarding: user && !user.onboardingCompleted,
+    tier,        // NEW
+    hasFeature,  // NEW
+  };
+}
+```
 
 ---
 
-## Architecture Patterns
+### Pattern 5: Voucher/Coupon Code Implementation
 
-### Pattern 1: Progress Streaming for Batch Processing
+**What:** Use Stripe's built-in coupon and promotion code system.
 
-**What:** Stream processing progress to client as PDFs are processed sequentially
-
-**When:** Multi-file upload where processing takes >5 seconds
-
-**Implementation:** Next.js ReadableStream with TextEncoder
+**No code changes needed.** The existing checkout session already has `allow_promotion_codes: true`:
 
 ```typescript
-// src/app/api/import/batch/route.ts
+// src/app/api/billing/create-checkout/route.ts (already implemented)
+const checkoutSession = await stripe.checkout.sessions.create({
+  // ...
+  allow_promotion_codes: true, // <-- Already enabled!
+  // ...
+});
+```
+
+**Stripe Dashboard setup (manual):**
+
+1. Go to Stripe Dashboard > Products > Coupons
+2. Create coupon: "1 Month Free" - 100% off, duration "once"
+3. Create promotion code: "FREEMONTH" linking to the coupon
+4. Set restrictions: first-time customers only, expires after X redemptions
+
+**For programmatic coupon creation:**
+```typescript
+// src/app/api/admin/coupons/route.ts (if needed)
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const files = formData.getAll("files") as File[];
+  const stripe = getStripeClient();
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const encoder = new TextEncoder();
+  // Create coupon
+  const coupon = await stripe.coupons.create({
+    duration: "once",
+    percent_off: 100,
+    id: "free-month",
+    max_redemptions: 100,
+  });
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-
-        // Send progress update
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: 'progress', file: i + 1, total: files.length })}\n\n`)
-        );
-
-        // Process file
-        const result = await processFile(file);
-
-        // Send result
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: 'result', file: i + 1, data: result })}\n\n`)
-        );
-      }
-
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'complete' })}\n\n`));
-      controller.close();
+  // Create promotion code
+  const promoCode = await stripe.promotionCodes.create({
+    coupon: coupon.id,
+    code: "FREEMONTH2026",
+    restrictions: {
+      first_time_transaction: true,
     },
   });
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  });
+  return NextResponse.json({ coupon, promoCode });
 }
 ```
-
-**Client-side consumption:**
-
-```typescript
-const response = await fetch('/api/import/batch', { method: 'POST', body: formData });
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-
-while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
-
-  const chunk = decoder.decode(value);
-  const lines = chunk.split('\n\n');
-
-  for (const line of lines) {
-    if (line.startsWith('data: ')) {
-      const data = JSON.parse(line.slice(6));
-
-      if (data.type === 'progress') {
-        setProgress({ current: data.file, total: data.total });
-      } else if (data.type === 'result') {
-        addResult(data.data);
-      } else if (data.type === 'complete') {
-        setProcessing(false);
-      }
-    }
-  }
-}
-```
-
-**Why this pattern:** Users uploading 12 PDFs need feedback. Streaming shows "Processing file 3 of 12..." instead of loading spinner.
-
-### Pattern 2: Extended OpenAI Prompt for Full Transaction Extraction
-
-**What:** Modify existing PDF parser to return ALL transactions, not just subscriptions
-
-**Current prompt:** Extracts recurring subscriptions only (Netflix, Spotify, etc.)
-
-**Extended prompt:**
-
-```typescript
-const SYSTEM_PROMPT_ALL_TRANSACTIONS = `You are an expert at analyzing bank statements and extracting transaction data.
-
-Extract EVERY transaction from the statement, including:
-- Subscription payments (recurring charges)
-- One-time purchases
-- Cash withdrawals
-- Transfers
-- Refunds
-- Fees
-
-For each transaction, return:
-{
-  "date": "2024-01-15",
-  "merchant": "Amazon",
-  "amount": 45.67,
-  "currency": "USD",
-  "description": "AMAZON.COM PURCHASE",
-  "category": "Shopping", // Bank's category if visible
-  "isRecurring": false, // True if you detect recurring pattern
-  "confidence": 95
-}
-
-Return as JSON array. If no transactions found, return [].`;
-```
-
-**Integration:** Add `extractAllTransactions: boolean` flag to import flow. When true, use extended prompt.
-
-### Pattern 3: Chunked Batch Insert with Transaction
-
-**What:** Insert thousands of line items in batches of 1000, wrapped in transaction for atomicity
-
-```typescript
-// src/app/api/import/confirm/route.ts
-import { db } from '@/lib/db';
-import { statementLineItems } from '@/lib/db/schema';
-
-async function saveLineItems(items: LineItem[]) {
-  const BATCH_SIZE = 1000;
-
-  await db.transaction(async (tx) => {
-    for (let i = 0; i < items.length; i += BATCH_SIZE) {
-      const chunk = items.slice(i, i + BATCH_SIZE);
-
-      await tx.insert(statementLineItems).values(chunk);
-
-      // Optional: Add pg_sleep(0.1) pause for AUTOVACUUM
-      // Only needed if inserting 100k+ rows
-    }
-  });
-}
-```
-
-**Why batching:** PostgreSQL has query size limits (~1GB). 1000-row batches keep queries under limits while maintaining performance.
-
-**Why transaction:** All-or-nothing. If batch 5 of 10 fails, rollback batches 1-4. User doesn't get partial data.
-
-### Pattern 4: BRIN Indexing for Time-Series Data
-
-**What:** Use Block Range Index (BRIN) for transaction_date column
-
-**Why:** Statement data is naturally ordered by date. BRIN indexes are tiny (1% of B-tree size) and extremely efficient for range queries.
-
-```sql
--- Migration: Add BRIN index
-CREATE INDEX statement_line_items_date_brin_idx
-  ON statement_line_items
-  USING brin (transaction_date);
-```
-
-**Query pattern:**
-
-```typescript
-// Get January 2025 transactions
-const items = await db
-  .select()
-  .from(statementLineItems)
-  .where(
-    and(
-      eq(statementLineItems.userId, userId),
-      gte(statementLineItems.transactionDate, new Date('2025-01-01')),
-      lt(statementLineItems.transactionDate, new Date('2025-02-01'))
-    )
-  );
-// Uses BRIN index, scans only relevant blocks
-```
-
-**Performance:** 100x smaller than B-tree, 10x faster for range queries on ordered data.
-
-### Pattern 5: Virtualized DataTable Component
-
-**What:** shadcn/ui DataTable + TanStack Virtual for rendering 10k+ rows
-
-**Structure:**
-
-```
-src/components/statements/
-├── statement-browser.tsx      # Main browser page component
-├── statement-data-table.tsx   # DataTable with virtualization
-├── statement-columns.tsx      # Column definitions
-└── statement-filters.tsx      # Filter controls (date range, merchant search)
-```
-
-**Key points:**
-- Use `useVirtualizer` for row virtualization
-- Use `getCoreRowModel`, `getSortedRowModel`, `getFilteredRowModel` from TanStack Table
-- Render only visible rows (10-20) + overscan buffer (10)
-- Height calculation: `virtualizer.getTotalSize()` gives total scrollable height
-- Position rows absolutely with `translateY(virtualRow.start)`
 
 ---
 
-## Don't Hand-Roll
+### Pattern 6: Extend Checkout for Multi-Tier
 
-| Problem | Don't Build | Use Instead | Why |
-|---------|-------------|-------------|-----|
-| Virtual scrolling | Custom intersection observer + windowing | @tanstack/react-virtual | Complex math for scroll positions, row heights. Library is battle-tested. |
-| Progress streaming | Polling API every 2 seconds | ReadableStream / SSE | Real-time, lower server load, cleaner code |
-| Batch inserts | Loop with individual INSERTs | Drizzle batch API + chunking | 100x faster, reduces round trips, transaction safety |
-| PDF text extraction | Write PDF parser from scratch | pdf2json (already installed) | PDF spec is 1,000+ pages. Don't reinvent. |
-| Large dataset rendering | Render all rows + CSS overflow | TanStack Virtual | Kills performance at 1k+ rows, virtual rendering is proven pattern |
+**What:** Update checkout endpoint to accept tier + billing period.
 
----
-
-## Common Pitfalls
-
-### Pitfall 1: OpenAI Rate Limits with Batch Upload
-
-**What goes wrong:** User uploads 12 PDFs. Code calls OpenAI API 12 times in parallel. Gets 429 rate limit error. Only 3 files processed.
-
-**Why it happens:** OpenAI has rate limits (500 requests/minute for GPT-4). Parallel processing exceeds limits.
-
-**Prevention:**
+**Extended endpoint:**
 ```typescript
-// Sequential processing, not parallel
-for (const file of files) {
-  const result = await processFile(file); // Await each one
-  results.push(result);
-}
+// src/app/api/billing/create-checkout/route.ts
+import { z } from "zod";
+import { TIERS, type TierName } from "@/lib/stripe/products";
 
-// NOT this:
-await Promise.all(files.map(processFile)); // All hit API at once
-```
-
-**Alternative:** Use OpenAI Batch API for 50% cost savings IF you can accept 24-hour latency. Not recommended for user-facing imports.
-
-**Warning signs:** 429 errors in logs, users reporting "some files didn't process"
-
----
-
-### Pitfall 2: Forgetting to Partition PostgreSQL Table
-
-**What goes wrong:** statement_line_items table grows to 500k rows. Queries become slow (5+ seconds). Users complain about lag.
-
-**Why it happens:** Without partitioning, queries scan entire table even when filtering by date. Full table scan on 500k rows is slow.
-
-**Prevention:**
-1. Create partitioned table from start (not retroactive, requires migration)
-2. Add BRIN index on transaction_date
-3. Always include userId + date range in WHERE clauses (partition pruning)
-
-```sql
--- Good query (uses partition + BRIN index)
-SELECT * FROM statement_line_items
-WHERE user_id = 'xyz'
-  AND transaction_date >= '2025-01-01'
-  AND transaction_date < '2025-02-01';
-
--- Bad query (scans all partitions)
-SELECT * FROM statement_line_items
-WHERE merchant_name LIKE '%Amazon%'; -- No user_id or date filter
-```
-
-**Warning signs:** Slow query logs showing full table scans, users waiting 10+ seconds for filter results
-
----
-
-### Pitfall 3: Not Chunking Large Batch Inserts
-
-**What goes wrong:** User imports 12-month statement with 10,000 line items. Code tries to insert all 10k rows in single query. Query fails with "string too long" or timeout error.
-
-**Why it happens:** PostgreSQL has query size limits. Very large INSERT queries hit those limits.
-
-**Prevention:** Chunk into batches of 1000 rows
-
-```typescript
-// Good - chunked
-const BATCH_SIZE = 1000;
-for (let i = 0; i < items.length; i += BATCH_SIZE) {
-  const chunk = items.slice(i, i + BATCH_SIZE);
-  await db.insert(statementLineItems).values(chunk);
-}
-
-// Bad - all at once
-await db.insert(statementLineItems).values(items); // 10k rows = query too large
-```
-
-**Warning signs:** "string too long" errors, timeouts on large imports, successful import of 100 items but failure at 5000+
-
----
-
-### Pitfall 4: Loading All Line Items Client-Side Without Virtualization
-
-**What goes wrong:** User has 50,000 line items. Browser fetches all 50k, renders all 50k DOM nodes. Page freezes for 30 seconds, then crashes.
-
-**Why it happens:** Rendering 50k table rows creates 50k DOM elements. Browser runs out of memory.
-
-**Prevention:** Use TanStack Virtual to render only visible rows
-
-```typescript
-// Good - virtualized (renders ~20 rows)
-const virtualizer = useVirtualizer({
-  count: lineItems.length, // 50,000
-  getScrollElement: () => parentRef.current,
-  estimateSize: () => 50,
+const checkoutSchema = z.object({
+  tier: z.enum(["primary", "enhanced", "advanced"]),
+  period: z.enum(["monthly", "annual"]),
 });
 
-// Only render visible items
-{virtualizer.getVirtualItems().map((virtualRow) => {
-  const item = lineItems[virtualRow.index];
-  return <TableRow key={item.id}>...</TableRow>;
-})}
+export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-// Bad - render all rows
-{lineItems.map((item) => (
-  <TableRow key={item.id}>...</TableRow> // 50,000 DOM nodes
-))}
+  const body = await request.json();
+  const result = checkoutSchema.safeParse(body);
+
+  if (!result.success) {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  const { tier, period } = result.data;
+  const tierConfig = TIERS[tier];
+  const priceId = tierConfig.priceIds[period];
+
+  if (!priceId) {
+    return NextResponse.json({ error: "Price not configured" }, { status: 500 });
+  }
+
+  // ... rest of checkout logic (unchanged)
+  const checkoutSession = await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    payment_method_types: ["card"],
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: `${APP_URL}/settings/billing?success=true`,
+    cancel_url: `${APP_URL}/settings/billing?canceled=true`,
+    subscription_data: {
+      metadata: { userId: user.id, tier },
+    },
+    allow_promotion_codes: true,
+    billing_address_collection: "auto",
+  });
+
+  return NextResponse.json({ url: checkoutSession.url });
+}
 ```
-
-**Rule of thumb:**
-- < 1,000 rows: Normal rendering OK
-- 1,000 - 10,000 rows: Use virtualization recommended
-- 10,000+ rows: Virtualization required OR switch to server-side pagination
-
-**Warning signs:** Browser freezes, "page unresponsive" warnings, high memory usage (1GB+)
 
 ---
 
-### Pitfall 5: Not Streaming Progress for Long Operations
+## What NOT to Change
 
-**What goes wrong:** User uploads 12 PDFs. Clicks "Process Files". Sees loading spinner for 3 minutes. No feedback. Assumes page froze. Refreshes. Loses progress.
+### Schema Changes (Not Needed)
 
-**Why it happens:** Sequential processing of 12 files takes time (15 seconds per file * 12 = 3 minutes). No intermediate feedback.
+The existing users table already has all needed fields:
 
-**Prevention:** Stream progress updates
+| Field | Purpose | Already Has |
+|-------|---------|-------------|
+| billingStatus | Trial/active/cancelled/past_due | Yes |
+| stripeCustomerId | Link to Stripe customer | Yes |
+| stripeSubscriptionId | Active subscription | Yes |
+| stripePriceId | Current price (reveals tier) | Yes |
+| currentPeriodEnd | When subscription renews | Yes |
+| trialStartDate / trialEndDate | Trial tracking | Yes |
 
-```typescript
-// Client shows: "Processing file 3 of 12 (25%)... Extracting transactions from October 2024 statement"
+**No new columns needed.** The `stripePriceId` field already tells us which tier the user is on. We look up the tier from the price ID.
 
-// Server sends progress events
-controller.enqueue(
-  encoder.encode(`data: ${JSON.stringify({
-    type: 'progress',
-    current: 3,
-    total: 12,
-    filename: 'october-2024-statement.pdf',
-    status: 'Extracting transactions...'
-  })}\n\n`)
-);
-```
+### Webhook Changes (Minimal)
 
-**UX improvement:** Progress bar + file name + status message. User knows system is working.
+The existing webhook handler already handles:
+- checkout.session.completed
+- customer.subscription.created/updated/deleted
+- invoice.payment_succeeded/failed
 
-**Warning signs:** Support tickets saying "page froze during upload", users refreshing mid-import
+**Only addition:** Log tier name in subscription metadata for debugging.
 
 ---
 
-## State of the Art (2026)
+## Stripe Dashboard Configuration
 
-| Category | Current Standard | Outdated Approach | Why Outdated |
-|----------|------------------|-------------------|--------------|
-| Virtual scrolling | TanStack Virtual | react-virtualized | Unmaintained since 2021, TanStack is spiritual successor |
-| Data tables | TanStack Table v8 | React Table v7 | v7 deprecated, v8 rewritten in TypeScript with better performance |
-| Batch processing | Sequential with progress streaming | Polling API for status | Streaming is more efficient, real-time updates |
-| Large inserts | Chunked batch inserts (1000 rows) | Individual INSERT per row | 100x slower without batching |
-| PDF parsing | pdf2json + OpenAI Vision | Custom PDF parsers | PDF spec is complex, OpenAI Vision handles scanned docs better |
-| Table indexing | BRIN for time-series + B-tree for lookups | B-tree only | BRIN is 100x smaller for ordered data (dates) |
+### Products to Create
 
-**Deprecated libraries:**
-- **react-virtualized:** Replaced by TanStack Virtual (same author, better API)
-- **react-window:** Still works, but TanStack Virtual has better TypeScript support
-- **react-table v7:** Replaced by @tanstack/react-table v8
+| Tier | Product Name | Monthly Price | Annual Price |
+|------|--------------|---------------|--------------|
+| Primary | Subscription Manager - Primary | $4.99/month | $39.99/year |
+| Enhanced | Subscription Manager - Enhanced | $9.99/month | $79.99/year |
+| Advanced | Subscription Manager - Advanced | $19.99/month | $159.99/year |
+
+**After creating, copy price IDs to environment variables.**
+
+### Customer Portal Configuration
+
+1. Go to Stripe Dashboard > Settings > Customer Portal
+2. Enable subscription upgrades/downgrades
+3. Enable promotion codes in portal
+4. Set default behavior for cancellations
 
 ---
 
 ## Installation
 
 ```bash
-# New dependency
-npm install @tanstack/react-virtual@^3.13.18
+# No new packages to install!
 
-# Verify existing dependencies (should already be installed)
-npm list react-dropzone @tanstack/react-query drizzle-orm openai pdf2json
+# Verify existing packages
+npm list stripe @stripe/stripe-js
+# Expected: stripe@20.2.0, @stripe/stripe-js@8.6.3
 
-# Expected output:
-# react-dropzone@14.3.8
-# @tanstack/react-query@5.90.19
-# drizzle-orm@0.45.1
-# openai@6.16.0
-# pdf2json@4.0.2
-```
-
-**Database migration:**
-
-```bash
-# Generate migration for new statement_line_items table
-npm run db:generate
-
-# Review migration in src/lib/db/migrations/
-# Should include table creation + indexes
-
-# Apply migration
-npm run db:migrate
+# Add environment variables for new price IDs
+# (see .env.example updates above)
 ```
 
 ---
 
-## Integration with Existing Stack
+## Alternatives Considered
 
-### Next.js 16 App Router
-- **Batch import API:** Use Route Handler with ReadableStream for progress
-- **Statement browser:** Server Component for initial data, Client Component for table interaction
-- **No changes needed:** Existing pattern works
-
-### Drizzle ORM
-- **New table:** `statementLineItems` with relations to `users`, `importAudits`, `subscriptions`
-- **Batch inserts:** Use `db.insert().values([...])` with chunking
-- **No version change:** 0.45.1 supports all needed features
-
-### OpenAI
-- **Extended prompt:** Modify existing `parseTextForSubscriptions` to extract all transactions
-- **Sequential processing:** Keep existing pattern, don't use Batch API (latency unacceptable)
-- **No version change:** 6.16.0 sufficient
-
-### TanStack Query
-- **Statement data fetching:** Use existing query patterns
-- **Add mutations:** `tagAsSubscription`, `deleteLineItem`
-- **No version change:** 5.90.19 sufficient
-
-### shadcn/ui
-- **DataTable:** Build custom using TanStack Table + Virtual (follows shadcn guide pattern)
-- **Table components:** Use existing Table, TableRow, TableCell primitives
-- **No new components needed:** Compose from existing
-
----
-
-## Recommended Stack Summary
-
-| Category | Library | Version | Purpose | Status |
-|----------|---------|---------|---------|--------|
-| **Batch Upload** | react-dropzone | 14.3.8 | Multiple file selection | ✅ Installed |
-| **Progress Streaming** | Next.js ReadableStream | Built-in (16.1.4) | Real-time progress updates | ✅ Installed |
-| **Line Item Storage** | Drizzle ORM | 0.45.1 | New table + batch inserts | ✅ Installed |
-| **Database** | PostgreSQL (Supabase) | Latest | Partitioning + BRIN indexes | ✅ Installed |
-| **PDF Processing** | OpenAI GPT-4o | 6.16.0 | Extract all transactions | ✅ Installed |
-| **PDF Text Extraction** | pdf2json | 4.0.2 | Convert PDF to text | ✅ Installed |
-| **Table Logic** | @tanstack/react-table | 5.90.19 | Sorting, filtering, columns | ✅ Installed (via Query) |
-| **Virtualization** | @tanstack/react-virtual | **3.13.18** | Render 10k+ rows efficiently | ❌ **NEW** |
-| **Data Fetching** | @tanstack/react-query | 5.90.19 | Fetch line items | ✅ Installed |
-| **UI Components** | shadcn/ui | Installed | Table, Input, Select, DatePicker | ✅ Installed |
-
-**Total new dependencies:** 1 (@tanstack/react-virtual)
-
----
-
-## Sources
-
-### Primary (HIGH confidence)
-
-**Batch File Upload:**
-- [React Dropzone Official Docs](https://react-dropzone.js.org/)
-- [Next.js Streaming Guide](https://nextjs.org/learn/dashboard-app/streaming)
-- [Multiple File Upload in Next.js Tutorial](https://medium.com/@sandeepbansod/implementing-multiple-file-uploads-in-next-js-a-step-by-step-guide-0b625e458bbf)
-
-**Statement Storage:**
-- [Drizzle ORM Batch API](https://orm.drizzle.team/docs/batch-api)
-- [PostgreSQL Partitioning Best Practices](https://oneuptime.com/blog/post/2026-01-25-postgresql-optimize-billion-row-tables/view)
-- [Massive Data Updates in PostgreSQL](https://medium.com/@nikhil.srivastava944/massive-data-updates-in-postgresql-how-we-processed-80m-records-with-minimal-impact-20babd2cfe6f)
-- [Handling Billions of Rows in PostgreSQL](https://www.tigerdata.com/blog/handling-billions-of-rows-in-postgresql)
-
-**Statement Browser:**
-- [TanStack Table Official Docs](https://tanstack.com/table/latest)
-- [TanStack Virtual Official Docs](https://tanstack.com/virtual/latest)
-- [@tanstack/react-virtual npm](https://www.npmjs.com/package/@tanstack/react-virtual)
-- [shadcn/ui DataTable Guide](https://ui.shadcn.com/docs/components/radix/data-table)
-- [Building Virtualized Table with TanStack](https://dev.to/ainayeem/building-an-efficient-virtualized-table-with-tanstack-virtual-and-react-query-with-shadcn-2hhl)
-
-**OpenAI:**
-- [OpenAI Batch API Documentation](https://platform.openai.com/docs/guides/batch) (evaluated but not recommended)
-- Codebase: `src/lib/openai/pdf-parser.ts` (existing pattern to extend)
-
-### Secondary (MEDIUM confidence)
-
-- [Server-Side Pagination with TanStack Table](https://medium.com/@clee080/how-to-do-server-side-pagination-column-filtering-and-sorting-with-tanstack-react-table-and-react-7400a5604ff2)
-- [Next.js Advanced Patterns 2026](https://medium.com/@beenakumawat002/next-js-app-router-advanced-patterns-for-2026-server-actions-ppr-streaming-edge-first-b76b1b3dcau7)
-
-### Tertiary (LOW confidence / Informational)
-
-- Codebase analysis: `src/app/api/import/route.ts`, `src/lib/db/schema.ts`, `package.json`
+| Instead of | Could Use | Why Not |
+|------------|-----------|---------|
+| Per-tier environment variables | Stripe Product metadata | Environment variables are simpler, work in all environments |
+| Feature flags service | LaunchDarkly, Statsig | Over-engineering for tier-based gating. Simple constant + lookup is sufficient |
+| Embedded Stripe Elements | @stripe/react-stripe-js | Adds complexity. Checkout redirect is simpler and handles all edge cases |
+| Custom coupon system | Database coupon table | Stripe handles redemption limits, expiration, fraud prevention |
+| Clerk/use-stripe-subscription | Already have NextAuth.js | Would require auth migration |
 
 ---
 
@@ -748,15 +627,41 @@ npm run db:migrate
 
 | Area | Confidence | Rationale |
 |------|-----------|-----------|
-| Batch Upload | HIGH | react-dropzone already installed, supports multiple files, well-documented |
-| Progress Streaming | HIGH | Next.js ReadableStream is built-in, standard pattern for 2026 |
-| Statement Storage | HIGH | PostgreSQL partitioning + BRIN indexes are proven patterns for time-series data |
-| Batch Inserts | HIGH | Drizzle batch API documented, chunking pattern is standard practice |
-| Statement Browser | HIGH | TanStack Table + Virtual are industry standards, shadcn provides guide |
-| Virtualization | HIGH | @tanstack/react-virtual is latest stable (3.13.18), widely adopted |
-| OpenAI Integration | MEDIUM | Extending existing prompt is straightforward, but "all transactions" may return unexpected formats |
+| Stripe SDK | HIGH | Already installed and working, v20.2.0 is latest |
+| Multi-tier products | HIGH | Stripe natively supports multiple products/prices |
+| Feature gating | HIGH | Simple lookup from price ID to tier features |
+| Voucher codes | HIGH | allow_promotion_codes already enabled, Stripe handles everything |
+| Customer portal | HIGH | Already implemented, supports tier switching |
+| Schema changes | HIGH | No changes needed - existing fields sufficient |
 
-**Overall confidence:** HIGH - Stack is mature, well-documented, and battle-tested for these use cases.
+**Overall confidence:** HIGH - This is an architectural expansion of existing, working code. No new dependencies required.
+
+---
+
+## Sources
+
+### Primary (HIGH confidence)
+
+**Stripe SDK:**
+- Codebase: package.json (stripe@20.2.0, @stripe/stripe-js@8.6.3)
+- Codebase: src/lib/stripe/client.ts (getStripeClient implementation)
+- Codebase: src/app/api/webhooks/stripe/route.ts (webhook handling)
+- [Stripe Subscriptions Build Guide](https://docs.stripe.com/billing/subscriptions/build-subscriptions)
+
+**Coupons & Promotion Codes:**
+- [Stripe Coupons & Promotion Codes Documentation](https://docs.stripe.com/billing/subscriptions/coupons)
+- [Stripe Promotion Codes API](https://docs.stripe.com/api/promotion_codes)
+- Codebase: create-checkout/route.ts already has `allow_promotion_codes: true`
+
+**Implementation Patterns:**
+- [T3's Stripe Recommendations](https://github.com/t3dotgg/stripe-recommendations) - Sync pattern, single source of truth
+- [Clerk use-stripe-subscription](https://github.com/clerk/use-stripe-subscription) - Feature gating via product metadata pattern
+- [Pedro Alonso Stripe + Next.js 15 Guide](https://www.pedroalonso.net/blog/stripe-nextjs-complete-guide-2025/)
+
+### Secondary (MEDIUM confidence)
+
+- [Vercel Next.js Subscription Payments](https://github.com/vercel/nextjs-subscription-payments) - Reference architecture
+- [Stripe Tiered Pricing Guide](https://docs.stripe.com/subscriptions/pricing-models/tiered-pricing)
 
 ---
 
@@ -764,29 +669,43 @@ npm run db:migrate
 
 Based on research, suggested phase structure:
 
-1. **Phase 1: Extend Import Flow for Batch Upload**
-   - Modify API to accept multiple files (already supported by react-dropzone)
-   - Add progress streaming with ReadableStream
-   - Test with 12-file upload
-   - **Estimated complexity:** Low (extend existing pattern)
+1. **Phase 1: Multi-Tier Product Setup**
+   - Create products/prices in Stripe Dashboard
+   - Extend products.ts with tier configuration
+   - Add environment variables for price IDs
+   - Update checkout endpoint to accept tier
+   - **Estimated complexity:** Low
 
-2. **Phase 2: Add Statement Line Item Storage**
-   - Create `statement_line_items` table with partitioning
-   - Extend OpenAI prompt to extract all transactions
-   - Implement chunked batch insert (1000 rows per batch)
-   - Add indexes (BRIN on date, B-tree on merchant)
-   - **Estimated complexity:** Medium (new table + partitioning)
+2. **Phase 2: Feature Gating Infrastructure**
+   - Create server-side hasFeature/requireFeature utilities
+   - Create client-side FeatureGate component
+   - Extend useUserStatus hook with tier/hasFeature
+   - **Estimated complexity:** Medium
 
-3. **Phase 3: Build Statement Browser**
-   - Install @tanstack/react-virtual
-   - Create DataTable component with virtualization
-   - Add filters (date range, merchant search, amount range)
-   - Add "Tag as Subscription" action
-   - **Estimated complexity:** Medium (new UI patterns)
+3. **Phase 3: Apply Feature Gates**
+   - Gate PDF import by tier
+   - Gate pattern detection by tier
+   - Gate statement browser by tier
+   - Add upgrade prompts where features are gated
+   - **Estimated complexity:** Medium (many touchpoints)
+
+4. **Phase 4: Pricing UI Updates**
+   - Update pricing page with three tiers
+   - Update billing settings page
+   - Add tier comparison table
+   - **Estimated complexity:** Low
+
+5. **Phase 5: Voucher Code Setup**
+   - Create coupons in Stripe Dashboard
+   - Create promotion codes
+   - Test redemption flow (already enabled)
+   - **Estimated complexity:** Low (Stripe Dashboard only)
 
 **Phase ordering rationale:**
-- Phase 1 builds on existing import flow (low risk)
-- Phase 2 adds database layer (foundational for Phase 3)
-- Phase 3 adds UI (depends on Phase 2 data)
+- Phase 1 is foundational (products must exist before gating)
+- Phase 2 creates infrastructure for Phase 3
+- Phase 3 applies gates across app
+- Phase 4 updates UI to reflect new structure
+- Phase 5 is independent, can run in parallel
 
-**No additional research flags:** All technologies are well-documented with clear integration paths.
+**No additional research flags:** All technologies are already in use, just being extended.

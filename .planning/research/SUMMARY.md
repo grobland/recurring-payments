@@ -1,388 +1,186 @@
 # Project Research Summary
 
-**Project:** Subscription Manager v2.0 - Statement Hub
-**Domain:** Batch import, statement data retention, statement browsing, manual enrichment
-**Researched:** 2026-02-08
+**Project:** Subscription Manager - Billing & Monetization (v2.1)
+**Domain:** SaaS Subscription Billing
+**Researched:** 2026-02-11
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The v2.0 Statement Hub milestone transforms the subscription manager from single-file extraction to comprehensive statement management. Users can now upload multiple bank statements at once, browse all transaction line items (not just detected subscriptions), manually tag potential subscriptions, and strengthen AI pattern detection with historical data.
+This milestone adds tiered billing infrastructure to an existing subscription tracking application that already has a solid Stripe foundation. The codebase already includes Stripe SDK integration (v20.2.0), checkout sessions, webhook handling, customer portal, and trial management. The core work is **architectural expansion, not technology addition** — no new libraries are required.
 
-Research reveals three critical insights that define the Statement Hub architecture:
+The recommended approach is to extend the existing single-tier setup to three tiers (Primary/Enhanced/Advanced) by: (1) creating tier-aware product configuration, (2) building feature gating utilities for both server and client, (3) applying gates across existing features, and (4) leveraging Stripe's built-in promotion code system for vouchers. The existing `stripePriceId` field on the users table already captures which tier a user is on — we map price IDs to tiers rather than adding redundant tier columns.
 
-**1. Batch import is table stakes, not a differentiator** - In 2026, users expect to drag-and-drop 12+ months of statements at once. Single-file upload feels antiquated. Every modern fintech app supports batch uploads with real-time progress indicators. This is baseline UX, not a competitive advantage.
-
-**2. Statement data retention enables the real value: manual enrichment** - The differentiator isn't just storing ALL line items - it's creating a collaborative intelligence loop. Users browse historical transactions, manually tag items AI missed, and teach the system what subscriptions look like. This transforms import from a one-time extraction to an ongoing enrichment workflow that gets smarter over time.
-
-**3. Sequential processing prevents memory exhaustion** - Processing 12 PDFs simultaneously causes Node.js heap overflow (50-100MB per file × 12 = 600MB-1.2GB). The anti-pattern is parallel processing; the solution is sequential processing with streaming progress updates. Users see "Processing file 3 of 12" instead of a frozen spinner.
-
-The recommended architecture extends existing patterns without disrupting current functionality. A new `statement_line_items` table stores ALL transactions from uploaded statements, linked to existing `import_audits` via foreign key. Line items can be tagged, filtered, and converted to subscriptions. When converted, a bidirectional link is established (`subscription.sourceLineItemId` and `lineItem.convertedToSubscriptionId`) enabling "show source statement" features.
-
-The primary risks are **pagination performance collapse at scale** (OFFSET 10000 takes 30 seconds) and **unbounded table growth without archival** (millions of rows cause query slowdowns, index bloat, and backup issues). Prevention requires keyset (cursor-based) pagination from day 1 and table partitioning by user and date to enable time-based cleanup.
+Key risks center on webhook reliability and feature gating race conditions. The existing webhook handler lacks idempotency tracking, which could cause duplicate processing during retries. Feature gating must include server-side verification — client-side checks alone can be bypassed. Additionally, the `allow_promotion_codes: true` flag is already enabled in checkout, so promo codes are live from day one and need proper redemption limits to prevent abuse.
 
 ## Key Findings
 
-### Recommended Stack Additions
+### Recommended Stack
 
-Research shows the existing stack (Next.js 16, Drizzle ORM, PostgreSQL, OpenAI GPT-4o, React Dropzone) handles 90% of Statement Hub requirements. **Only one new dependency is needed:**
+**No new packages required.** The existing stack is sufficient for all billing requirements.
 
-**@tanstack/react-virtual** (3.13.18, ~15KB)
-- **Purpose:** Virtualized scrolling for statement browser with 10,000+ line items
-- **Why:** Renders only visible rows (10-20 at a time) + buffer, reuses DOM elements, maintains 60fps with 10K+ rows
-- **Alternative considered:** react-window (maintenance mode), AG Grid ($1,000/year)
-- **Installation:** `npm install @tanstack/react-virtual@^3.13.18`
+**Core technologies (already installed):**
+- **stripe@20.2.0**: Server-side Stripe API — already handling checkout, webhooks, portal
+- **@stripe/stripe-js@8.6.3**: Client-side Stripe redirect — no embedded elements needed
+- **Drizzle ORM**: Database operations — schema already has billing fields (billingStatus, stripeCustomerId, stripePriceId, etc.)
+- **NextAuth.js v5**: Session management — user context available for tier checks
+- **TanStack Query**: State management — useUserStatus hook already provides billing state
 
 **What NOT to add:**
-- OpenAI Batch API: 50% cost savings but 24-hour latency - users uploading 12 months expect instant feedback, not batch jobs
-- MongoDB for statement storage: Adds new database, overkill - PostgreSQL handles millions of rows with partitioning
-- Real-time WebSocket progress: Over-engineered - Server-Sent Events (built into Next.js ReadableStream) sufficient
-- Automatic reconciliation across sources: Enterprise feature adds complexity users don't need for personal subscription tracking
+- @stripe/react-stripe-js — Using Checkout redirect, not embedded elements
+- Feature flag services (LaunchDarkly) — Simple tier-based gating is sufficient
+- Custom coupon database — Stripe handles redemption limits, expiration, fraud
 
-### Architecture Components
+### Expected Features
 
-**New database tables:**
+**Must have (table stakes):**
+- Stripe Checkout flow (already implemented)
+- Monthly and annual billing (already implemented)
+- Email receipts/invoices (Stripe automatic)
+- Subscription cancellation (Customer portal)
+- Plan upgrade/downgrade with proration (Customer portal)
+- Payment method update (Customer portal)
+- Failed payment retry (Stripe Smart Retries)
 
-1. **statement_line_items** (stores ALL transactions from statements)
-   - Columns: merchantName, amount, currency, transactionDate, tags (JSONB array), aiConfidence, convertedToSubscriptionId
-   - Indexes: userId + transactionDate (composite), merchantName (B-tree), tags (GIN for containment queries)
-   - Partitioning: By user (HASH) then by month (RANGE) for time-based cleanup
-   - Rationale: Structured schema enables filtering by merchant, date, tag (impossible with JSONB on import_audits)
+**Should have (differentiators):**
+- Three-tier product structure (Primary $4.99, Enhanced $9.99, Advanced $19.99)
+- Feature gating with contextual upgrade prompts
+- Voucher/coupon codes for free months (Stripe promotion codes)
+- Annual discount incentive (33% savings)
 
-2. **Extension to subscriptions table**
-   - Add: sourceLineItemId (nullable FK to statement_line_items)
-   - Rationale: Enables "show original statement line" feature, tracks conversion lineage
+**Defer (v2.2+):**
+- Referral program (requires tracking infrastructure)
+- Team/family plans (multi-user access model)
+- Retention coupon on cancel attempt
+- Trial extension for high-engagement users
 
-**Enhanced import flow:**
+### Architecture Approach
 
-- Current flow (subscriptions-only) continues unchanged
-- New flow adds `mode` parameter: "subscriptions" (default) or "full_statement"
-- Full statement mode calls new GPT-4 prompt extracting ALL transactions (not just subscriptions)
-- Line items bulk inserted with chunking (1,000 rows per batch to avoid query size limits)
-- Progress streamed to client via ReadableStream (Server-Sent Events pattern)
+The architecture extends the existing billing layer by adding tier awareness. The `stripePriceId` field already on the users table serves as the source of truth for tier determination — a lookup function maps price IDs to tiers. Feature access is controlled by a configuration constant (TIER_LIMITS/TIER_FEATURES) that defines which features belong to which tier. Gating happens at two levels: client-side for UI (FeatureGate component) and server-side for API routes (requireFeature utility). Trial users get Enhanced tier access to experience premium features before conversion.
 
-**Statement browser architecture:**
-
-- Query API with filters: `/api/statements/line-items?source=X&tagged=Y&from=date&to=date&cursor=Z`
-- Keyset (cursor-based) pagination: Uses transactionDate cursor instead of OFFSET (constant time, not linear)
-- Virtualized table: TanStack Virtual renders only visible rows, handles 10K+ items at 60fps
-- Filter sidebar: Source, tags, date range (standard banking app pattern per research)
-
-**Tagging and conversion flows:**
-
-- Tag API: POST `/api/statements/line-items/[id]/tag` updates tags JSONB array (add/remove)
-- Conversion API: POST `/api/subscriptions/from-line-item` creates subscription from line item, sets sourceLineItemId, marks line item as converted (prevents double-conversion)
-- UI pattern: Inline combobox in table row (not modal) with recently-used subscriptions quick-access
-
-### Feature Categorization
-
-Based on analysis of 10+ fintech apps (MoneyWiz, PocketGuard, Expensify, YNAB) and enterprise reconciliation tools:
-
-**Table Stakes (users EXPECT these):**
-1. Batch PDF upload with drag-and-drop
-2. Statement data retention (all line items stored)
-3. Transaction browsing UI (filter, search, sort)
-4. Duplicate detection during import (extended to statements)
-5. Drag-and-drop file upload UX
-6. Progress indicators for batch processing
-
-**Differentiators (competitive advantage):**
-7. Manual transaction tagging (mark as potential subscription)
-8. Manual conversion (any item → subscription)
-9. Source dashboard (overview cards per statement source)
-10. AI suggestions from statement data (recurring pattern detection)
-11. Re-import capability (import skipped items from previous statements)
-12. Historical data strengthens pattern detection (12 months of data = better AI)
-
-**Anti-Features (deliberately avoid):**
-- Automatic reconciliation across multiple sources (enterprise complexity users don't need)
-- Automated cash application (B2B feature, not relevant for personal subscriptions)
-- Multi-currency reconciliation (scope creep, low demand)
-- Transaction-level commenting/notes (<5% usage in research)
-- Automatic category learning (ML complexity, premature optimization)
-- Real-time import via Plaid (massive scope increase, security/privacy concerns)
-- Transaction splitting (wrong use case for subscriptions)
-- Budget tracking (feature creep, separate product direction)
+**Major components:**
+1. **lib/stripe/products.ts (extended)** — Tier definitions, price ID mappings, feature lists per tier
+2. **lib/billing/feature-gate.ts (new)** — Server-side hasFeature(), requireFeature(), getUserTier() utilities
+3. **components/billing/feature-gate.tsx (new)** — Client-side FeatureGate component with upgrade prompts
+4. **lib/hooks/use-user.ts (extended)** — Add tier and hasFeature to existing useUserStatus hook
+5. **webhooks/stripe (updated)** — Add idempotency tracking, extract tier from price ID on subscription events
 
 ### Critical Pitfalls
 
-**Pitfall 1: Memory Exhaustion in Batch PDF Processing (CRITICAL)**
-- **What:** Processing 12+ PDFs simultaneously causes Node.js heap overflow, crashing import
-- **Why:** 50-page statement = 50-100MB memory; 12 files = 600MB-1.2GB exceeding Node default (512MB-1.7GB)
-- **Prevention:** Process sequentially not in parallel, use streaming PDF libraries, increase heap to 4GB, store PDFs in S3/Supabase Storage not memory
-- **Phase impact:** Must address in Phase 1 (Batch Upload) before UI work
-- **Detection:** Monitor process.memoryUsage(), watch for "heap out of memory" errors
+1. **Non-Idempotent Webhooks** — Stripe retries webhooks for up to 3 days. Without tracking processed event IDs, duplicate charges and data corruption occur. Create a `stripe_events` table and check `event.id` before processing.
 
-**Pitfall 2: Unbounded Table Growth Without Archival (CRITICAL)**
-- **What:** Line items table grows to millions of rows causing query slowdowns, index bloat, backup issues
-- **Why:** 50-200 items per statement × no cleanup = indefinite growth; PostgreSQL MVCC creates dead tuples
-- **Prevention:** Partition table by user + date, implement 24-month retention policy, archive to S3, tune autovacuum for high-write tables
-- **Phase impact:** Must design in Phase 2 (Statement Storage) - retrofitting partitioning requires full rebuild
-- **Detection:** Query pgstattuple for bloat >30%, monitor table size growth rate (GB/month)
+2. **Feature Gating Race Conditions** — User upgrades but webhook hasn't processed yet. Client-side cache shows old tier. Always verify tier server-side for premium actions, invalidate cache on checkout success redirect.
 
-**Pitfall 3: Pagination Performance Collapse at Scale (CRITICAL)**
-- **What:** Transaction browsing becomes unusable (20+ second page loads) when paginating deep with OFFSET
-- **Why:** OFFSET 10000 forces database to scan and discard 10,000 rows; performance degrades linearly with depth
-- **Prevention:** Use keyset (cursor-based) pagination with transactionDate cursor, create composite indexes, use BRIN indexes for time-series data
-- **Phase impact:** Must implement in Phase 3 (Statement Browser) - changing pagination later breaks API
-- **Detection:** Test pagination at page 100, 500, 1000; use EXPLAIN ANALYZE to check for Seq Scan
+3. **Voucher Code Exploitation** — Promo codes shared publicly with no limits. Always set `max_redemptions`, use `first_time_transaction` restriction, monitor usage in Stripe dashboard.
 
-**Pitfall 4: Deduplication Logic Failure on Re-imports (CRITICAL)**
-- **What:** Re-importing same statement creates duplicates or false negatives (missing items)
-- **Why:** Naive hash of (date+amount+merchant) fails on merchant name variations, same-day charges, floating-point precision
-- **Prevention:** Use composite fingerprint with fuzzy tolerance (normalized merchant + rounded amount + date ±2 days), store source file hash, implement idempotent import API
-- **Phase impact:** Must design in Phase 2 before data accumulates - changing deduplication later requires backfilling
-- **Detection:** Monitor duplicate rate via SQL query, test re-importing same file multiple times
+4. **Trial-to-Paid Conversion Gaps** — Trial expires during checkout flow. Extend trial by 24 hours when checkout initiated, resolve state conflicts in webhook handler.
 
-**Pitfall 5: Manual Tags Lost on Re-import (CRITICAL)**
-- **What:** User manually tags transactions, then re-imports statement - tags overwritten/deleted
-- **Why:** Re-import logic treats all line items as new data, overwrites existing records
-- **Prevention:** Never UPDATE line items (only INSERT with replacesId), track user_modified flag, implement tag preservation logic during re-import
-- **Phase impact:** Must implement in Phase 4 (Manual Tagging) - fixing later requires data recovery from backups
-- **Detection:** Track manual tag count before/after re-import, add audit log for tag deletions
-
-### Moderate Pitfalls
-
-**Pitfall 6: Transaction Browser Filter Performance (IMPORTANT)**
-- Generic indexes don't cover filter combinations causing 10+ second query times
-- Prevention: Create partial indexes for common filter combos, use PostgreSQL full-text search for merchant, pre-filter by userId
-- Detection: Test filters with 100K+ rows, use EXPLAIN ANALYZE
-
-**Pitfall 7: Batch Import Progress Not Saved on Failure (IMPORTANT)**
-- Import fails on file 8 of 12, user must re-upload all 12 files
-- Prevention: Process and persist each file independently, store per-file status, allow resuming failed batch
-- Detection: Kill import mid-batch, check if partial progress saved
-
-**Pitfall 8: No Loading State for Long Batch Imports (IMPORTANT)**
-- User uploads 12 files, sees spinner for 5 minutes with no feedback, thinks app froze
-- Prevention: Use Server-Sent Events for real-time progress, show per-file status, display estimated time remaining
-- Detection: Upload 12 files and monitor user confusion in testing
-
-**Pitfall 9: Statement Browser Mobile UX Breaks (MODERATE)**
-- Table with 10 columns doesn't fit on mobile, horizontal scrolling feels broken
-- Prevention: Use card layout on mobile, table on desktop; show only essential columns (date, merchant, amount)
-- Detection: Test on real mobile device
-
-**Pitfall 10: Tagging UX Requires Too Many Clicks (MODERATE)**
-- Tagging requires: click row → dialog → search → select → save; users give up after 5-10 items
-- Prevention: Inline combobox in table row, keyboard shortcuts, bulk actions, recently-used subscriptions quick-access
-- Detection: User test "tag 20 transactions", track average time per tag
+5. **Client-Side Only Feature Gating** — Users can bypass React component checks by calling API directly. Always validate tier in API routes for premium features.
 
 ## Implications for Roadmap
 
-Based on combined research, suggested phase structure prioritizes foundational data storage, then UI for browsing/enrichment, then intelligence features:
+Based on research, suggested phase structure:
 
-### Phase 1: Batch Upload Foundation (Week 1-2)
-**Rationale:** Core feature that users expect; establishes sequential processing pattern preventing memory issues; foundational for all other phases.
+### Phase 1: Webhook Infrastructure Hardening
+**Rationale:** Foundation that all billing depends on. Current handler lacks idempotency — must fix before adding complexity.
+**Delivers:** Reliable webhook processing with idempotency tracking, complete event coverage
+**Addresses:** Subscription lifecycle sync, trial-to-paid transitions
+**Avoids:** Duplicate processing (Pitfall 1), webhook timeouts (Pitfall 2), missing event coverage (Pitfall 8)
+**Estimated effort:** Medium
 
-**Delivers:**
-- Database: `statement_line_items` table with partitioning, indexes, relations
-- Database: `sourceLineItemId` column on `subscriptions` table
-- Import API: Enhanced `/api/import` with `mode` parameter ("subscriptions" | "full_statement")
-- Parser: New `statement-parser.ts` with GPT-4 prompt for ALL transactions
-- Batch API: `/api/statements/line-items/batch` for bulk inserts with chunking
-- UI: Drag-and-drop upload zone with progress indicators
-- UI: Mode toggle in import page (subscriptions-only vs full statement)
+### Phase 2: Multi-Tier Product Setup
+**Rationale:** Products must exist in Stripe before checkout can reference them. Configuration-only phase.
+**Delivers:** Three products in Stripe, six prices (monthly/annual each), extended products.ts with tier configuration
+**Uses:** Stripe Dashboard, environment variables for price IDs
+**Implements:** TIERS configuration, getTierFromPriceId() lookup
+**Estimated effort:** Low
 
-**Stack:** Drizzle ORM (schema), OpenAI GPT-4o (extended prompt), React Dropzone (existing), Next.js ReadableStream (progress)
+### Phase 3: Feature Gating Infrastructure
+**Rationale:** Gating utilities must exist before applying gates to features. Server and client components.
+**Delivers:** hasFeature/requireFeature utilities, FeatureGate component, extended useUserStatus hook
+**Addresses:** Tier-based access control (table stakes for multi-tier)
+**Avoids:** Client-only gating bypass (Pitfall 5), multi-tier confusion (Pitfall 9)
+**Estimated effort:** Medium
 
-**Addresses:** Batch PDF upload (#1 table stakes), statement data retention (#2 table stakes), drag-and-drop UX (#5 table stakes), progress indicators (#6 table stakes)
+### Phase 4: Feature Gate Rollout
+**Rationale:** Apply gates to existing features now that infrastructure is ready.
+**Delivers:** PDF import gated by tier, pattern detection gated, statement browser gated (Advanced only), upgrade prompts at gate points
+**Implements:** Usage limits per tier, contextual upgrade CTAs
+**Estimated effort:** Medium (many touchpoints across app)
 
-**Avoids:** Memory exhaustion (Pitfall #1 - critical) via sequential processing, unbounded table growth (Pitfall #2 - critical) via partitioning design, deduplication failure (Pitfall #4 - critical) via fingerprinting logic
+### Phase 5: Pricing & Billing UI
+**Rationale:** UI updates after backend is complete. Pricing page, billing settings, tier comparison.
+**Delivers:** Three-tier pricing page, updated billing settings with current tier display, plan switching with proration preview
+**Avoids:** Plan switching proration confusion (Pitfall 10)
+**Estimated effort:** Low
 
-**Research flags:** None - patterns well-established
-
-**Estimated Effort:** 8-10 days (includes schema design, migration, API implementation, UI components)
-
----
-
-### Phase 2: Statement Browser & Filtering (Week 3-4)
-**Rationale:** Must be able to browse retained data; establishes filtering patterns and pagination strategy before data accumulates.
-
-**Delivers:**
-- Query API: `/api/statements/line-items` GET with filters (source, tagged, date range, cursor)
-- Browser page: `/statements` with virtualized table using TanStack Virtual
-- Filter sidebar: Source filter, tag filter, date range picker
-- Keyset pagination: Cursor-based with transactionDate
-- Duplicate detection: Extended to statements (file hash checking)
-- Empty states: "No statements uploaded yet" with upload CTA
-
-**Stack:** @tanstack/react-virtual (NEW - 15KB), TanStack Table (existing), shadcn/ui components (existing)
-
-**Addresses:** Transaction browsing UI (#3 table stakes), duplicate detection (#4 table stakes)
-
-**Avoids:** Pagination performance collapse (Pitfall #3 - critical) via keyset pagination, filter performance issues (Pitfall #6 - important) via composite indexes, mobile UX breaks (Pitfall #9 - moderate) via responsive design
-
-**Research flags:** None - TanStack Virtual and keyset pagination are proven patterns
-
-**Estimated Effort:** 6-8 days (includes API with complex filtering, virtualized table, filter UI, pagination)
-
----
-
-### Phase 3: Manual Tagging & Conversion (Week 5-6)
-**Rationale:** Core differentiator - enables users to enrich data AI missed; establishes collaborative intelligence loop.
-
-**Delivers:**
-- Tag API: POST `/api/statements/line-items/[id]/tag` for add/remove tags
-- Conversion API: POST `/api/subscriptions/from-line-item` with pre-filled data
-- Tag UI: Inline combobox in table rows with recently-used subscriptions
-- Bulk actions: "Tag selected items" for multi-select
-- Conversion modal: Pre-filled form with line item data (merchant, amount, frequency)
-- Converted badge: Visual indicator showing which items became subscriptions
-- Tag preservation: Logic to prevent losing manual tags on re-import
-
-**Stack:** shadcn/ui Combobox, Drizzle ORM (JSONB updates), existing subscription creation flow
-
-**Addresses:** Manual tagging (#7 differentiator), manual conversion (#8 differentiator)
-
-**Avoids:** Manual tags lost on re-import (Pitfall #5 - critical) via user_modified flag, tagging UX friction (Pitfall #10 - moderate) via inline editing and bulk actions
-
-**Research flags:** None - tag preservation patterns documented in Modern Treasury research
-
-**Estimated Effort:** 5-7 days (includes tag API, conversion API, inline editing UI, bulk actions)
-
----
-
-### Phase 4: Source Dashboard & Re-import (Week 7-8)
-**Rationale:** Quick overview of data coverage; enables users to fix initial import mistakes; low-complexity enhancements.
-
-**Delivers:**
-- Source Dashboard: Grid of cards showing statements per source (count, date range, total items)
-- Aggregation query: GROUP BY source with counts
-- Re-import UI: Statement detail view showing all items (imported vs skipped)
-- Import status: Visual indicators (✅ imported, ⭕ skipped)
-- Import from detail: "Import this item" button on skipped items
-- Partial import tracking: Per-file status (pending, processing, completed, failed)
-- Resume capability: Continue failed batch from last successful file
-
-**Stack:** shadcn/ui Cards, existing query patterns, reuse conversion flow from Phase 3
-
-**Addresses:** Source dashboard (#9 differentiator), re-import capability (#11 differentiator)
-
-**Avoids:** Batch progress not saved (Pitfall #7 - important) via per-file status tracking, no loading state (Pitfall #8 - important) via detailed progress UI
-
-**Research flags:** None - dashboard aggregations and status tracking are standard patterns
-
-**Estimated Effort:** 4-6 days (includes aggregation queries, dashboard UI, detail view, resume logic)
-
----
-
-### Phase 5: AI Suggestions & Pattern Detection (Week 9-10)
-**Rationale:** Leverages historical statement data to strengthen existing pattern detection (v1.3); proactive user value.
-
-**Delivers:**
-- Extended pattern detection: Scan `statement_line_items` not just `subscriptions`
-- Recurring pattern detection: Same merchant, 3+ occurrences, monthly frequency
-- Suggestion dashboard: "We found 2 potential subscriptions" with confidence scores
-- Evidence display: List of matching transactions supporting suggestion
-- Accept/dismiss actions: One-click add or permanent dismissal
-- Tag integration: Auto-tag high-confidence items (>80%) as "potential_subscription"
-
-**Stack:** Extend existing pattern detection algorithm (v1.3), Drizzle ORM queries, confidence scoring
-
-**Addresses:** AI suggestions (#10 differentiator), historical pattern detection (#12 differentiator)
-
-**Avoids:** False positive suggestions by requiring 3+ occurrences, showing evidence not just confidence, allowing dismissals
-
-**Research flags:** Possible - if initial confidence thresholds generate too many false positives, may need `/gsd:research-phase` to tune; start conservatively (85% threshold)
-
-**Estimated Effort:** 5-7 days (includes pattern detection extension, suggestion UI, accept/dismiss flows)
-
----
+### Phase 6: Voucher System
+**Rationale:** Independent feature, can run parallel with Phase 4-5. Leverages existing allow_promotion_codes.
+**Delivers:** Stripe coupons and promotion codes created, documented redemption flows, admin guide for creating codes
+**Addresses:** Acquisition tool requirement, free months promotional capability
+**Avoids:** Voucher exploitation (Pitfall 4), portal promo exposure (Pitfall 6)
+**Estimated effort:** Low (mostly Stripe Dashboard configuration)
 
 ### Phase Ordering Rationale
 
-- **Phase 1 is foundation:** All other phases depend on statement data storage
-- **Phase 2 before 3:** Must be able to browse data before tagging it
-- **Phase 3 before 4:** Conversion flow reused in re-import
-- **Phase 5 last:** Requires historical data from imports, benefits from tag data from Phase 3
-
-**Parallelization opportunity:** None - phases have strict dependencies
-
-**Total estimated effort:** 28-38 days (5.6-7.6 weeks) for full Statement Hub milestone
+- **Phase 1 is non-negotiable first** — All subsequent phases depend on reliable webhooks for tier sync
+- **Phase 2 before Phase 3** — Feature gating needs to know tier; tier comes from Stripe price IDs
+- **Phase 3 before Phase 4** — Must have gating utilities before applying gates
+- **Phase 4 before Phase 5** — Gates must work before showing tier-specific UI
+- **Phase 6 is independent** — Can run in parallel with 4-5, only needs Stripe products from Phase 2
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 5 (AI Suggestions):** Confidence threshold tuning is user-specific; may need additional research if false positive rate >20%; consider `/gsd:research-phase` after initial implementation with real data
+**Phases with well-documented patterns (skip phase research):**
+- **Phase 1 (Webhooks):** Stripe documentation is comprehensive, existing codebase has foundation
+- **Phase 2 (Products):** Stripe Dashboard configuration, no code research needed
+- **Phase 3 (Feature Gating):** Standard SaaS pattern, multiple reference implementations available
+- **Phase 6 (Vouchers):** Stripe handles everything, allow_promotion_codes already enabled
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (Batch Upload):** Sequential processing, streaming progress, and partitioning are well-documented patterns
-- **Phase 2 (Statement Browser):** Keyset pagination and virtualized tables are proven at scale
-- **Phase 3 (Manual Tagging):** Tag preservation and inline editing patterns documented in fintech research
-- **Phase 4 (Source Dashboard):** Aggregation queries and status tracking are standard database patterns
+**Phases that may need implementation validation:**
+- **Phase 4 (Gate Rollout):** Needs per-feature decisions on which tier gets what — review during planning
+- **Phase 5 (Pricing UI):** May need proration preview API testing — verify Stripe invoice preview behavior
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Only 1 new dependency (@tanstack/react-virtual); all other capabilities use existing stack (Drizzle, OpenAI, React Dropzone, Next.js); npm package widely adopted (3.13.18 stable) |
-| Features | HIGH | Table stakes clear from 10+ fintech app research (MoneyWiz, PocketGuard, Expensify, YNAB); differentiators validated by Modern Treasury transaction tagging patterns |
-| Architecture | HIGH | Extends existing schema cleanly (additive only); keyset pagination and partitioning are proven PostgreSQL patterns; TanStack Virtual is industry standard for large lists |
-| Pitfalls | HIGH | Memory exhaustion documented in Node.js limits research; pagination performance and table bloat documented in PostgreSQL optimization guides; deduplication issues covered in Modern Treasury case studies |
+| Stack | HIGH | No new packages needed; all technologies already installed and working |
+| Features | HIGH | Stripe documentation verified; existing codebase analyzed; feature gaps are clear |
+| Architecture | HIGH | Extends existing patterns; no new paradigms; users table already has billing fields |
+| Pitfalls | HIGH | Official Stripe docs on webhooks/coupons; codebase analysis confirms current gaps |
 
 **Overall confidence:** HIGH
 
+This is an architectural expansion of existing, working code. The Stripe foundation is solid. Risk is execution, not technology.
+
 ### Gaps to Address
 
-Areas where research was conclusive but implementation needs validation:
-
-- **Optimal partition strategy:** Research shows monthly partitioning recommended for time-series data, but actual partition size depends on statement volume per user; start with monthly partitions, monitor partition size (target: 10K-100K rows per partition); if partitions grow >500K rows, consider weekly partitioning
-
-- **Sequential processing timeout:** Research shows 12 PDFs × 20 seconds/file = 4 minutes total; Vercel Pro has 60-second timeout per request; must use background job queue (Vercel cron + status polling) or streaming response that maintains connection; validate timeout doesn't kill long-running imports
-
-- **Keyset pagination with filters:** Cursor-based pagination requires stable sort key; when filtering by merchant + date, cursor must include both fields; validate cursor serialization handles multi-column cursors correctly
-
-- **TanStack Virtual row height:** Virtualization requires estimated row height (default: 50px); if transaction descriptions vary significantly, may need dynamic height measurement; validate scrolling feels smooth with real statement data
-
-- **Tag preservation edge cases:** Research shows tag preservation should prevent overwrites, but what if user re-imports with conflicting data (e.g., amount changed)?; validate merge logic with production scenarios; may need conflict resolution UI
-
-- **Statement file hash uniqueness:** Using SHA-256 hash of PDF contents assumes byte-identical files are duplicates; some banks regenerate PDFs with different metadata but same transactions; validate file hash approach with multiple bank statement formats; may need content-based hashing (transactions only) instead of file-based
+- **Proration behavior testing:** Need to verify Stripe invoice preview API for plan switching before Phase 5 implementation
+- **Tier feature allocation:** Research did not prescribe exactly which features belong to which tier — this needs product decision during Phase 4 planning
+- **Webhook queue pattern:** Current recommendation is idempotency table; queue-based async processing is optional optimization if timeout issues occur
 
 ## Sources
 
 ### Primary (HIGH confidence)
-
-**Stack:**
-- [TanStack Virtual Official Docs](https://tanstack.com/virtual/latest) - Official documentation for virtualized scrolling (3.13.18 stable)
-- [@tanstack/react-virtual npm](https://www.npmjs.com/package/@tanstack/react-virtual) - Package details, 15KB bundle size
-- [Drizzle ORM Batch API](https://orm.drizzle.team/docs/batch-api) - Batch inserts with chunking
-- [Next.js Streaming Guide](https://nextjs.org/learn/dashboard-app/streaming) - ReadableStream for progress updates
-
-**Features:**
-- [Key Features Every Personal Finance App Needs in 2026](https://financialpanther.com/key-features-every-personal-finance-app-needs-in-2026/) - Table stakes validation
-- [MoneyWiz 2026](https://apps.apple.com/us/app/moneywiz-2026-personal-finance/id1511185140) - Transaction browsing patterns
-- [PocketGuard Features](https://pocketguard.com/) - Filtering and categorization UX
-- [Modern Treasury Transaction Tagging](https://www.moderntreasury.com/journal/transaction-tagging-transforming-raw-bank-data-into-real-insights) - Tagging system design, manual enrichment patterns
-
-**Architecture:**
-- [PostgreSQL Partitioning Best Practices](https://oneuptime.com/blog/post/2026-01-25-postgresql-optimize-billion-row-tables/view) - Partitioning for large tables
-- [Keyset Pagination for Large Datasets](https://oneuptime.com/blog/post/2026-02-02-keyset-pagination/view) - Cursor-based pagination implementation
-- [Building Virtualized Table with TanStack](https://dev.to/ainayeem/building-an-efficient-virtualized-table-with-tanstack-virtual-and-react-query-with-shadcn-2hhl) - Integration patterns
-- [Financial Data Retention Policies](https://atlan.com/know/data-governance/data-retention-policies-in-finance/) - 24-month retention standards
-
-**Pitfalls:**
-- [Batch Processing Large Datasets in Node.js Without Running Out of Memory](https://dev.to/rabbitramang/batch-processing-large-datasets-in-nodejs-without-running-out-of-memory-9a1) - Memory exhaustion prevention
-- [How to Reduce Bloat in Large PostgreSQL Tables](https://www.tigerdata.com/learn/how-to-reduce-bloat-in-large-postgresql-tables) - Table bloat mitigation
-- [Handling Large Datasets: Optimizing Pagination, Sorting & Filtering](https://medium.com/@jatin.jain_69313/handling-large-datasets-high-traffic-queries-optimizing-pagination-sorting-filtering-bf9a2d5a9813) - Pagination performance
-- [Deduplication at Scale](https://www.moderntreasury.com/journal/deduplication-at-scale) - Deduplication strategies, fingerprinting patterns
+- Stripe SDK: package.json (stripe@20.2.0, @stripe/stripe-js@8.6.3)
+- Stripe Subscriptions Build Guide: https://docs.stripe.com/billing/subscriptions/build-subscriptions
+- Stripe Coupons & Promotion Codes: https://docs.stripe.com/billing/subscriptions/coupons
+- Stripe Webhooks Best Practices: https://docs.stripe.com/webhooks/best-practices
+- Stripe Customer Portal Configuration: https://docs.stripe.com/customer-management/configure-portal
+- Codebase: src/lib/stripe/client.ts, src/app/api/webhooks/stripe/route.ts, src/lib/db/schema.ts
 
 ### Secondary (MEDIUM confidence)
+- T3's Stripe Recommendations: https://github.com/t3dotgg/stripe-recommendations
+- Vercel nextjs-subscription-payments: https://github.com/vercel/nextjs-subscription-payments
+- Pedro Alonso Stripe + Next.js 15 Guide: https://www.pedroalonso.net/blog/stripe-nextjs-complete-guide-2025/
+- Clerk use-stripe-subscription: https://github.com/clerk/use-stripe-subscription
 
-- [File Upload UX Best Practices](https://uploadcare.com/blog/file-uploader-ux-best-practices/) - Drag-and-drop patterns
-- [Drag-and-Drop UX Guidelines](https://smart-interface-design-patterns.com/articles/drag-and-drop-ux/) - Interaction design best practices
-- [NetSuite Bank Statement Import](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_N1550803.html) - Enterprise import patterns
-- [Data Archiving in PostgreSQL](https://dataegret.com/2025/05/data-archiving-and-retention-in-postgresql-best-practices-for-large-datasets/) - Archival strategies
-
-### Codebase Analysis (HIGH confidence)
-
-- `src/lib/db/schema.ts` - Existing schema structure, import_audits table, subscriptions table
-- `src/app/api/import/route.ts` - Current import flow, OpenAI integration
-- `src/lib/openai/pdf-parser.ts` - GPT-4 prompt structure, DetectedSubscription interface
-- `.planning/phases/06-statement-source-tracking/06-RESEARCH.md` - Statement source tracking patterns
-- `CLAUDE.md` - Tech stack (Next.js 16, Drizzle ORM, Supabase PostgreSQL, OpenAI GPT-4o)
+### Tertiary (for reference)
+- SaaS Tiered Billing Guide - Maxio
+- SaaS Pricing Strategy Guide 2026 - Momentum Nexus
+- BigBinary Database Design for Subscriptions
 
 ---
-
-*Research completed: 2026-02-08*
+*Research completed: 2026-02-11*
 *Ready for roadmap: yes*
