@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -192,14 +193,7 @@ export default async function WebhookLogsPage({ searchParams }: PageProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
-                    {new Date(event.processedAt).toLocaleString("en-US", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    })}
+                    {format(new Date(event.processedAt), "MMM d, yyyy HH:mm:ss")}
                   </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
                     {event.processingTimeMs ? (
