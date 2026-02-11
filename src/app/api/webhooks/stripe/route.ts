@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm";
 import { getStripeClient } from "@/lib/stripe/client";
 import type Stripe from "stripe";
 import { addDays } from "date-fns";
+import { renderPaymentFailedEmail } from "@/lib/email/templates/payment-failed";
+import { sendEmail } from "@/lib/email/client";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -291,5 +293,45 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
   console.log(`Payment failed for user: ${user.id}`);
 
-  // TODO: Send email notification about failed payment
+  // Send email notification (first attempt only)
+  const attemptCount = invoice.attempt_count ?? 1;
+  if (attemptCount > 1) {
+    console.log(`Skipping email for retry attempt ${attemptCount}`);
+    return;
+  }
+
+  try {
+    // Create billing portal session for payment method update
+    const stripe = getStripeClient();
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+      flow_data: {
+        type: 'payment_method_update',
+      },
+    });
+
+    // Prepare retry date (Stripe retries failed payments)
+    const retryDate = invoice.next_payment_attempt
+      ? new Date(invoice.next_payment_attempt * 1000)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default to 7 days
+
+    // Send email
+    await sendEmail({
+      to: user.email,
+      subject: "Action Required: Payment Failed",
+      html: renderPaymentFailedEmail({
+        userName: user.name || "there",
+        amount: (invoice.amount_due / 100).toFixed(2),
+        currency: invoice.currency.toUpperCase(),
+        billingPortalUrl: portalSession.url,
+        retryDate,
+      }),
+    });
+
+    console.log(`Payment failure email sent to: ${user.email}`);
+  } catch (error) {
+    console.error("Failed to send payment failure email:", error);
+    // Don't fail the webhook if email fails
+  }
 }
