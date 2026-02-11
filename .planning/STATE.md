@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 24 of 28 (Webhook Infrastructure Hardening)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-11 - Roadmap created for v2.1
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-02-11 - Completed 24-01-PLAN.md
 
-Progress: [========================] v2.0 complete | v2.1 [-----] 0%
+Progress: [========================] v2.0 complete | v2.1 [█----] 20%
 
 ## Milestone Summary
 
@@ -43,14 +43,14 @@ Progress: [========================] v2.0 complete | v2.1 [-----] 0%
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 70 plans completed, 96 requirements validated
+**Total:** 71 plans completed, 96 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 70
+- Total plans completed: 71
 - Average duration: ~6 min
-- Total execution time: ~442 min (~7.4 hours)
+- Total execution time: ~445 min (~7.4 hours)
 
 ## Accumulated Context
 
@@ -59,6 +59,7 @@ Progress: [========================] v2.0 complete | v2.1 [-----] 0%
 | Pattern | Description |
 |---------|-------------|
 | Webhook handler | Verify signature, parse event, switch on type |
+| Webhook idempotency | Insert-on-conflict pattern with unique constraint (24-01) |
 | Stripe Customer ID | Stored on users.stripeCustomerId |
 | Trial system | 14-day trial with billingStatus enum |
 | Checkout flow | Create session, redirect, handle webhook |
@@ -71,12 +72,20 @@ Progress: [========================] v2.0 complete | v2.1 [-----] 0%
 - NEXT_PUBLIC_SENTRY_DSN needed for Sentry error tracking
 
 **Billing-specific:**
-- Webhook handler lacks idempotency (Phase 24 addresses this)
+- Webhook events need TTL cleanup cron job (30-day retention)
 - allow_promotion_codes already enabled in checkout (promo codes work from day one)
+
+## Decisions Log
+
+| Phase | Decision | Rationale | Impact |
+|-------|----------|-----------|--------|
+| 24-01 | Insert-on-conflict idempotency pattern | Atomic check-and-insert via PostgreSQL unique constraint | Eliminates race conditions, no external dependencies |
+| 24-01 | Return 200 for failed events | Prevents Stripe retry storms for non-retriable errors | Only database connection errors return 500 |
+| 24-01 | 30-day webhook event TTL | Matches Stripe event retention window | Bounded storage, requires cleanup cron |
 
 ## Session Continuity
 
 Last session: 2026-02-11
-Status: Roadmap created, ready to plan Phase 24
+Stopped at: Completed 24-01-PLAN.md
 Resume file: None
-Next step: /gsd:plan-phase 24
+Next step: Continue Phase 24 webhook hardening plans
