@@ -78,26 +78,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TIER-01 | TBD | Pending |
-| TIER-02 | TBD | Pending |
-| TIER-03 | TBD | Pending |
-| PORTAL-01 | TBD | Pending |
-| PORTAL-02 | TBD | Pending |
-| PORTAL-03 | TBD | Pending |
-| GATE-01 | TBD | Pending |
-| GATE-02 | TBD | Pending |
-| GATE-03 | TBD | Pending |
-| VCHR-01 | TBD | Pending |
-| VCHR-02 | TBD | Pending |
-| VCHR-03 | TBD | Pending |
-| HOOK-01 | TBD | Pending |
-| HOOK-02 | TBD | Pending |
+| HOOK-01 | Phase 24 | Pending |
+| HOOK-02 | Phase 24 | Pending |
+| TIER-01 | Phase 25 | Pending |
+| TIER-02 | Phase 25 | Pending |
+| TIER-03 | Phase 25 | Pending |
+| GATE-01 | Phase 26 | Pending |
+| GATE-02 | Phase 26 | Pending |
+| GATE-03 | Phase 26 | Pending |
+| PORTAL-01 | Phase 27 | Pending |
+| PORTAL-02 | Phase 27 | Pending |
+| PORTAL-03 | Phase 27 | Pending |
+| VCHR-01 | Phase 28 | Pending |
+| VCHR-02 | Phase 28 | Pending |
+| VCHR-03 | Phase 28 | Pending |
 
 **Coverage:**
 - v2.1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 (pending roadmap creation)
+- Mapped to phases: 14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-11 after initial definition*
+*Last updated: 2026-02-11 after roadmap creation*
