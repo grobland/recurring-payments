@@ -623,6 +623,29 @@ export const transactionTags = pgTable(
   ]
 );
 
+// ============ WEBHOOK EVENTS TABLE ============
+
+export const webhookEvents = pgTable(
+  "webhook_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: varchar("event_id", { length: 255 }).notNull(),
+    eventType: varchar("event_type", { length: 100 }).notNull(),
+    processedAt: timestamp("processed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    status: varchar("status", { length: 20 }).notNull(), // 'processed', 'failed', 'skipped'
+    errorMessage: text("error_message"),
+    processingTimeMs: integer("processing_time_ms"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("webhook_events_event_id_idx").on(table.eventId),
+    index("webhook_events_expires_at_idx").on(table.expiresAt),
+    index("webhook_events_status_idx").on(table.status),
+  ]
+);
+
 // ============ RELATIONS ============
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -826,3 +849,6 @@ export type Tag = typeof tags.$inferSelect;
 export type NewTag = typeof tags.$inferInsert;
 export type TransactionTag = typeof transactionTags.$inferSelect;
 export type NewTransactionTag = typeof transactionTags.$inferInsert;
+
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
