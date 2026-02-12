@@ -4,13 +4,17 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getStripeClient } from "@/lib/stripe/client";
-import { getPriceId, type PricingPlan } from "@/lib/stripe/products";
+import { getPriceIdForCheckout } from "@/lib/stripe/tiers";
+import { SUPPORTED_CURRENCIES, BILLING_INTERVALS } from "@/lib/stripe/products";
 import { z } from "zod";
+import type { Tier } from "@/lib/db/schema";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 const checkoutSchema = z.object({
-  plan: z.enum(["monthly", "annual"]),
+  tier: z.enum(["primary", "enhanced", "advanced"] as const),
+  interval: z.enum(["month", "year"] as const),
+  currency: z.enum(["usd", "eur", "gbp"] as const).default("usd"),
 });
 
 export async function POST(request: Request) {
@@ -25,12 +29,12 @@ export async function POST(request: Request) {
 
     if (!result.success) {
       return NextResponse.json(
-        { error: "Invalid plan selected" },
+        { error: "Invalid parameters", details: result.error.flatten() },
         { status: 400 }
       );
     }
 
-    const { plan } = result.data;
+    const { tier, interval, currency } = result.data;
 
     // Get user from database
     const user = await db.query.users.findFirst({
@@ -44,6 +48,17 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Look up price ID from database
+    const priceId = await getPriceIdForCheckout(tier, interval, currency);
+
+    if (!priceId) {
+      console.error(`Price not found for: tier=${tier}, interval=${interval}, currency=${currency}`);
+      return NextResponse.json(
+        { error: "Price not available for selected options" },
+        { status: 400 }
+      );
     }
 
     const stripe = getStripeClient();
@@ -66,9 +81,6 @@ export async function POST(request: Request) {
         .where(eq(users.id, user.id));
     }
 
-    // Get the price ID for the selected plan
-    const priceId = getPriceId(plan as PricingPlan);
-
     // Create checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -85,6 +97,7 @@ export async function POST(request: Request) {
       subscription_data: {
         metadata: {
           userId: user.id,
+          tier, // Store tier in subscription metadata for reference
         },
       },
       allow_promotion_codes: true,
