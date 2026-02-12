@@ -10,6 +10,7 @@ import {
   ExternalLink,
   AlertCircle,
   Crown,
+  Info,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,15 +18,70 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserStatus } from "@/lib/hooks";
-import { PRICING, formatPrice } from "@/lib/stripe/products";
+import { TIER_CONFIG, formatPrice, calculateAnnualSavings } from "@/lib/stripe/products";
+import { getGrandfatheringInfoAction, getUserTier } from "@/lib/stripe/tiers";
 import { toast } from "sonner";
+import type { Tier } from "@/lib/db/schema";
+import type { GrandfatheringInfo } from "@/lib/stripe/tiers";
+
+type BillingInterval = "month" | "year";
+
+interface TierPrices {
+  name: string;
+  tagline: string;
+  features: string[];
+  prices: {
+    month: Record<string, { priceId: string; amountCents: number }>;
+    year: Record<string, { priceId: string; amountCents: number }>;
+  };
+}
 
 export default function BillingPage() {
   const searchParams = useSearchParams();
   const { user, isLoading, isTrialActive, isPaid, daysLeftInTrial, billingStatus } =
     useUserStatus();
-  const [isCheckoutLoading, setIsCheckoutLoading] = useState<string | null>(null);
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState<Tier | null>(null);
   const [isPortalLoading, setIsPortalLoading] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<Tier>("primary");
+  const [selectedInterval, setSelectedInterval] = useState<BillingInterval>("month");
+  const [tierPrices, setTierPrices] = useState<Record<Tier, TierPrices> | null>(null);
+  const [grandfatheringInfo, setGrandfatheringInfo] = useState<GrandfatheringInfo | null>(null);
+  const [userTier, setUserTier] = useState<Tier | null>(null);
+
+  // Fetch prices from API
+  useEffect(() => {
+    async function fetchPrices() {
+      try {
+        const response = await fetch("/api/billing/prices");
+        if (!response.ok) throw new Error("Failed to fetch prices");
+        const data = await response.json();
+        setTierPrices(data.tiers);
+      } catch (error) {
+        console.error("Error fetching prices:", error);
+        toast.error("Failed to load pricing information");
+      }
+    }
+    fetchPrices();
+  }, []);
+
+  // Fetch grandfathering info for paid users
+  useEffect(() => {
+    async function fetchGrandfatheringInfo() {
+      if (!user?.id || !isPaid) return;
+
+      try {
+        const info = await getGrandfatheringInfoAction(user.id);
+        setGrandfatheringInfo(info);
+
+        // Also get user's current tier
+        const tier = await getUserTier(user.id);
+        setUserTier(tier);
+      } catch (error) {
+        console.error("Error fetching grandfathering info:", error);
+      }
+    }
+    fetchGrandfatheringInfo();
+  }, [user?.id, isPaid]);
 
   // Show success/cancel messages from Stripe redirect
   useEffect(() => {
@@ -36,13 +92,17 @@ export default function BillingPage() {
     }
   }, [searchParams]);
 
-  const handleCheckout = async (plan: "monthly" | "annual") => {
-    setIsCheckoutLoading(plan);
+  const handleCheckout = async (tier: Tier) => {
+    setIsCheckoutLoading(tier);
     try {
       const response = await fetch("/api/billing/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({
+          tier,
+          interval: selectedInterval,
+          currency: "usd",
+        }),
       });
 
       if (!response.ok) {
@@ -76,7 +136,7 @@ export default function BillingPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !tierPrices) {
     return (
       <div className="space-y-6">
         <Card>
@@ -87,6 +147,11 @@ export default function BillingPage() {
       </div>
     );
   }
+
+  // Calculate savings for interval toggle
+  const primaryMonthly = tierPrices.primary.prices.month.usd?.amountCents || 0;
+  const primaryYearly = tierPrices.primary.prices.year.usd?.amountCents || 0;
+  const savingsPercent = calculateAnnualSavings(primaryMonthly, primaryYearly);
 
   return (
     <div className="space-y-6">
@@ -107,7 +172,9 @@ export default function BillingPage() {
                     <Crown className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold">Pro Plan</p>
+                    <p className="font-semibold">
+                      {userTier ? TIER_CONFIG[userTier].name : "Pro"} Plan
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       Full access to all features
                     </p>
@@ -123,6 +190,20 @@ export default function BillingPage() {
                   Your subscription renews on{" "}
                   {format(new Date(user.currentPeriodEnd), "MMMM d, yyyy")}
                 </p>
+              )}
+
+              {/* Grandfathering alert */}
+              {grandfatheringInfo?.isGrandfathered && (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5" />
+                    <p className="text-sm text-green-800 dark:text-green-200">
+                      You're saving{" "}
+                      {formatPrice(grandfatheringInfo.savingsPerMonth, grandfatheringInfo.currency)}
+                      /month on your legacy pricing!
+                    </p>
+                  </div>
+                </div>
               )}
 
               <Button
@@ -202,97 +283,111 @@ export default function BillingPage() {
           <CardHeader>
             <CardTitle>Choose a Plan</CardTitle>
             <CardDescription>
-              Upgrade to unlock all features
+              Select the tier that fits your needs
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Monthly Plan */}
-              <div className="rounded-lg border p-6">
-                <h3 className="text-lg font-semibold">{PRICING.monthly.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {PRICING.monthly.description}
-                </p>
-                <div className="my-4">
-                  <span className="text-3xl font-bold">
-                    {formatPrice(PRICING.monthly.amount)}
-                  </span>
-                  <span className="text-muted-foreground">/month</span>
-                </div>
-                <ul className="mb-6 space-y-2 text-sm">
-                  <PlanFeature>Unlimited subscriptions</PlanFeature>
-                  <PlanFeature>AI-powered PDF import</PlanFeature>
-                  <PlanFeature>Email reminders</PlanFeature>
-                  <PlanFeature>Spending analytics</PlanFeature>
-                  <PlanFeature>Data export</PlanFeature>
-                </ul>
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => handleCheckout("monthly")}
-                  disabled={isCheckoutLoading !== null}
-                >
-                  {isCheckoutLoading === "monthly" ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    "Subscribe Monthly"
-                  )}
-                </Button>
-              </div>
+          <CardContent className="space-y-6">
+            {/* Interval Toggle */}
+            <div className="flex items-center justify-center gap-4">
+              <Button
+                variant={selectedInterval === "month" ? "default" : "outline"}
+                onClick={() => setSelectedInterval("month")}
+                className="min-w-[120px]"
+              >
+                Monthly
+              </Button>
+              <Button
+                variant={selectedInterval === "year" ? "default" : "outline"}
+                onClick={() => setSelectedInterval("year")}
+                className="min-w-[120px]"
+              >
+                Annual
+                {savingsPercent > 0 && (
+                  <Badge className="ml-2 bg-green-100 text-green-800">
+                    Save {savingsPercent}%
+                  </Badge>
+                )}
+              </Button>
+            </div>
 
-              {/* Annual Plan */}
-              <div className="relative rounded-lg border-2 border-primary p-6">
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  Save {PRICING.annual.savings}
-                </Badge>
-                <h3 className="text-lg font-semibold">{PRICING.annual.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {PRICING.annual.description}
-                </p>
-                <div className="my-4">
-                  <span className="text-3xl font-bold">
-                    {formatPrice(PRICING.annual.amount)}
-                  </span>
-                  <span className="text-muted-foreground">/year</span>
-                </div>
-                <ul className="mb-6 space-y-2 text-sm">
-                  <PlanFeature>Unlimited subscriptions</PlanFeature>
-                  <PlanFeature>AI-powered PDF import</PlanFeature>
-                  <PlanFeature>Email reminders</PlanFeature>
-                  <PlanFeature>Spending analytics</PlanFeature>
-                  <PlanFeature>Data export</PlanFeature>
-                </ul>
-                <Button
-                  className="w-full"
-                  onClick={() => handleCheckout("annual")}
-                  disabled={isCheckoutLoading !== null}
-                >
-                  {isCheckoutLoading === "annual" ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    "Subscribe Annually"
-                  )}
-                </Button>
-              </div>
+            {/* Tier Cards */}
+            <div className="grid gap-6 md:grid-cols-3">
+              {(["primary", "enhanced", "advanced"] as Tier[]).map((tier) => {
+                const tierData = tierPrices[tier];
+                const price = tierData.prices[selectedInterval].usd;
+                const isSelected = selectedTier === tier;
+                const isRecommended = tier === "enhanced";
+
+                return (
+                  <div
+                    key={tier}
+                    className={`relative rounded-lg border p-6 transition-all ${
+                      isSelected
+                        ? "border-primary shadow-lg"
+                        : "border-gray-200 hover:border-gray-300"
+                    } ${isRecommended ? "border-2 border-primary" : ""}`}
+                    onClick={() => setSelectedTier(tier)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    {isRecommended && (
+                      <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        Recommended
+                      </Badge>
+                    )}
+
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-xl font-bold">{tierData.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {tierData.tagline}
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className="text-4xl font-bold">
+                          {price ? formatPrice(price.amountCents) : "$0"}
+                        </span>
+                        <span className="text-muted-foreground">
+                          /{selectedInterval === "month" ? "month" : "year"}
+                        </span>
+                      </div>
+
+                      <ul className="space-y-2 text-sm">
+                        {tierData.features.map((feature, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <Button
+                        className="w-full"
+                        variant={isSelected ? "default" : "outline"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCheckout(tier);
+                        }}
+                        disabled={isCheckoutLoading !== null}
+                      >
+                        {isCheckoutLoading === tier ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Subscribe"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
       )}
     </div>
-  );
-}
-
-function PlanFeature({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-center gap-2">
-      <Check className="h-4 w-4 text-primary" />
-      {children}
-    </li>
   );
 }
