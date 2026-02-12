@@ -57,6 +57,13 @@
       "when": 1770823636797,
       "tag": "0007_nappy_doomsday",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1770902398009,
+      "tag": "0008_slippery_puck",
+      "breakpoints": true
     }
   ]
 }
