@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 25 of 28 (Multi-Tier Product Setup)
-Plan: 3 of 3 in current phase
+Plan: 4 of 4 in current phase
 Status: Phase complete
-Last activity: 2026-02-12 - Completed 25-03-PLAN.md (Stripe Products and Price Seeding)
+Last activity: 2026-02-12 - Completed 25-04-PLAN.md (Multi-Tier Billing UI)
 
-Progress: [========================] v2.0 complete | v2.1 [████-] 40%
+Progress: [========================] v2.0 complete | v2.1 [█████] 45%
 
 ## Milestone Summary
 
@@ -43,14 +43,14 @@ Progress: [========================] v2.0 complete | v2.1 [████-] 40%
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 76 plans completed, 98 requirements validated
+**Total:** 77 plans completed, 98 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 76
+- Total plans completed: 77
 - Average duration: ~6 min
-- Total execution time: ~473 min (~7.88 hours)
+- Total execution time: ~481 min (~8.02 hours)
 
 ## Accumulated Context
 
@@ -73,6 +73,9 @@ Progress: [========================] v2.0 complete | v2.1 [████-] 40%
 | Multi-tier checkout | Accepts tier/interval/currency, looks up price from DB (25-02) |
 | Seed script connection | Dedicated postgres connection with max:1, connect_timeout:30 for reliability (25-03) |
 | Price seeding | onConflictDoUpdate pattern for idempotent seed operations (25-03) |
+| Public pricing API | GET /api/billing/prices returns active prices, no auth required (25-04) |
+| Server actions for billing | getGrandfatheringInfoAction() callable from client components (25-04) |
+| Database-driven pricing UI | Billing page fetches prices from API, not hardcoded (25-04) |
 
 
 ### Blockers/Concerns
@@ -114,9 +117,13 @@ Progress: [========================] v2.0 complete | v2.1 [████-] 40%
 | 25-02 | Database price lookup in checkout | getPriceIdForCheckout() queries stripe_prices table | Enables adding grandfathered prices without code deployment |
 | 25-03 | Dedicated postgres connection for seed scripts | Create connection with custom timeouts instead of using shared db instance | Resolves connection timeouts in network-constrained environments |
 | 25-03 | SQL migration for seed data | Create 0009_seed_stripe_prices.sql as backup seeding method | Provides alternative execution path if TypeScript script fails |
+| 25-04 | Public prices API endpoint | Pricing information is public, no need for authentication | Simpler frontend code, can be cached by CDN |
+| 25-04 | Server action for grandfathering info | Enables client components to fetch user-specific billing data | Cleaner than separate API route, co-located with tier logic |
+| 25-04 | Tier selection via click on card | Visual selection before checkout provides better UX | Users can review tier details before subscribing |
+| 25-04 | Default to USD currency | Multi-currency UI can be added later | Users currently only see USD pricing |
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 25-03-PLAN.md (Phase 25 complete)
+Stopped at: Completed 25-04-PLAN.md (Multi-Tier Billing UI - Phase 25 complete)
 Resume file: None
