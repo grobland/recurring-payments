@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 25 of 28 (Multi-Tier Product Setup)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-12 - Completed 25-02-PLAN.md (Tier Derivation and Multi-Tier Checkout)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-02-12 - Completed 25-03-PLAN.md (Stripe Products and Price Seeding)
 
-Progress: [========================] v2.0 complete | v2.1 [███--] 30%
+Progress: [========================] v2.0 complete | v2.1 [████-] 40%
 
 ## Milestone Summary
 
@@ -43,14 +43,14 @@ Progress: [========================] v2.0 complete | v2.1 [███--] 30%
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 75 plans completed, 98 requirements validated
+**Total:** 76 plans completed, 98 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 75
+- Total plans completed: 76
 - Average duration: ~6 min
-- Total execution time: ~467 min (~7.78 hours)
+- Total execution time: ~473 min (~7.88 hours)
 
 ## Accumulated Context
 
@@ -71,6 +71,8 @@ Progress: [========================] v2.0 complete | v2.1 [███--] 30%
 | Tier derivation | getUserTier() derives from stripePriceId, not stored column (25-02) |
 | Grandfathering check | getGrandfatheringInfo() compares user price to current active price (25-02) |
 | Multi-tier checkout | Accepts tier/interval/currency, looks up price from DB (25-02) |
+| Seed script connection | Dedicated postgres connection with max:1, connect_timeout:30 for reliability (25-03) |
+| Price seeding | onConflictDoUpdate pattern for idempotent seed operations (25-03) |
 
 
 ### Blockers/Concerns
@@ -83,8 +85,6 @@ Progress: [========================] v2.0 complete | v2.1 [███--] 30%
 - Payment failure emails require RESEND_API_KEY configuration
 - Health check needs actual webhook traffic for meaningful metrics
 - Cron jobs require CRON_SECRET environment variable in production
-- stripe_prices table must be populated with actual Stripe price IDs before checkout works (25-02)
-- Stripe products must be created for Primary, Enhanced, Advanced tiers (25-02)
 
 **Admin UI:**
 - Admin access currently open to all authenticated users (future: role-based access control)
@@ -112,9 +112,11 @@ Progress: [========================] v2.0 complete | v2.1 [███--] 30%
 | 25-02 | Grandfathering via price comparison | Compare user's price to current active price for same tier/interval/currency | Shows users their savings when on old prices |
 | 25-02 | Monthly savings normalization | Annualize yearly prices for consistent comparison | Enables fair comparison between monthly and yearly billing |
 | 25-02 | Database price lookup in checkout | getPriceIdForCheckout() queries stripe_prices table | Enables adding grandfathered prices without code deployment |
+| 25-03 | Dedicated postgres connection for seed scripts | Create connection with custom timeouts instead of using shared db instance | Resolves connection timeouts in network-constrained environments |
+| 25-03 | SQL migration for seed data | Create 0009_seed_stripe_prices.sql as backup seeding method | Provides alternative execution path if TypeScript script fails |
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 25-02-PLAN.md
+Stopped at: Completed 25-03-PLAN.md (Phase 25 complete)
 Resume file: None
