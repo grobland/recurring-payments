@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 25 of 28 (Multi-Tier Product Setup)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-11 - Completed Phase 24 Webhook Hardening (3 plans, all verified)
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-02-12 - Completed 25-01-PLAN.md (Multi-Tier Price Mapping Schema)
 
-Progress: [========================] v2.0 complete | v2.1 [█----] 20%
+Progress: [========================] v2.0 complete | v2.1 [██---] 25%
 
 ## Milestone Summary
 
@@ -43,14 +43,14 @@ Progress: [========================] v2.0 complete | v2.1 [█----] 20%
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 73 plans completed, 98 requirements validated
+**Total:** 74 plans completed, 98 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 73
+- Total plans completed: 74
 - Average duration: ~6 min
-- Total execution time: ~460 min (~7.7 hours)
+- Total execution time: ~465 min (~7.75 hours)
 
 ## Accumulated Context
 
@@ -67,6 +67,8 @@ Progress: [========================] v2.0 complete | v2.1 [█----] 20%
 | Checkout flow | Create session, redirect, handle webhook |
 | Portal redirect | Create portal session, redirect to Stripe |
 | Billing portal flow | Payment method update via Stripe-hosted portal (24-02) |
+| Price-to-tier mapping | stripePrices lookup table for grandfathering (25-01) |
+
 
 ### Blockers/Concerns
 
@@ -98,10 +100,12 @@ Progress: [========================] v2.0 complete | v2.1 [█----] 20%
 | 24-03 | Filter via URL searchParams | Shareable URLs, no client state management | Users can bookmark filtered views |
 | 24-03 | date-fns format for timestamps | Prevents hydration mismatch between server and client | Consistent rendering, no console warnings |
 | 24-03 | 50 events per page pagination | Balance between performance and UX | Good experience for typical webhook volumes |
+| 25-01 | Store tier as enum | Type safety and database constraint enforcement | Prevents invalid tier values, better IDE autocomplete |
+| 25-01 | Unique index on stripePriceId | Fast O(1) lookup when determining user tier | Critical for performance on every authenticated request |
+| 25-01 | isActive boolean flag | Distinguish current prices from grandfathered prices | Enables price changes without breaking existing subscribers |
 
 ## Session Continuity
 
-Last session: 2026-02-11
-Stopped at: Phase 24 complete (3/3 plans, verified)
+Last session: 2026-02-12
+Stopped at: Completed 25-01-PLAN.md
 Resume file: None
-Next step: /gsd:discuss-phase 25
