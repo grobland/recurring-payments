@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.1 Billing & Monetization - Phase 25 Multi-Tier Setup
+**Current focus:** v2.1 Billing & Monetization - Phase 26 Feature Gating
 
 ## Current Position
 
-Phase: 25 of 28 (Multi-Tier Product Setup)
-Plan: 5 of 5 in current phase
-Status: Phase complete
-Last activity: 2026-02-12 - Completed 25-05-PLAN.md (Multi-Tier Public Pricing Page)
+Phase: 26 of 28 (Feature Gating Infrastructure)
+Plan: 1 of ? in current phase
+Status: In progress
+Last activity: 2026-02-12 - Completed 26-01-PLAN.md (Feature Gating Configuration)
 
-Progress: [========================] v2.0 complete | v2.1 [██████] 50%
+Progress: [========================] v2.0 complete | v2.1 [████████] 60%
 
 ## Milestone Summary
 
@@ -43,14 +43,14 @@ Progress: [========================] v2.0 complete | v2.1 [██████] 5
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 77 plans completed, 98 requirements validated
+**Total:** 78 plans completed, 98 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 78
+- Total plans completed: 79
 - Average duration: ~6 min
-- Total execution time: ~487 min (~8.12 hours)
+- Total execution time: ~491 min (~8.18 hours)
 
 ## Accumulated Context
 
@@ -78,6 +78,10 @@ Progress: [========================] v2.0 complete | v2.1 [██████] 5
 | Database-driven pricing UI | Billing page fetches prices from API, not hardcoded (25-04) |
 | Marketing pricing display | Three-tier cards with interval toggle, dynamic pricing from database (25-05) |
 | Client-side data fetch pattern | useEffect + fetch for public data in client components (25-05) |
+| Feature-to-tier mapping | FEATURES constant with FEATURE_TIERS Record<Feature, Tier> (26-01) |
+| Feature access checking | hasFeature(), requireFeature(), getUserFeatureAccess() server actions (26-01) |
+| Tier hierarchy levels | TIER_LEVELS numeric comparison for tier access (primary=1, enhanced=2, advanced=3) (26-01) |
+| Trial user feature access | Null tier treated as primary tier via userTier ?? "primary" pattern (26-01) |
 
 
 ### Blockers/Concerns
@@ -125,9 +129,13 @@ Progress: [========================] v2.0 complete | v2.1 [██████] 5
 | 25-04 | Default to USD currency | Multi-currency UI can be added later | Users currently only see USD pricing |
 | 25-05 | Client component for pricing page | Needs useState for interval toggle, useEffect for data fetching | Simpler than server component with form actions for toggle state |
 | 25-05 | Fetch from API instead of direct DB query | Reuses existing /api/billing/prices endpoint | Consistent with billing page, avoids database coupling in marketing page |
+| 26-01 | Features as const object with string values | Better JSON serialization and debugging than enums | Type-safe via Feature type union |
+| 26-01 | Numeric tier levels for hierarchy | Simple comparison via TIER_LEVELS[tier] enables future tier additions | Extensible tier system |
+| 26-01 | Null tier = primary | Trial users get primary tier access via coalescing | Consistent trial experience |
+| 26-01 | Server actions for feature checks | Consistent with tiers.ts pattern | Use from both client and server components |
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 25-05-PLAN.md (Multi-Tier Public Pricing Page - Phase 25 complete)
+Stopped at: Completed 26-01-PLAN.md (Feature Gating Configuration)
 Resume file: None
