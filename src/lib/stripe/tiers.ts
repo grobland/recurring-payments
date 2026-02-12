@@ -1,3 +1,5 @@
+"use server";
+
 import { db } from "@/lib/db";
 import { users, stripePrices } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -113,4 +115,14 @@ export async function getPriceIdForCheckout(
     columns: { stripePriceId: true },
   });
   return priceRecord?.stripePriceId ?? null;
+}
+
+/**
+ * Server action wrapper for getGrandfatheringInfo
+ * Allows client components to fetch grandfathering info
+ */
+export async function getGrandfatheringInfoAction(
+  userId: string
+): Promise<GrandfatheringInfo | null> {
+  return getGrandfatheringInfo(userId);
 }
