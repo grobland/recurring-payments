@@ -7,7 +7,7 @@ export async function GET() {
   try {
     // Check database connectivity
     const dbCheck = await db.execute(sql`SELECT 1 as health`);
-    if (!dbCheck.rows?.[0]) {
+    if (!dbCheck?.[0]) {
       throw new Error("Database health check failed");
     }
 

@@ -5,8 +5,6 @@ import { users, stripePrices } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import type { Tier } from "@/lib/db/schema";
 
-export type { Tier };
-
 /**
  * Get tier for a specific Stripe price ID
  * Used for quick lookups without user context
