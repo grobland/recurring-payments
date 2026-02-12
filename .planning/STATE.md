@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 25 of 28 (Multi-Tier Product Setup)
-Plan: 1 of TBD in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-12 - Completed 25-01-PLAN.md (Multi-Tier Price Mapping Schema)
+Last activity: 2026-02-12 - Completed 25-02-PLAN.md (Tier Derivation and Multi-Tier Checkout)
 
-Progress: [========================] v2.0 complete | v2.1 [██---] 25%
+Progress: [========================] v2.0 complete | v2.1 [███--] 30%
 
 ## Milestone Summary
 
@@ -43,14 +43,14 @@ Progress: [========================] v2.0 complete | v2.1 [██---] 25%
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 74 plans completed, 98 requirements validated
+**Total:** 75 plans completed, 98 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 74
+- Total plans completed: 75
 - Average duration: ~6 min
-- Total execution time: ~465 min (~7.75 hours)
+- Total execution time: ~467 min (~7.78 hours)
 
 ## Accumulated Context
 
@@ -68,6 +68,9 @@ Progress: [========================] v2.0 complete | v2.1 [██---] 25%
 | Portal redirect | Create portal session, redirect to Stripe |
 | Billing portal flow | Payment method update via Stripe-hosted portal (24-02) |
 | Price-to-tier mapping | stripePrices lookup table for grandfathering (25-01) |
+| Tier derivation | getUserTier() derives from stripePriceId, not stored column (25-02) |
+| Grandfathering check | getGrandfatheringInfo() compares user price to current active price (25-02) |
+| Multi-tier checkout | Accepts tier/interval/currency, looks up price from DB (25-02) |
 
 
 ### Blockers/Concerns
@@ -80,6 +83,8 @@ Progress: [========================] v2.0 complete | v2.1 [██---] 25%
 - Payment failure emails require RESEND_API_KEY configuration
 - Health check needs actual webhook traffic for meaningful metrics
 - Cron jobs require CRON_SECRET environment variable in production
+- stripe_prices table must be populated with actual Stripe price IDs before checkout works (25-02)
+- Stripe products must be created for Primary, Enhanced, Advanced tiers (25-02)
 
 **Admin UI:**
 - Admin access currently open to all authenticated users (future: role-based access control)
@@ -103,9 +108,13 @@ Progress: [========================] v2.0 complete | v2.1 [██---] 25%
 | 25-01 | Store tier as enum | Type safety and database constraint enforcement | Prevents invalid tier values, better IDE autocomplete |
 | 25-01 | Unique index on stripePriceId | Fast O(1) lookup when determining user tier | Critical for performance on every authenticated request |
 | 25-01 | isActive boolean flag | Distinguish current prices from grandfathered prices | Enables price changes without breaking existing subscribers |
+| 25-02 | Derive tier from price ID | Query stripe_prices table instead of storing tier column | Prevents sync issues, tier always accurate based on current subscription |
+| 25-02 | Grandfathering via price comparison | Compare user's price to current active price for same tier/interval/currency | Shows users their savings when on old prices |
+| 25-02 | Monthly savings normalization | Annualize yearly prices for consistent comparison | Enables fair comparison between monthly and yearly billing |
+| 25-02 | Database price lookup in checkout | getPriceIdForCheckout() queries stripe_prices table | Enables adding grandfathered prices without code deployment |
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 25-01-PLAN.md
+Stopped at: Completed 25-02-PLAN.md
 Resume file: None
