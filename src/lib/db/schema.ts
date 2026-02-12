@@ -58,6 +58,8 @@ export const transactionTagStatusEnum = pgEnum("transaction_tag_status", [
   "converted",
 ]);
 
+export const tierEnum = pgEnum("tier", ["primary", "enhanced", "advanced"]);
+
 // ============ USERS TABLE ============
 
 export const users = pgTable("users", {
@@ -646,6 +648,27 @@ export const webhookEvents = pgTable(
   ]
 );
 
+// ============ STRIPE PRICES TABLE ============
+
+export const stripePrices = pgTable(
+  "stripe_prices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    stripePriceId: varchar("stripe_price_id", { length: 255 }).notNull(),
+    tier: tierEnum("tier").notNull(),
+    interval: varchar("interval", { length: 20 }).notNull(), // 'month' | 'year'
+    currency: varchar("currency", { length: 3 }).notNull(), // 'usd' | 'eur' | 'gbp'
+    amountCents: integer("amount_cents").notNull(),
+    isActive: boolean("is_active").default(true).notNull(), // Can new users subscribe?
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("stripe_prices_price_id_idx").on(table.stripePriceId),
+    index("stripe_prices_tier_idx").on(table.tier),
+    index("stripe_prices_active_idx").on(table.isActive),
+  ]
+);
+
 // ============ RELATIONS ============
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -852,3 +875,7 @@ export type NewTransactionTag = typeof transactionTags.$inferInsert;
 
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
+
+export type StripePrices = typeof stripePrices.$inferSelect;
+export type NewStripePrices = typeof stripePrices.$inferInsert;
+export type Tier = "primary" | "enhanced" | "advanced";
