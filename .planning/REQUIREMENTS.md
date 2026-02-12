@@ -83,9 +83,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TIER-01 | Phase 25 | Pending |
 | TIER-02 | Phase 25 | Pending |
 | TIER-03 | Phase 25 | Pending |
-| GATE-01 | Phase 26 | Pending |
-| GATE-02 | Phase 26 | Pending |
-| GATE-03 | Phase 26 | Pending |
+| GATE-01 | Phase 26 | Complete |
+| GATE-02 | Phase 26 | Complete |
+| GATE-03 | Phase 26 | Complete |
 | PORTAL-01 | Phase 27 | Pending |
 | PORTAL-02 | Phase 27 | Pending |
 | PORTAL-03 | Phase 27 | Pending |
