@@ -1,42 +1,102 @@
-// Stripe Price IDs - these should be set in environment variables
-// and configured in your Stripe dashboard
+import type { Tier } from "@/lib/db/schema";
 
-export const STRIPE_PRICES = {
-  monthly: process.env.STRIPE_MONTHLY_PRICE_ID ?? "",
-  annual: process.env.STRIPE_ANNUAL_PRICE_ID ?? "",
-} as const;
+// Re-export Tier type for convenience
+export type { Tier };
 
-export const PRICING = {
-  monthly: {
-    amount: 499, // $4.99 in cents
-    currency: "usd",
-    interval: "month" as const,
-    name: "Monthly",
-    description: "Billed monthly",
+/**
+ * Tier configuration - features and display info
+ * Price amounts are stored in database, not here
+ */
+export const TIER_CONFIG: Record<Tier, {
+  name: string;
+  tagline: string;
+  description: string;
+  features: string[];
+}> = {
+  primary: {
+    name: "Primary",
+    tagline: "Essential subscription tracking",
+    description: "Everything you need to track and manage recurring subscriptions",
+    features: [
+      "Unlimited subscription tracking",
+      "PDF statement imports",
+      "Spending analytics dashboard",
+      "Email renewal reminders",
+      "Category organization",
+    ],
   },
-  annual: {
-    amount: 3999, // $39.99 in cents
-    currency: "usd",
-    interval: "year" as const,
-    name: "Annual",
-    description: "Billed yearly (save 33%)",
-    savings: "33%",
+  enhanced: {
+    name: "Enhanced",
+    tagline: "General banking insights",
+    description: "Advanced analytics plus spending monitoring and budgeting",
+    features: [
+      "Everything in Primary",
+      "Spending monitoring",
+      "Budget management",
+      "Debt tracking",
+      "Transaction categorization",
+    ],
   },
-} as const;
+  advanced: {
+    name: "Advanced",
+    tagline: "Full financial picture",
+    description: "Complete financial overview with investments and net worth",
+    features: [
+      "Everything in Enhanced",
+      "Investment tracking",
+      "Net worth dashboard",
+      "Multi-account aggregation",
+      "Financial goal planning",
+    ],
+  },
+};
 
-export type PricingPlan = keyof typeof PRICING;
+/**
+ * Get display name for tier
+ */
+export function getTierDisplayName(tier: Tier): string {
+  return TIER_CONFIG[tier].name;
+}
 
-export function formatPrice(amountInCents: number, currency: string = "usd"): string {
+/**
+ * Get features for tier
+ */
+export function getTierFeatures(tier: Tier): string[] {
+  return TIER_CONFIG[tier].features;
+}
+
+/**
+ * Format price for display
+ */
+export function formatPrice(
+  amountInCents: number,
+  currency: string = "usd"
+): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
   }).format(amountInCents / 100);
 }
 
-export function getPriceId(plan: PricingPlan): string {
-  const priceId = STRIPE_PRICES[plan];
-  if (!priceId) {
-    throw new Error(`Stripe price ID not configured for plan: ${plan}`);
-  }
-  return priceId;
+/**
+ * Calculate annual savings compared to monthly
+ * @param monthlyAmount Monthly amount in cents
+ * @param annualAmount Annual amount in cents
+ * @returns Percentage saved (e.g., 17 for 17%)
+ */
+export function calculateAnnualSavings(
+  monthlyAmount: number,
+  annualAmount: number
+): number {
+  const monthlyTotal = monthlyAmount * 12;
+  const savings = ((monthlyTotal - annualAmount) / monthlyTotal) * 100;
+  return Math.round(savings);
 }
+
+// Supported currencies
+export const SUPPORTED_CURRENCIES = ["usd", "eur", "gbp"] as const;
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+
+// Billing intervals
+export const BILLING_INTERVALS = ["month", "year"] as const;
+export type BillingInterval = (typeof BILLING_INTERVALS)[number];
