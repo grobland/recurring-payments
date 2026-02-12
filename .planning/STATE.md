@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 25 of 28 (Multi-Tier Product Setup)
-Plan: 4 of 4 in current phase
+Plan: 5 of 5 in current phase
 Status: Phase complete
-Last activity: 2026-02-12 - Completed 25-04-PLAN.md (Multi-Tier Billing UI)
+Last activity: 2026-02-12 - Completed 25-05-PLAN.md (Multi-Tier Public Pricing Page)
 
-Progress: [========================] v2.0 complete | v2.1 [█████] 45%
+Progress: [========================] v2.0 complete | v2.1 [██████] 50%
 
 ## Milestone Summary
 
@@ -48,9 +48,9 @@ Progress: [========================] v2.0 complete | v2.1 [█████] 45%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 77
+- Total plans completed: 78
 - Average duration: ~6 min
-- Total execution time: ~481 min (~8.02 hours)
+- Total execution time: ~487 min (~8.12 hours)
 
 ## Accumulated Context
 
@@ -76,6 +76,8 @@ Progress: [========================] v2.0 complete | v2.1 [█████] 45%
 | Public pricing API | GET /api/billing/prices returns active prices, no auth required (25-04) |
 | Server actions for billing | getGrandfatheringInfoAction() callable from client components (25-04) |
 | Database-driven pricing UI | Billing page fetches prices from API, not hardcoded (25-04) |
+| Marketing pricing display | Three-tier cards with interval toggle, dynamic pricing from database (25-05) |
+| Client-side data fetch pattern | useEffect + fetch for public data in client components (25-05) |
 
 
 ### Blockers/Concerns
@@ -121,9 +123,11 @@ Progress: [========================] v2.0 complete | v2.1 [█████] 45%
 | 25-04 | Server action for grandfathering info | Enables client components to fetch user-specific billing data | Cleaner than separate API route, co-located with tier logic |
 | 25-04 | Tier selection via click on card | Visual selection before checkout provides better UX | Users can review tier details before subscribing |
 | 25-04 | Default to USD currency | Multi-currency UI can be added later | Users currently only see USD pricing |
+| 25-05 | Client component for pricing page | Needs useState for interval toggle, useEffect for data fetching | Simpler than server component with form actions for toggle state |
+| 25-05 | Fetch from API instead of direct DB query | Reuses existing /api/billing/prices endpoint | Consistent with billing page, avoids database coupling in marketing page |
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 25-04-PLAN.md (Multi-Tier Billing UI - Phase 25 complete)
+Stopped at: Completed 25-05-PLAN.md (Multi-Tier Public Pricing Page - Phase 25 complete)
 Resume file: None
