@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 27 of 28 (Pricing & Portal UI)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-13 - Completed 27-02-PLAN.md (Current Tier Highlighting)
+Plan: 3 of 3 in current phase - PHASE COMPLETE
+Status: Phase complete
+Last activity: 2026-02-13 - Completed 27-03-PLAN.md (Stripe Portal Configuration)
 
-Progress: [========================] v2.0 complete | v2.1 [██████████] 80%
+Progress: [========================] v2.0 complete | v2.1 [███████████] 85%
 
 ## Milestone Summary
 
@@ -43,12 +43,12 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 82 plans completed, 98 requirements validated
+**Total:** 83 plans completed, 101 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 82
+- Total plans completed: 83
 - Average duration: ~6 min
 - Total execution time: ~499 min (~8.32 hours)
 
@@ -87,6 +87,8 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | Upgrade modal pattern | Dialog with tier features from TIER_CONFIG, CTAs to /pricing and /settings/billing (26-02) |
 | Current tier highlighting | isCurrentTier = isPaid && userTier === tier for visual tier indication (27-02) |
 | Feature comparison table | Static FEATURE_MATRIX with responsive hidden md:table / md:hidden cards pattern (27-01) |
+| Portal tier switching | Self-service tier switching via Stripe-hosted Customer Portal (27-03) |
+| Portal branding | Logo and colors configured in Stripe Dashboard Branding settings (27-03) |
 
 
 ### Blockers/Concerns
@@ -145,9 +147,11 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | 27-02 | Current Plan badge replaces Recommended | Clear visual indication of active subscription | No confusion about which tier user owns |
 | 27-01 | Static FEATURE_MATRIX array | Custom display names without coupling to FEATURES config | Simpler, more flexible feature naming |
 | 27-01 | Mobile cards show only available features | No X icons on mobile - cleaner UX | Focus on what tier provides, not what's missing |
+| 27-03 | Proration: Credit remaining time | Fair billing on tier switches | Users not charged twice for same period |
+| 27-03 | All tiers in portal catalog | Users can upgrade or downgrade self-service | Reduces support burden |
 
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Completed 27-02-PLAN.md (Current Tier Highlighting)
-Resume file: .planning/phases/27-pricing-portal-ui/27-03-PLAN.md
+Stopped at: Completed 27-03-PLAN.md (Stripe Portal Configuration) - Phase 27 complete
+Resume file: .planning/phases/28-*/28-01-PLAN.md (next phase)
