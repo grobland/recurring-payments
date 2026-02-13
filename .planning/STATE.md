@@ -86,6 +86,7 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | LockedNavItem styling | opacity-50 + pointer-events-none for disabled navigation items (26-02) |
 | Upgrade modal pattern | Dialog with tier features from TIER_CONFIG, CTAs to /pricing and /settings/billing (26-02) |
 | Current tier highlighting | isCurrentTier = isPaid && userTier === tier for visual tier indication (27-02) |
+| Feature comparison table | Static FEATURE_MATRIX with responsive hidden md:table / md:hidden cards pattern (27-01) |
 
 
 ### Blockers/Concerns
@@ -142,6 +143,8 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | 26-02 | LockedNavItem uses pointer-events-none | Prevents interaction entirely rather than showing error | Cleaner disabled state for navigation |
 | 27-02 | Show pricing cards to all users | Paid users can compare tiers and consider upgrades | Better UX for plan management |
 | 27-02 | Current Plan badge replaces Recommended | Clear visual indication of active subscription | No confusion about which tier user owns |
+| 27-01 | Static FEATURE_MATRIX array | Custom display names without coupling to FEATURES config | Simpler, more flexible feature naming |
+| 27-01 | Mobile cards show only available features | No X icons on mobile - cleaner UX | Focus on what tier provides, not what's missing |
 
 ## Session Continuity
 
