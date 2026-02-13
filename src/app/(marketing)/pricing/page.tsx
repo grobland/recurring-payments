@@ -13,6 +13,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { FeatureComparisonTable } from "@/components/pricing/feature-comparison-table";
 
 // FAQ data
 const faqs = [
@@ -218,6 +219,14 @@ export default function PricingPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Feature Comparison */}
+      <div className="mx-auto mt-16 max-w-6xl">
+        <h2 className="mb-8 text-center text-2xl font-bold">
+          Compare all features
+        </h2>
+        <FeatureComparisonTable />
       </div>
 
       {/* FAQs */}
