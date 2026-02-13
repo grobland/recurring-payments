@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.1 Billing & Monetization - Phase 27 Pricing & Portal UI
+**Current focus:** v2.1 Billing & Monetization - Phase 28 Voucher System
 
 ## Current Position
 

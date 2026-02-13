@@ -80,15 +80,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | HOOK-01 | Phase 24 | Complete |
 | HOOK-02 | Phase 24 | Complete |
-| TIER-01 | Phase 25 | Pending |
-| TIER-02 | Phase 25 | Pending |
-| TIER-03 | Phase 25 | Pending |
+| TIER-01 | Phase 25 | Complete |
+| TIER-02 | Phase 25 | Complete |
+| TIER-03 | Phase 25 | Complete |
 | GATE-01 | Phase 26 | Complete |
 | GATE-02 | Phase 26 | Complete |
 | GATE-03 | Phase 26 | Complete |
-| PORTAL-01 | Phase 27 | Pending |
-| PORTAL-02 | Phase 27 | Pending |
-| PORTAL-03 | Phase 27 | Pending |
+| PORTAL-01 | Phase 27 | Complete |
+| PORTAL-02 | Phase 27 | Complete |
+| PORTAL-03 | Phase 27 | Complete |
 | VCHR-01 | Phase 28 | Pending |
 | VCHR-02 | Phase 28 | Pending |
 | VCHR-03 | Phase 28 | Pending |
@@ -100,4 +100,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-11 after roadmap creation*
+*Last updated: 2026-02-13 after Phase 27 completion*
