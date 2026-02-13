@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.1 Billing & Monetization - Phase 26 Feature Gating
+**Current focus:** v2.1 Billing & Monetization - Phase 27 Pricing & Portal UI
 
 ## Current Position
 
-Phase: 26 of 28 (Feature Gating Infrastructure)
-Plan: 2 of 2 in current phase (Phase Complete)
-Status: Phase complete
-Last activity: 2026-02-12 - Completed 26-02-PLAN.md (Feature Gating UI Components)
+Phase: 27 of 28 (Pricing & Portal UI)
+Plan: 2 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-13 - Completed 27-02-PLAN.md (Current Tier Highlighting)
 
-Progress: [========================] v2.0 complete | v2.1 [█████████] 70%
+Progress: [========================] v2.0 complete | v2.1 [██████████] 80%
 
 ## Milestone Summary
 
@@ -43,14 +43,14 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 80 plans completed, 98 requirements validated
+**Total:** 82 plans completed, 98 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 80
+- Total plans completed: 82
 - Average duration: ~6 min
-- Total execution time: ~493 min (~8.22 hours)
+- Total execution time: ~499 min (~8.32 hours)
 
 ## Accumulated Context
 
@@ -85,6 +85,7 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | FeatureGate component | Client component with useEffect to fetch getUserFeatureAccess, renders modal for locked features (26-02) |
 | LockedNavItem styling | opacity-50 + pointer-events-none for disabled navigation items (26-02) |
 | Upgrade modal pattern | Dialog with tier features from TIER_CONFIG, CTAs to /pricing and /settings/billing (26-02) |
+| Current tier highlighting | isCurrentTier = isPaid && userTier === tier for visual tier indication (27-02) |
 
 
 ### Blockers/Concerns
@@ -139,9 +140,11 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | 26-02 | Locked placeholder with Lock icon | Visual indication of locked feature, clickable to trigger upgrade modal | Clear UX for locked features |
 | 26-02 | Modal CTAs to /pricing and /settings/billing | Two paths: compare tiers or upgrade directly | Flexibility for different user intents |
 | 26-02 | LockedNavItem uses pointer-events-none | Prevents interaction entirely rather than showing error | Cleaner disabled state for navigation |
+| 27-02 | Show pricing cards to all users | Paid users can compare tiers and consider upgrades | Better UX for plan management |
+| 27-02 | Current Plan badge replaces Recommended | Clear visual indication of active subscription | No confusion about which tier user owns |
 
 ## Session Continuity
 
-Last session: 2026-02-12
-Stopped at: Phase 26 complete, ready for Phase 27 planning
-Resume file: .planning/phases/27-pricing-portal-ui/.continue-here.md
+Last session: 2026-02-13
+Stopped at: Completed 27-02-PLAN.md (Current Tier Highlighting)
+Resume file: .planning/phases/27-pricing-portal-ui/27-03-PLAN.md
