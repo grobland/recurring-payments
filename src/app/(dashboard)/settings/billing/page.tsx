@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserStatus } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
 import { TIER_CONFIG, formatPrice, calculateAnnualSavings } from "@/lib/stripe/products";
 import { getGrandfatheringInfoAction, getUserTier } from "@/lib/stripe/tiers";
 import { toast } from "sonner";
@@ -278,8 +279,7 @@ export default function BillingPage() {
       </Card>
 
       {/* Pricing Plans */}
-      {!isPaid && (
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle>Choose a Plan</CardTitle>
             <CardDescription>
@@ -317,24 +317,31 @@ export default function BillingPage() {
                 const price = tierData.prices[selectedInterval].usd;
                 const isSelected = selectedTier === tier;
                 const isRecommended = tier === "enhanced";
+                const isCurrentTier = isPaid && userTier === tier;
 
                 return (
                   <div
                     key={tier}
-                    className={`relative rounded-lg border p-6 transition-all ${
-                      isSelected
-                        ? "border-primary shadow-lg"
-                        : "border-gray-200 hover:border-gray-300"
-                    } ${isRecommended ? "border-2 border-primary" : ""}`}
+                    className={cn(
+                      "relative rounded-lg border p-6 transition-all cursor-pointer",
+                      isSelected && !isCurrentTier && "border-primary shadow-lg",
+                      isCurrentTier && "border-2 border-primary bg-primary/5",
+                      isRecommended && !isCurrentTier && "border-2 border-primary",
+                      !isSelected && !isCurrentTier && !isRecommended && "border-gray-200 hover:border-gray-300"
+                    )}
                     onClick={() => setSelectedTier(tier)}
                     role="button"
                     tabIndex={0}
                   >
-                    {isRecommended && (
+                    {isCurrentTier ? (
+                      <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
+                        Current Plan
+                      </Badge>
+                    ) : isRecommended ? (
                       <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
                         Recommended
                       </Badge>
-                    )}
+                    ) : null}
 
                     <div className="space-y-4">
                       <div>
@@ -364,14 +371,16 @@ export default function BillingPage() {
 
                       <Button
                         className="w-full"
-                        variant={isSelected ? "default" : "outline"}
+                        variant={isSelected && !isCurrentTier ? "default" : "outline"}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleCheckout(tier);
                         }}
-                        disabled={isCheckoutLoading !== null}
+                        disabled={isCheckoutLoading !== null || isCurrentTier}
                       >
-                        {isCheckoutLoading === tier ? (
+                        {isCurrentTier ? (
+                          "Current Plan"
+                        ) : isCheckoutLoading === tier ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Loading...
@@ -387,7 +396,6 @@ export default function BillingPage() {
             </div>
           </CardContent>
         </Card>
-      )}
     </div>
   );
 }
