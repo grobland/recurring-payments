@@ -27,9 +27,9 @@ Requirements for billing & monetization milestone. Each maps to roadmap phases.
 
 ### Voucher System
 
-- [ ] **VCHR-01**: Admin can create voucher codes for free months in Stripe
-- [ ] **VCHR-02**: User can redeem voucher code during checkout
-- [ ] **VCHR-03**: Admin can create trial extension vouchers for engaged users
+- [x] **VCHR-01**: Admin can create voucher codes for free months in Stripe
+- [x] **VCHR-02**: User can redeem voucher code during checkout
+- [x] **VCHR-03**: Admin can create trial extension vouchers for engaged users
 
 ### Webhook Infrastructure
 
@@ -89,9 +89,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PORTAL-01 | Phase 27 | Complete |
 | PORTAL-02 | Phase 27 | Complete |
 | PORTAL-03 | Phase 27 | Complete |
-| VCHR-01 | Phase 28 | Pending |
-| VCHR-02 | Phase 28 | Pending |
-| VCHR-03 | Phase 28 | Pending |
+| VCHR-01 | Phase 28 | Complete |
+| VCHR-02 | Phase 28 | Complete |
+| VCHR-03 | Phase 28 | Complete |
 
 **Coverage:**
 - v2.1 requirements: 14 total
@@ -100,4 +100,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-13 after Phase 27 completion*
+*Last updated: 2026-02-17 after Phase 28 completion - v2.1 Milestone complete*
