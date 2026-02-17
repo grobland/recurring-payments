@@ -669,6 +669,32 @@ export const stripePrices = pgTable(
   ]
 );
 
+
+// ============ TRIAL EXTENSIONS TABLE ============
+
+export const trialExtensions = pgTable(
+  "trial_extensions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    daysAdded: integer("days_added").notNull(),
+    previousTrialEndDate: timestamp("previous_trial_end_date", { withTimezone: true }),
+    newTrialEndDate: timestamp("new_trial_end_date", { withTimezone: true }).notNull(),
+    appliedByAdminId: uuid("applied_by_admin_id")
+      .references(() => users.id, { onDelete: "set null" }),
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("trial_extensions_user_id_idx").on(table.userId),
+    index("trial_extensions_created_at_idx").on(table.createdAt),
+  ]
+);
+
 // ============ RELATIONS ============
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -684,6 +710,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   statements: many(statements),
   transactions: many(transactions),
   tags: many(tags),
+  trialExtensions: many(trialExtensions),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -832,6 +859,18 @@ export const transactionTagsRelations = relations(transactionTags, ({ one }) => 
   }),
 }));
 
+
+export const trialExtensionsRelations = relations(trialExtensions, ({ one }) => ({
+  user: one(users, {
+    fields: [trialExtensions.userId],
+    references: [users.id],
+  }),
+  appliedByAdmin: one(users, {
+    fields: [trialExtensions.appliedByAdminId],
+    references: [users.id],
+  }),
+}));
+
 // ============ TYPE EXPORTS ============
 
 export type User = typeof users.$inferSelect;
@@ -879,3 +918,6 @@ export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
 export type StripePrices = typeof stripePrices.$inferSelect;
 export type NewStripePrices = typeof stripePrices.$inferInsert;
 export type Tier = "primary" | "enhanced" | "advanced";
+
+export type TrialExtension = typeof trialExtensions.$inferSelect;
+export type NewTrialExtension = typeof trialExtensions.$inferInsert;
