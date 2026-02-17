@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 ## Current Position
 
-Phase: 27 of 28 (Pricing & Portal UI)
-Plan: 3 of 3 in current phase - PHASE COMPLETE
-Status: Phase complete
-Last activity: 2026-02-13 - Completed 27-03-PLAN.md (Stripe Portal Configuration)
+Phase: 28 of 28 (Voucher System)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-17 - Completed 28-01-PLAN.md (Trial Extension Infrastructure)
 
-Progress: [========================] v2.0 complete | v2.1 [███████████] 85%
+Progress: [========================] v2.0 complete | v2.1 [████████████] 90%
 
 ## Milestone Summary
 
@@ -43,14 +43,14 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 83 plans completed, 101 requirements validated
+**Total:** 84 plans completed, 101 requirements validated
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 83
+- Total plans completed: 84
 - Average duration: ~6 min
-- Total execution time: ~499 min (~8.32 hours)
+- Total execution time: ~511 min (~8.52 hours)
 
 ## Accumulated Context
 
@@ -89,6 +89,9 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | Feature comparison table | Static FEATURE_MATRIX with responsive hidden md:table / md:hidden cards pattern (27-01) |
 | Portal tier switching | Self-service tier switching via Stripe-hosted Customer Portal (27-03) |
 | Portal branding | Logo and colors configured in Stripe Dashboard Branding settings (27-03) |
+| Nullable FK for set null | appliedByAdminId without .notNull() enables onDelete: "set null" (28-01) |
+| Admin endpoint auth | Session auth only, admin role gating deferred for MVP (28-01) |
+| Cumulative trial extension | Extend from max(trialEndDate, now) ensures forward extension (28-01) |
 
 
 ### Blockers/Concerns
@@ -149,9 +152,12 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | 27-01 | Mobile cards show only available features | No X icons on mobile - cleaner UX | Focus on what tier provides, not what's missing |
 | 27-03 | Proration: Credit remaining time | Fair billing on tier switches | Users not charged twice for same period |
 | 27-03 | All tiers in portal catalog | Users can upgrade or downgrade self-service | Reduces support burden |
+| 28-01 | appliedByAdminId nullable | Enables onDelete: "set null" - preserves extension records when admin deleted | Audit trail maintained even if admin user removed |
+| 28-01 | Session auth only for admin endpoint | Admin role gating deferred for MVP | Simpler implementation, can add roles later |
+| 28-01 | Cumulative extension from max(trialEndDate, now) | Ensures extensions always extend forward, never backward | Prevents accidental trial shortening |
 
 ## Session Continuity
 
-Last session: 2026-02-13
-Stopped at: Completed 27-03-PLAN.md (Stripe Portal Configuration) - Phase 27 complete
-Resume file: .planning/phases/28-*/28-01-PLAN.md (next phase)
+Last session: 2026-02-17
+Stopped at: Completed 28-01-PLAN.md (Trial Extension Infrastructure)
+Resume file: .planning/phases/28-voucher-system/28-02-PLAN.md
