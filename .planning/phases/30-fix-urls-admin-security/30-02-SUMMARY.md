@@ -107,6 +107,14 @@ None - no external service configuration required.
 - Pricing page is fully discoverable from marketing site navigation.
 - ESLint rule in place to catch future unused imports before they accumulate.
 
+## Self-Check: PASSED
+
+- FOUND: .planning/phases/30-fix-urls-admin-security/30-02-SUMMARY.md
+- FOUND: commit 3be286b (fix: payment failed URL and pricing nav)
+- FOUND: commit ab89ae2 (chore: dead code and ESLint)
+- FOUND: commit 08eac30 (docs: metadata)
+- Build verified: npm run build succeeds with zero errors
+
 ---
 *Phase: 30-fix-urls-admin-security*
 *Completed: 2026-02-18*
