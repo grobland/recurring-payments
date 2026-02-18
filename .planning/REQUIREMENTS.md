@@ -34,7 +34,7 @@ Requirements for billing & monetization milestone. Each maps to roadmap phases.
 ### Webhook Infrastructure
 
 - [ ] **HOOK-01**: System tracks processed webhook events to prevent duplicates
-- [ ] **HOOK-02**: User receives email when payment fails
+- [x] **HOOK-02**: User receives email when payment fails
 
 ## Future Requirements
 

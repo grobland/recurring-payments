@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 ## Current Position
 
-Phase: 29 of 30 (Apply Feature Gating - Gap Closure)
-Plan: 1 of 1 in current phase
-Status: Phase 29 complete - feature gating wired into application
-Last activity: 2026-02-18 - Completed 29-01-PLAN.md (feature gating applied)
+Phase: 30 of 30 (Fix URLs, Admin Security - Gap Closure)
+Plan: 2 of 2 in current phase
+Status: Phase 30 complete - URLs fixed, pricing nav added, dead code removed, ESLint hardened
+Last activity: 2026-02-18 - Completed 30-02-PLAN.md (URL fix, pricing nav, dead code cleanup)
 
-Progress: [========================] v2.0 complete | v2.1 [██████████████░░] 88% (gap closure)
+Progress: [========================] v2.0 complete | v2.1 [████████████████] 100% (gap closure complete)
 
 ## Milestone Summary
 
@@ -163,9 +163,11 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | 29-01 | requireFeature after auth check | 401 takes priority over 403 for unauthenticated requests | Correct HTTP semantics for auth vs authorization |
 | 29-01 | Feature error string prefix check | requireFeature throws plain Error, not custom class | Catch block identifies feature errors via message.startsWith() |
 | 29-01 | DashboardHeader outside FeatureGate | Users see page title even when content is locked | Better UX - header gives context before upgrade modal |
+| 30-02 | Pricing link always visible in marketing nav | Pricing is public marketing content, visible regardless of auth state | Consistent with /pricing being a public marketing page |
+| 30-02 | ESLint no-unused-vars at warn not error | Avoids breaking build on pre-existing warnings | Flags future dead code without disrupting CI |
 
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Phase 30 context gathered
-Resume file: .planning/phases/30-fix-urls-admin-security/30-CONTEXT.md
+Stopped at: Phase 30 plan 02 complete - v2.1 gap closure milestone complete
+Resume file: .planning/phases/30-fix-urls-admin-security/30-02-SUMMARY.md
