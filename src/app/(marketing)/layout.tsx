@@ -16,6 +16,11 @@ export default function MarketingLayout({
             <CreditCard className="h-6 w-6" />
             <span className="font-semibold text-lg">Subscription Manager</span>
           </Link>
+          <nav className="flex items-center gap-6">
+            <Link href="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Pricing
+            </Link>
+          </nav>
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
               <Link href="/login">Log in</Link>
@@ -35,6 +40,9 @@ export default function MarketingLayout({
         <div className="container flex flex-col items-center gap-4 px-4 py-8 text-center text-sm text-muted-foreground sm:flex-row sm:justify-between sm:text-left">
           <p>Subscription Manager. All rights reserved.</p>
           <div className="flex gap-4">
+            <Link href="/pricing" className="hover:underline">
+              Pricing
+            </Link>
             <Link href="/privacy" className="hover:underline">
               Privacy
             </Link>

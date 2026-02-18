@@ -305,7 +305,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     const stripe = getStripeClient();
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing`,
       flow_data: {
         type: 'payment_method_update',
       },
