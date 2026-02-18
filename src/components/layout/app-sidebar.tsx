@@ -21,6 +21,7 @@ import {
   Monitor,
   TrendingUp,
   Sparkles,
+  Activity,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -50,6 +51,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useUserStatus } from "@/lib/hooks";
+import { LockedNavItem } from "@/components/features";
+import { FEATURES } from "@/lib/features";
 
 const mainNavItems = [
   {
@@ -170,6 +173,16 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              <SidebarMenuItem>
+                <LockedNavItem feature={FEATURES.SPENDING_MONITORING}>
+                  <SidebarMenuButton asChild isActive={pathname === "/spending"}>
+                    <Link href="/spending">
+                      <Activity className="size-4" />
+                      <span>Spending Monitor</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </LockedNavItem>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
