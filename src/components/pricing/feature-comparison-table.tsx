@@ -10,8 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TIER_CONFIG } from "@/lib/stripe/products";
-import { TIER_LEVELS } from "@/lib/features/config";
-import { cn } from "@/lib/utils";
 import type { Tier } from "@/lib/db/schema";
 
 /**

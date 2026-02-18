@@ -52,20 +52,6 @@ export const TIER_CONFIG: Record<Tier, {
 };
 
 /**
- * Get display name for tier
- */
-export function getTierDisplayName(tier: Tier): string {
-  return TIER_CONFIG[tier].name;
-}
-
-/**
- * Get features for tier
- */
-export function getTierFeatures(tier: Tier): string[] {
-  return TIER_CONFIG[tier].features;
-}
-
-/**
  * Format price for display
  */
 export function formatPrice(
