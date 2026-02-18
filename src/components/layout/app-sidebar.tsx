@@ -22,6 +22,8 @@ import {
   TrendingUp,
   Sparkles,
   Activity,
+  Shield,
+  Webhook,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -126,6 +128,8 @@ export function AppSidebar() {
   const { isTrialActive, daysLeftInTrial, billingStatus } = useUserStatus();
   const { theme, setTheme } = useTheme();
 
+  const isAdmin = session?.user?.role === "admin";
+
   const user = session?.user;
   const initials = user?.name
     ? user.name
@@ -207,6 +211,38 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/admin/trial-extensions")}
+                  >
+                    <Link href="/admin/trial-extensions">
+                      <Shield className="size-4" />
+                      <span>Trial Extensions</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/admin/webhooks")}
+                  >
+                    <Link href="/admin/webhooks">
+                      <Webhook className="size-4" />
+                      <span>Webhooks</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {isTrialActive && (
           <SidebarGroup>

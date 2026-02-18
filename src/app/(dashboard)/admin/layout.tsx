@@ -12,10 +12,9 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  // Future: Add admin role check here
-  // if (session.user.role !== 'admin') {
-  //   redirect("/dashboard");
-  // }
+  if (session.user.role !== "admin") {
+    redirect("/dashboard");
+  }
 
   return (
     <div className="container mx-auto py-8">
