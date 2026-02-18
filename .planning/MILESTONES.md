@@ -2,6 +2,58 @@
 
 ## Completed Milestones
 
+### v2.1 "Billing & Monetization" (2026-02-10 → 2026-02-18)
+
+**Goal:** Enable paid subscriptions with three-tier feature access, Stripe integration, and promotional capabilities.
+
+**What shipped:**
+- Webhook idempotency with database-backed dedup preventing duplicate processing during Stripe retries
+- Three-tier product system (Primary/Enhanced/Advanced) with price-to-tier mapping and grandfathering
+- Feature gating infrastructure with server-side access checks (hasFeature, requireFeature) and client-side gate components (FeatureGate, LockedNavItem)
+- Pricing & Portal UI with feature comparison table, tier highlighting, and Stripe customer portal
+- Voucher system with trial extensions, admin UI, and promotion code support in checkout
+- Feature gating applied to import API, analytics page, and sidebar navigation
+- Admin RBAC with role-based layout guards, API 403 protection, and conditional sidebar nav
+
+**Phases completed:** 7 (Phases 24-30)
+- Phase 24: Webhook Infrastructure Hardening (3 plans)
+- Phase 25: Multi-Tier Product Setup (5 plans)
+- Phase 26: Feature Gating Infrastructure (2 plans)
+- Phase 27: Pricing & Portal UI (3 plans)
+- Phase 28: Voucher System (3 plans)
+- Phase 29: Apply Feature Gating — gap closure (1 plan)
+- Phase 30: Fix URLs & Admin Security — gap closure (2 plans)
+
+**Stats:**
+- 19 plans, 94 commits
+- 42 source files changed (+16,671 / -247 lines)
+- 8 days development
+
+**Requirements:** 14/14 complete
+- HOOK-01, HOOK-02 (Webhook Infrastructure)
+- TIER-01, TIER-02, TIER-03 (Tier System)
+- GATE-01, GATE-02, GATE-03 (Feature Gating)
+- PORTAL-01, PORTAL-02, PORTAL-03 (Checkout & Portal)
+- VCHR-01, VCHR-02, VCHR-03 (Voucher System)
+
+**Key decisions:**
+- Insert-on-conflict idempotency pattern for webhook dedup (PostgreSQL unique constraint)
+- Derive tier from stripePriceId lookup (not stored column) for always-accurate tier
+- Grandfathering via price comparison (user price vs current active price)
+- Features as const object with FEATURE_TIERS mapping (type-safe, no enum)
+- Null tier = primary (trial users get primary tier access)
+- Admin routes redirect silently (don't leak admin route existence)
+- ESLint no-unused-vars at warn (flags dead code without breaking CI)
+
+**Tech debt:**
+- auth() called twice in import route (minor inefficiency)
+- Analytics FeatureGate wraps BASIC_ANALYTICS (primary tier) — never visibly locks for current users
+- No SUMMARY.md files include requirements_completed frontmatter (process gap)
+
+**What's next:** `/gsd:new-milestone` for next milestone planning
+
+---
+
 ### v2.0 "Statement Hub" (2026-02-08 → 2026-02-10)
 
 **Goal:** Comprehensive statement management with batch uploads, full data retention, and manual enrichment.
@@ -52,8 +104,6 @@
 - TODO: Parser improvements (current parser meets requirements)
 - EvidenceList URL params don't pre-filter (minor UX enhancement)
 
-**What's next:** v2.1 Stripe billing and monetization via `/gsd:new-milestone`
-
 ---
 
 ### v1.3 "Data & Intelligence" (2026-02-05 → 2026-02-08)
@@ -99,12 +149,6 @@
 - Jaro-Winkler for fuzzy name matching with 0.8 threshold
 - Multi-factor confidence scoring for patterns (occurrence 30%, interval 40%, amount 30%)
 
-**Tech debt:**
-- Hooks not re-exported from central index (use-duplicate-scan, useTrends, useForecast*, useAlerts)
-- Phase 14 verification inline in summary rather than separate file
-
-**What's next:** `/gsd:new-milestone` for v1.4 planning (billing, production deployment, or additional features)
-
 ---
 
 ### v1.2 "Production Polish" (2026-02-04 → 2026-02-05)
@@ -121,34 +165,13 @@
 - Empty states with helpful guidance and dual CTAs
 
 **Phases completed:** 4 (Phases 9-12)
-- Phase 9: Reliability Foundation (2 plans)
-- Phase 10: Error Handling (3 plans)
-- Phase 11: Loading & Empty States (2 plans)
-- Phase 12: Mobile & Visual Polish (3 plans)
 
 **Stats:**
-- 10 plans
-- 67 files modified
+- 10 plans, 67 files modified
 - ~18,800 lines TypeScript
 - 2 days development
 
 **Requirements:** 19/19 complete
-- UX-01 through UX-08 (UX Refinements)
-- ERR-01 through ERR-06 (Error Handling)
-- MON-01 through MON-05 (Reliability & Monitoring)
-
-**Key decisions:**
-- Sentry sample rates: 0.1 production, 1.0 development for cost control
-- Delayed skeleton pattern: 200ms delay + 300ms minimum display to prevent flash
-- Touch target minimum: 44px (h-11) per Apple HIG guidelines
-- Error transformation: getErrorMessage converts technical errors to user-friendly messages
-- Retry detection: isRetryableError identifies transient failures for automatic retry
-
-**Tech debt:**
-- Logging infrastructure created but not adopted by all API routes (intentional; routes adopt incrementally)
-- RESEND_FROM_EMAIL needs verified domain for production email delivery
-
-**What's next:** v1.3 milestone (billing/monetization, custom domain, or additional features)
 
 ---
 
@@ -161,30 +184,15 @@
 - Statement source tracking with autocomplete from previous imports
 - Smart import UX showing ALL detected items with confidence scores (green/yellow/red)
 - Renewal date intelligence extracting transaction dates and calculating renewals correctly
-- Inline date editing with visual diff and auto-recalculation
 
 **Phases completed:** 4 (Phases 5-8)
-- Phase 5: Category Management (3 plans)
-- Phase 6: Statement Source Tracking (3 plans)
-- Phase 7: Smart Import UX (3 plans)
-- Phase 8: Renewal Date Intelligence (2 plans)
 
 **Stats:**
-- 11 plans, 57 commits
-- 70 files modified
+- 11 plans, 57 commits, 70 files modified
 - ~17,700 lines TypeScript
 - 3 days development
 
-**Requirements:** 18/18 complete (CAT-01 through CAT-05, SOURCE-01 through SOURCE-04, IMPORT-01 through IMPORT-06, RENEW-01 through RENEW-03)
-
-**Key decisions:**
-- AI prompt returns ALL items with confidence scores (not just high-confidence)
-- Confidence thresholds: 80+ (high/green), 50-79 (medium/yellow), 0-49 (low/red)
-- Transaction date is source of truth for renewal calculation
-- Click-to-edit pattern for inline date fields
-- Command palette pattern for searchable selectors
-
-**What's next:** v1.2 milestone (billing, production deployment, or additional features)
+**Requirements:** 18/18 complete
 
 ---
 
@@ -193,28 +201,15 @@
 **Goal:** Configure all service integrations and verify the three core features work end-to-end in a deployed environment.
 
 **What shipped:**
-- PDF import with OpenAI GPT-4 Vision text extraction (pdf2json → GPT-4)
-- Subscription CRUD with full E2E test coverage (7 tests)
-- Email reminders via Resend with database logging (4 tests)
+- PDF import with OpenAI GPT-4 Vision text extraction
+- Subscription CRUD with full E2E test coverage
+- Email reminders via Resend with database logging
 - Dashboard with spending analytics
 - Vercel deployment with cron jobs
 
-**Phases completed:** 4
-- Phase 1: Service Configuration (OpenAI, Stripe, Resend, Vercel)
-- Phase 2: PDF Import Verification
-- Phase 3: Core CRUD Verification
-- Phase 4: Email Reminders Verification
+**Phases completed:** 4 (Phases 1-4)
 
-**Requirements:** 9/9 complete (CONF-01 through CONF-04, TEST-01 through TEST-05)
-
-**Key decisions:**
-- pdf2json for PDF text extraction (only library working in Vercel serverless)
-- Session Pooler for Supabase IPv4 compatibility
-- Project-based Playwright auth setup
-
-**Tech debt carried forward:**
-- Email delivery requires verified Resend domain (RESEND_FROM_EMAIL)
-- PDF import E2E tests need TEST_USER credentials
+**Requirements:** 9/9 complete
 
 ---
-*Last updated: 2026-02-10*
+*Last updated: 2026-02-18*

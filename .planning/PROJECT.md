@@ -2,32 +2,16 @@
 
 ## What This Is
 
-A web application for tracking and managing recurring subscriptions. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include batch PDF import with full statement data retention, a virtualized transaction browser for discovering subscriptions, manual tagging and one-click conversion, AI-powered pattern detection with suggestions, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, and full category management.
+A web application for tracking and managing recurring subscriptions with Stripe-powered billing. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include batch PDF import with full statement data retention, a virtualized transaction browser, manual tagging and one-click conversion, AI-powered pattern detection, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, category management, three-tier paid subscriptions (Primary/Enhanced/Advanced), feature gating with upgrade prompts, customer portal for subscription management, and admin tools for trial extensions and webhook monitoring.
 
 ## Core Value
 
 Users can see all their subscriptions in one place and never get surprised by a renewal again.
 
-## Current Milestone: v2.1 Billing & Monetization
-
-**Goal:** Enable paid subscriptions with tiered feature access and Stripe integration.
-
-**Target features:**
-- Three paid tiers (Primary, Enhanced, Advanced) with feature gating
-- Stripe Checkout with monthly and annual billing periods
-- Voucher code system for free months
-- Upgrade prompts for locked features
-- Customer portal for subscription management
-
-**Tier structure:**
-- **Primary**: Current product (PDF import, patterns, subscriptions, analytics)
-- **Enhanced**: Future banking features (placeholder in v2.1)
-- **Advanced**: Future investing features (placeholder in v2.1)
-
 ## Current State
 
-**Version:** v2.0 Statement Hub (shipped 2026-02-10)
-**Codebase:** ~36,050 lines TypeScript, Next.js 16 + Supabase + OpenAI
+**Version:** v2.1 Billing & Monetization (shipped 2026-02-18)
+**Codebase:** ~40,000+ lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
 **Production URL:** https://recurring-payments.vercel.app
 
 **Current capabilities:**
@@ -37,10 +21,8 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Manual tagging with inline combobox and bulk operations
 - One-click subscription conversion with 8-second undo
 - Source dashboard with coverage visualization and gap detection
-- Re-import capability for previously skipped items
 - AI-powered pattern detection with auto-tagging during import
 - Suggestions page for accepting/dismissing detected patterns
-- Tag management UI in Settings page
 - Full subscription CRUD with category management
 - Dashboard with spending analytics (period selector, stat cards, category chart)
 - Spending trends (month-over-month, year-over-year, per-category)
@@ -49,6 +31,14 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Anomaly alerts (price increases, missed renewals)
 - Notification bell UI with weekly digest emails
 - Email reminders before renewals
+- Three-tier billing (Primary/Enhanced/Advanced) with Stripe Checkout
+- Feature gating with upgrade prompts for locked features
+- Stripe customer portal for subscription management (tier switching, billing)
+- Grandfathering (original pricing preserved when prices change)
+- Voucher/promotion code support in checkout
+- Admin trial extension UI with audit trail
+- Admin webhook monitoring dashboard
+- Admin RBAC with role-based layout and API guards
 - Production-ready error tracking (Sentry)
 - Mobile-responsive design with polished UX
 - Structured logging and health monitoring
@@ -119,16 +109,25 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - ✓ Re-import capability for previously skipped items — v2.0
 - ✓ Tag management UI in Settings page — v2.0
 
+**v2.1 Billing & Monetization:**
+- ✓ Webhook idempotency with database-backed dedup — v2.1
+- ✓ Payment failed email notifications — v2.1
+- ✓ Three-tier product system (Primary/Enhanced/Advanced) — v2.1
+- ✓ Price-to-tier mapping with grandfathering — v2.1
+- ✓ Feature gating infrastructure (hasFeature, requireFeature) — v2.1
+- ✓ Feature gating UI (FeatureGate, LockedNavItem, upgrade modal) — v2.1
+- ✓ Feature gating applied to import API, analytics, sidebar — v2.1
+- ✓ Pricing page with feature comparison table — v2.1
+- ✓ Customer portal with tier switching and branding — v2.1
+- ✓ Voucher/promotion code support in checkout — v2.1
+- ✓ Admin trial extension system with audit trail — v2.1
+- ✓ Admin RBAC with role-based layout and API guards — v2.1
+- ✓ Admin webhook monitoring dashboard — v2.1
+- ✓ Stripe Checkout with monthly and annual billing — v2.1
+
 ### Active
 
-**v2.1 Billing & Monetization:**
-- [ ] Tier system with Primary/Enhanced/Advanced levels
-- [ ] Stripe product and price configuration
-- [ ] Stripe Checkout integration (monthly + annual)
-- [ ] Webhook handling for subscription events
-- [ ] Voucher code system for free months
-- [ ] Feature gating with upgrade prompts
-- [ ] Customer portal for subscription management
+(No active requirements — define next milestone via `/gsd:new-milestone`)
 
 ### Out of Scope
 
@@ -142,27 +141,36 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Auto-merge duplicates — user trust critical; always require confirmation
 - Blob storage for PDF persistence — PDFs processed in-memory, no storage needed
 - Parallel PDF processing — memory exhaustion risk; sequential is safer
+- Free tier forever — creates support burden, no conversion pressure
+- Usage-based billing — revenue unpredictability, confusing for consumer app
+- Pause subscription — complicates billing logic, rarely resumes
+- Crypto payments — regulatory complexity, <1% demand
+- Lifetime deals — destroys LTV math, attracts wrong customers
+- Complex cancellation flows — FTC enforcement risk
+- Team/family plans — defer until product-market fit established
+- Referral program — requires tracking infrastructure, defer to v2.2+
 
 ## Context
 
-**Codebase state:** v2.0 complete. Full statement management system with batch uploads, transaction browser, tagging, conversion, and AI suggestions. All 101 requirements across 5 milestones validated.
+**Codebase state:** v2.1 complete. Full subscription management platform with billing, monetization, and admin tools. All 116 requirements across 6 milestones validated.
 
 **Known issues:**
 - Email delivery requires verified Resend domain (RESEND_FROM_EMAIL)
-- Sentry requires DSN configuration for error tracking to work (NEXT_PUBLIC_SENTRY_DSN)
+- Sentry requires DSN configuration for error tracking (NEXT_PUBLIC_SENTRY_DSN)
+- auth() called twice in import route (minor inefficiency)
+- Analytics FeatureGate wraps BASIC_ANALYTICS (primary tier) — never visibly locks for current users
 
 **Tech debt:**
 - Hooks not re-exported from central index (use-duplicate-scan, useTrends, useForecast*, useAlerts, useTags, etc.)
 - Logging infrastructure (withLogging, actionLog) created but not adopted by all API routes
 - EvidenceList URL params don't pre-filter transactions (minor UX enhancement)
+- Blob storage for PDF persistence (currently processed in-memory)
 
-**Database migrations required (if not already run):**
-- 0002_create_analytics_mv.sql - analytics materialized view
-- 0002_gorgeous_surge.sql - mergedAt/mergedIntoId columns
-- 0003_old_azazel.sql - recurring_patterns table
-- 0004_modern_argent.sql - alerts table and alert_type enum
-- 0005_strange_triathlon.sql - statements and transactions tables
-- 0006_typical_captain_stacy.sql - tags and transaction_tags tables
+**Database migrations (10 total):**
+- 0001-0006: Core schema, analytics MV, patterns, alerts, statements, tags
+- 0007-0008: Webhook events, stripe prices
+- 0009: Stripe price seeding
+- 0010: User role enum for admin RBAC
 
 **Codebase documentation:** See `.planning/codebase/` for detailed architecture, stack, conventions, and concerns analysis.
 
@@ -176,23 +184,21 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Configure Stripe now, build billing later | Focus on core features first, billing is secondary | — Pending |
 | Dev environment only | Reduce scope, validate features before production | ✓ Good |
 | PDF import as priority | Most unique/interesting feature, proves AI integration works | ✓ Good |
-| AI returns ALL items with confidence scores | User reported missing items; "be conservative" prompt filtered too aggressively | ✓ Good |
-| Confidence thresholds 80/50 (not 70/40) | More conservative auto-selection reduces false positives | ✓ Good |
-| Transaction date as source of truth | Renewal dates derived from statement transaction dates, not import date | ✓ Good |
+| AI returns ALL items with confidence scores | User reported missing items | ✓ Good |
 | Materialized view pattern | Fast analytics queries (<100ms) with 15-minute refresh | ✓ Good |
-| 70% similarity threshold | Balance between catching duplicates and avoiding false positives | ✓ Good |
-| sqrt(time) uncertainty scaling | Confidence intervals widen naturally with forecast horizon | ✓ Good |
-| Weekly batch over real-time alerts | Prevents notification fatigue while keeping users informed | ✓ Good |
-| Fire-and-forget pattern triggers | Background async operations don't block primary request | ✓ Good |
 | Sequential PDF processing | Prevents memory exhaustion with 50-100MB files | ✓ Good |
 | Keyset pagination | O(1) performance at any depth vs O(n) with OFFSET | ✓ Good |
-| TanStack Virtual | Lightweight virtualization for 10k+ items at 60fps | ✓ Good |
 | Many-to-many tags | Flexible tagging system with junction table | ✓ Good |
-| 8-second undo toast | Long enough for user to click undo, consistent pattern | ✓ Good |
-| selectedIdsRef pattern | Sync access in async callbacks prevents stale closures | ✓ Good |
+| Derive tier from price ID | Query stripe_prices table instead of storing tier column | ✓ Good |
+| Null tier = primary | Trial users get primary tier access via coalescing | ✓ Good |
+| Insert-on-conflict idempotency | Atomic webhook dedup via PostgreSQL unique constraint | ✓ Good |
+| Grandfathering via price comparison | User price vs current active price for same tier/interval | ✓ Good |
+| Features as const object | Type-safe via Feature type union, better than enum | ✓ Good |
+| Admin routes redirect silently | Don't leak admin route existence to unauthorized users | ✓ Good |
+| Role bootstrapped via seed script | Minimal attack surface, auditable admin promotion | ✓ Good |
+| ESLint no-unused-vars at warn | Flags dead code without breaking CI | ✓ Good |
 
 ---
-*Last updated: 2026-02-10 after v2.1 milestone started*
+*Last updated: 2026-02-18 after v2.1 milestone*

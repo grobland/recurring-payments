@@ -73,7 +73,7 @@ Each task was committed atomically:
 2. **Task 2: Wrap analytics page with FeatureGate** - `e1a22e7` (feat)
 3. **Task 3: Add LockedNavItem for enhanced-tier placeholder** - `f3400ff` (feat)
 
-**Plan metadata:** TBD (docs: complete plan)
+**Plan metadata:** `8b2358b` (docs: complete plan)
 
 ## Files Created/Modified
 
