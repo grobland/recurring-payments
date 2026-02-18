@@ -12,6 +12,7 @@ declare module "next-auth" {
       trialEndDate: string | null;
       onboardingCompleted: boolean;
       displayCurrency: string;
+      role: "user" | "admin";
     };
   }
 
@@ -24,6 +25,7 @@ declare module "next-auth" {
     trialEndDate?: Date | null;
     onboardingCompleted?: boolean;
     displayCurrency?: string;
+    role?: "user" | "admin";
   }
 }
 
@@ -34,5 +36,6 @@ declare module "next-auth/jwt" {
     trialEndDate: string | null;
     onboardingCompleted: boolean;
     displayCurrency: string;
+    role: "user" | "admin";
   }
 }

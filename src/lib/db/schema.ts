@@ -60,6 +60,8 @@ export const transactionTagStatusEnum = pgEnum("transaction_tag_status", [
 
 export const tierEnum = pgEnum("tier", ["primary", "enhanced", "advanced"]);
 
+export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
+
 // ============ USERS TABLE ============
 
 export const users = pgTable("users", {
@@ -96,6 +98,9 @@ export const users = pgTable("users", {
 
   // Onboarding
   onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
+
+  // Role
+  role: userRoleEnum("role").default("user").notNull(),
 
   // GDPR
   consentGiven: boolean("consent_given").default(false).notNull(),

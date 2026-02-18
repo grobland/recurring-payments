@@ -71,6 +71,13 @@
       "when": 1771357049963,
       "tag": "0009_tough_blockbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1771423820872,
+      "tag": "0010_absurd_nehzno",
+      "breakpoints": true
     }
   ]
 }

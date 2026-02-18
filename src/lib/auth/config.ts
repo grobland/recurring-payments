@@ -88,6 +88,7 @@ export const authConfig: NextAuthConfig = {
           token.trialEndDate = dbUser.trialEndDate?.toISOString() ?? null;
           token.onboardingCompleted = dbUser.onboardingCompleted;
           token.displayCurrency = dbUser.displayCurrency;
+          token.role = dbUser.role;
         }
       }
 
@@ -102,6 +103,7 @@ export const authConfig: NextAuthConfig = {
           token.trialEndDate = dbUser.trialEndDate?.toISOString() ?? null;
           token.onboardingCompleted = dbUser.onboardingCompleted;
           token.displayCurrency = dbUser.displayCurrency;
+          token.role = dbUser.role;
         }
       }
 
@@ -116,6 +118,7 @@ export const authConfig: NextAuthConfig = {
         user.trialEndDate = token.trialEndDate;
         user.onboardingCompleted = token.onboardingCompleted;
         user.displayCurrency = token.displayCurrency;
+        user.role = token.role;
       }
       return session;
     },
