@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { subscriptions } from "@/lib/db/schema";
+import { requireFeature, FEATURES } from "@/lib/features";
 // eq, isNull used via query builder helpers
 import { parseDocumentForSubscriptions, parseTextForSubscriptions, type DetectedSubscription } from "@/lib/openai/pdf-parser";
 import { isUserActive } from "@/lib/auth/helpers";
@@ -132,6 +133,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Feature gate: PDF imports require primary tier
+    await requireFeature(FEATURES.PDF_IMPORTS);
+
     // Check if user can import
     if (!isUserActive(session.user)) {
       return NextResponse.json(
@@ -251,6 +255,11 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Import error:", error);
+
+    // Feature access denied
+    if (error instanceof Error && error.message.startsWith("This feature requires")) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
 
     // Handle specific OpenAI API errors
     if (error instanceof OpenAI.APIError) {
