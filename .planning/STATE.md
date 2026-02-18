@@ -167,5 +167,5 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 29-01-PLAN.md (Apply Feature Gating)
-Resume file: .planning/phases/30-e2e-billing-flow/
+Stopped at: Phase 30 context gathered
+Resume file: .planning/phases/30-fix-urls-admin-security/30-CONTEXT.md
