@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 29 of 30 (Apply Feature Gating - Gap Closure)
-Plan: 0 of 1 in current phase
-Status: Gap closure phases created from v2.1 audit
-Last activity: 2026-02-17 - Created gap closure phases 29-30
+Plan: 1 of 1 in current phase
+Status: Phase 29 complete - feature gating wired into application
+Last activity: 2026-02-18 - Completed 29-01-PLAN.md (feature gating applied)
 
-Progress: [========================] v2.0 complete | v2.1 [████████████░░░░] 83% (gap closure)
+Progress: [========================] v2.0 complete | v2.1 [██████████████░░] 88% (gap closure)
 
 ## Milestone Summary
 
@@ -92,6 +92,9 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | Nullable FK for set null | appliedByAdminId without .notNull() enables onDelete: "set null" (28-01) |
 | Admin endpoint auth | Session auth only, admin role gating deferred for MVP (28-01) |
 | Cumulative trial extension | Extend from max(trialEndDate, now) ensures forward extension (28-01) |
+| API route feature gating | requireFeature() after auth check, 403 handler catches feature errors by string prefix (29-01) |
+| Page content gating | FeatureGate wraps main content, header stays outside gate for visibility (29-01) |
+| Nav item locking | LockedNavItem inside SidebarMenuItem, renders opacity-50 + pointer-events-none for locked features (29-01) |
 
 
 ### Blockers/Concerns
@@ -157,9 +160,12 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | 28-01 | Cumulative extension from max(trialEndDate, now) | Ensures extensions always extend forward, never backward | Prevents accidental trial shortening |
 | 28-02 | Client form for interactivity | Server component page with client form child enables useState/fetch | Clean separation of server queries and client interactions |
 | 28-02 | Pass trialUsers via props | Server queries trial users, passes to client form | Avoids duplicate DB queries in client |
+| 29-01 | requireFeature after auth check | 401 takes priority over 403 for unauthenticated requests | Correct HTTP semantics for auth vs authorization |
+| 29-01 | Feature error string prefix check | requireFeature throws plain Error, not custom class | Catch block identifies feature errors via message.startsWith() |
+| 29-01 | DashboardHeader outside FeatureGate | Users see page title even when content is locked | Better UX - header gives context before upgrade modal |
 
 ## Session Continuity
 
-Last session: 2026-02-17
-Stopped at: Created gap closure phases 29-30 from v2.1 audit
-Resume file: .planning/phases/29-apply-feature-gating/
+Last session: 2026-02-18
+Stopped at: Completed 29-01-PLAN.md (Apply Feature Gating)
+Resume file: .planning/phases/30-e2e-billing-flow/
