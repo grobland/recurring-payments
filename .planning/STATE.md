@@ -11,8 +11,8 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 Phase: 30 of 30 (Fix URLs, Admin Security - Gap Closure)
 Plan: 2 of 2 in current phase
-Status: Phase 30 complete - URLs fixed, pricing nav added, dead code removed, ESLint hardened
-Last activity: 2026-02-18 - Completed 30-02-PLAN.md (URL fix, pricing nav, dead code cleanup)
+Status: Phase 30 complete - admin RBAC added, URLs fixed, pricing nav added, dead code removed, ESLint hardened
+Last activity: 2026-02-18 - Completed 30-01-PLAN.md (admin role-based access control)
 
 Progress: [========================] v2.0 complete | v2.1 [████████████████] 100% (gap closure complete)
 
@@ -43,7 +43,7 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 85 plans completed, 101 requirements validated
+**Total:** 86 plans completed, 102 requirements validated
 
 ## Performance Metrics
 
@@ -95,7 +95,10 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | API route feature gating | requireFeature() after auth check, 403 handler catches feature errors by string prefix (29-01) |
 | Page content gating | FeatureGate wraps main content, header stays outside gate for visibility (29-01) |
 | Nav item locking | LockedNavItem inside SidebarMenuItem, renders opacity-50 + pointer-events-none for locked features (29-01) |
-
+| Admin role guard | Layout-level check: session.user.role !== 'admin' redirects to /dashboard silently (30-01) |
+| API admin role guard | Inline 403 check after 401 auth check: session.user.role !== 'admin' returns Forbidden (30-01) |
+| isAdmin derivation | const isAdmin = session?.user?.role === 'admin' for client components needing conditional rendering (30-01) |
+| Admin bootstrap script | seed-admin.ts reads ADMIN_EMAIL env var, updates user role to 'admin' via drizzle (30-01) |
 
 ### Blockers/Concerns
 
@@ -109,7 +112,7 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 - Cron jobs require CRON_SECRET environment variable in production
 
 **Admin UI:**
-- Admin access currently open to all authenticated users (future: role-based access control)
+- Admin RBAC implemented - role-based access control via session.user.role (30-01)
 - Webhook logs require manual refresh (no real-time updates)
 
 ## Decisions Log
@@ -163,11 +166,14 @@ Progress: [========================] v2.0 complete | v2.1 [███████
 | 29-01 | requireFeature after auth check | 401 takes priority over 403 for unauthenticated requests | Correct HTTP semantics for auth vs authorization |
 | 29-01 | Feature error string prefix check | requireFeature throws plain Error, not custom class | Catch block identifies feature errors via message.startsWith() |
 | 29-01 | DashboardHeader outside FeatureGate | Users see page title even when content is locked | Better UX - header gives context before upgrade modal |
+| 30-01 | Admin routes redirect silently to /dashboard | Avoids leaking existence of admin routes to unauthorized users | Silent redirect provides better security posture |
+| 30-01 | user_role as PostgreSQL enum | Type safety and database constraint enforcement | Prevents invalid role values at DB level |
+| 30-01 | Role bootstrapped via seed script | No UI for role management - minimal surface area | Simple, auditable path for admin promotion |
 | 30-02 | Pricing link always visible in marketing nav | Pricing is public marketing content, visible regardless of auth state | Consistent with /pricing being a public marketing page |
 | 30-02 | ESLint no-unused-vars at warn not error | Avoids breaking build on pre-existing warnings | Flags future dead code without disrupting CI |
 
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Phase 30 plan 02 complete - v2.1 gap closure milestone complete
-Resume file: .planning/phases/30-fix-urls-admin-security/30-02-SUMMARY.md
+Stopped at: Completed 30-01-PLAN.md (admin RBAC) - Phase 30 both plans complete, v2.1 gap closure milestone complete
+Resume file: .planning/phases/30-fix-urls-admin-security/30-01-SUMMARY.md
