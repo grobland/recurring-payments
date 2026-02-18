@@ -13,6 +13,8 @@ import { useSubscriptions, useUserStatus } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { isRetryableError } from "@/lib/utils/errors";
 import { ServiceUnavailable } from "@/components/shared/service-unavailable";
+import { FeatureGate } from "@/components/features";
+import { FEATURES } from "@/lib/features";
 
 export default function AnalyticsPage() {
   const { data, isLoading, error, refetch } = useSubscriptions({ status: "active" });
@@ -147,7 +149,8 @@ export default function AnalyticsPage() {
           { label: "Analytics" },
         ]}
       />
-      <main className="flex-1 space-y-6 p-6">
+      <FeatureGate feature={FEATURES.BASIC_ANALYTICS}>
+        <main className="flex-1 space-y-6 p-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -311,7 +314,8 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
         )}
-      </main>
+        </main>
+      </FeatureGate>
     </>
   );
 }
