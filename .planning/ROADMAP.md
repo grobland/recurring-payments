@@ -155,7 +155,7 @@ Plans:
 | 13-18 | v1.3 | 21 | Complete | 2026-02-08 |
 | 19-23 | v2.0 | 21 | Complete | 2026-02-10 |
 | 24-30 | v2.1 | 19 | Complete | 2026-02-18 |
-| 31. Storage Foundation | v2.2 | TBD | Not started | - |
+| 31. Storage Foundation | 1/2 | In Progress|  | - |
 | 32. PDF Viewer | v2.2 | TBD | Not started | - |
 | 33. Vault UI | v2.2 | TBD | Not started | - |
 | 34. Coverage & Historical Upload | v2.2 | TBD | Not started | - |

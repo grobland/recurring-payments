@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 31 of 34 (Storage Foundation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-19 — v2.2 roadmap created (4 phases, 10 requirements mapped)
+Plan: 2 completed in current phase
+Status: In progress
+Last activity: 2026-02-19 — Completed 31-02: PDF storage status indicators (hasPdf APIs + PdfStatusIcon)
 
 Progress: [░░░░░░░░░░] 0% (v2.2 — 0/4 phases complete)
 
@@ -48,6 +48,9 @@ Recent decisions affecting v2.2 work:
 - [v2.2 research]: Supabase Storage RLS policies use `(storage.foldername(name))[1] = auth.uid()::text`; configure INSERT/SELECT/DELETE before writing upload code
 - [v2.2 research]: Storage failures are non-fatal — log error, continue import, set `pdfStoragePath = NULL`
 - [v2.2 research]: Signed URLs generated on-demand when modal opens; vault list returns `hasPdf: boolean` only (avoids stale URL problem)
+- [31-02]: hasPdf boolean derived from pdfStoragePath IS NOT NULL at API boundary — raw storage path never exposed to client
+- [31-02]: PdfStatusIcon duplicated locally in statement-list and statement-detail (6-line component, avoids premature abstraction)
+- [31-02]: PdfStatusIcon informational only in Phase 31 — no onClick; Phase 32 adds viewer on click
 - [v2.2 research]: Phase 34 coverage grid rendering approach not yet decided — evaluate CSS Grid vs shadcn calendar vs Recharts during planning
 
 ### Blockers/Concerns
@@ -67,6 +70,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Phase 31 context gathered
-Resume file: .planning/phases/31-storage-foundation/31-CONTEXT.md
-Resume with: `/gsd:plan-phase 31`
+Stopped at: Completed 31-02-PLAN.md (PDF storage status indicators)
+Resume file: .planning/phases/31-storage-foundation/31-02-SUMMARY.md
+Resume with: next plan in phase 31

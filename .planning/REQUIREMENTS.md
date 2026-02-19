@@ -10,7 +10,7 @@ Requirements for the Financial Data Vault milestone. Each maps to roadmap phases
 ### PDF Storage
 
 - [ ] **STOR-01**: User's uploaded PDFs are persisted in Supabase Storage during batch import
-- [ ] **STOR-02**: Pre-vault statements display a "No file stored" indicator when PDF is unavailable
+- [x] **STOR-02**: Pre-vault statements display a "No file stored" indicator when PDF is unavailable
 
 ### PDF Viewing
 
@@ -63,7 +63,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | STOR-01 | Phase 31 | Pending |
-| STOR-02 | Phase 31 | Pending |
+| STOR-02 | Phase 31 | Complete |
 | VIEW-01 | Phase 32 | Pending |
 | VIEW-02 | Phase 32 | Pending |
 | VAULT-01 | Phase 33 | Pending |
