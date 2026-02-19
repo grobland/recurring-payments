@@ -1,711 +1,340 @@
-# Stack Research: Billing & Monetization
+# Stack Research
 
-**Project:** Subscription Manager - Billing Milestone
-**Researched:** 2026-02-11
-**Confidence:** HIGH
-
-## Executive Summary
-
-The billing milestone adds three paid tiers (Primary, Enhanced, Advanced), Stripe Checkout with monthly/annual billing, voucher codes, feature gating, and customer portal integration. The existing stack is already well-suited for this:
-
-1. **Stripe SDK** - Already installed (stripe@20.2.0, @stripe/stripe-js@8.6.3), webhooks configured
-2. **Database schema** - Already has billing fields on users table (billingStatus, stripeCustomerId, etc.)
-3. **Existing UI** - Billing page, trial banner, and checkout flow already implemented
-
-**Key decision:** Extend the existing single-tier setup to multi-tier. NO new libraries needed. This is an architectural expansion, not a technology addition.
-
-**Stack additions:** None. All required packages are installed. Implementation involves:
-- Extending products.ts with three tiers and their feature definitions
-- Adding feature gating utilities (server + client)
-- Extending schema for tier tracking (stripePriceId already captures this)
+**Domain:** Financial Document Vault — PDF blob storage, in-app viewing, dual-view vault UI
+**Researched:** 2026-02-19
+**Confidence:** HIGH (core additions verified), MEDIUM (worker config patterns, community-sourced)
 
 ---
 
-## Current State Analysis
+## Context: What Already Exists
 
-### Already Implemented (No Changes Needed)
+The project uses `postgres` directly for database queries (Drizzle ORM) and has **no
+`@supabase/supabase-js` client installed**. The `statements` table already has a
+`pdf_storage_path` column (nullable `text`) ready to receive Supabase Storage paths.
+PDFs are currently processed in-memory and discarded — v2.2 adds permanent storage.
 
-| Capability | Location | Status |
-|------------|----------|--------|
-| Stripe server SDK | stripe@20.2.0 | Installed, client initialized |
-| Stripe JS | @stripe/stripe-js@8.6.3 | Installed |
-| Webhook handling | src/app/api/webhooks/stripe/route.ts | Handles checkout.session.completed, subscription.*, invoice.* |
-| Checkout session creation | src/app/api/billing/create-checkout/route.ts | Working with allow_promotion_codes: true |
-| Customer portal | src/app/api/billing/portal/route.ts | Working |
-| Billing status tracking | users table | billingStatus, stripeCustomerId, stripeSubscriptionId, stripePriceId, currentPeriodEnd |
-| Trial management | useUserStatus hook | isTrialActive, isPaid, daysLeftInTrial |
-| Billing UI | src/app/(dashboard)/settings/billing/page.tsx | Shows current plan, checkout buttons |
-| Trial banners | src/components/billing/trial-banner.tsx | Urgent + expired states |
-
-### Needs Extension (Architectural Changes)
-
-| Capability | What's Missing | Effort |
-|------------|----------------|--------|
-| Multi-tier products | Currently only monthly/annual for single tier | Low - extend products.ts |
-| Feature definitions per tier | No feature-to-tier mapping | Low - add constants |
-| Feature gating (server) | No middleware/utility for tier checks | Medium - add utility |
-| Feature gating (client) | No React component for upgrade prompts | Medium - add component |
-| Voucher code creation | Stripe coupons/promotion codes (Stripe Dashboard + API) | Low - Stripe handles this |
-| Tier display in UI | Pricing page shows single tier | Low - update UI |
+**Critical infrastructure constraint:** Vercel serverless functions have a **4.5 MB
+hard body size limit**. Bank statement PDFs regularly exceed this. The upload flow must
+bypass the Next.js API layer and write directly from the browser to Supabase Storage
+using a signed upload URL pattern.
 
 ---
 
-## Recommended Stack (No Additions)
-
-### Core Technologies (Already Installed)
-
-| Technology | Version | Purpose | Why Sufficient |
-|------------|---------|---------|----------------|
-| stripe | 20.2.0 | Server-side Stripe API | Latest version, handles all billing operations |
-| @stripe/stripe-js | 8.6.3 | Client-side Stripe elements | Redirect to Checkout, no embedded elements needed |
-| Drizzle ORM | 0.45.1 | Database operations | Schema already has billing fields |
-| NextAuth.js | 5.0.0-beta.30 | Session management | User context available for tier checks |
-| TanStack Query | 5.90.19 | State management | useUserStatus already implemented |
-
-### What NOT to Add
-
-| Library | Why NOT |
-|---------|---------|
-| @stripe/react-stripe-js | Not needed - using Stripe Checkout redirect, not embedded elements |
-| zustand/jotai for billing state | useUserStatus hook already provides billing state via TanStack Query |
-| Feature flag service (LaunchDarkly, etc.) | Over-engineering - simple tier-based gating is sufficient |
-| clerk/use-stripe-subscription | Adds Clerk dependency we don't need - we have NextAuth.js |
-
----
-
-## Implementation Patterns
-
-### Pattern 1: Multi-Tier Product Configuration
-
-**What:** Extend products.ts to define three tiers with features.
-
-**Current state:**
-```typescript
-export const STRIPE_PRICES = {
-  monthly: process.env.STRIPE_MONTHLY_PRICE_ID ?? "",
-  annual: process.env.STRIPE_ANNUAL_PRICE_ID ?? "",
-} as const;
-```
-
-**Extended pattern:**
-```typescript
-// src/lib/stripe/products.ts
-
-export const TIERS = {
-  primary: {
-    name: "Primary",
-    priceIds: {
-      monthly: process.env.STRIPE_PRIMARY_MONTHLY_PRICE_ID ?? "",
-      annual: process.env.STRIPE_PRIMARY_ANNUAL_PRICE_ID ?? "",
-    },
-    pricing: {
-      monthly: 499,  // $4.99
-      annual: 3999,  // $39.99 (33% savings)
-    },
-    features: [
-      "unlimited_subscriptions",
-      "email_reminders",
-      "spending_analytics",
-      "data_export",
-    ],
-    limits: {
-      pdfImportsPerMonth: 5,
-      categories: 10,
-    },
-  },
-  enhanced: {
-    name: "Enhanced",
-    priceIds: {
-      monthly: process.env.STRIPE_ENHANCED_MONTHLY_PRICE_ID ?? "",
-      annual: process.env.STRIPE_ENHANCED_ANNUAL_PRICE_ID ?? "",
-    },
-    pricing: {
-      monthly: 999,  // $9.99
-      annual: 7999,  // $79.99 (33% savings)
-    },
-    features: [
-      "unlimited_subscriptions",
-      "email_reminders",
-      "spending_analytics",
-      "data_export",
-      "pdf_import",
-      "pattern_detection",
-      "multi_currency",
-    ],
-    limits: {
-      pdfImportsPerMonth: 25,
-      categories: 50,
-    },
-  },
-  advanced: {
-    name: "Advanced",
-    priceIds: {
-      monthly: process.env.STRIPE_ADVANCED_MONTHLY_PRICE_ID ?? "",
-      annual: process.env.STRIPE_ADVANCED_ANNUAL_PRICE_ID ?? "",
-    },
-    pricing: {
-      monthly: 1999,  // $19.99
-      annual: 15999,  // $159.99 (33% savings)
-    },
-    features: [
-      "unlimited_subscriptions",
-      "email_reminders",
-      "spending_analytics",
-      "data_export",
-      "pdf_import",
-      "pattern_detection",
-      "multi_currency",
-      "statement_browser",
-      "forecasting",
-      "alerts",
-      "priority_support",
-    ],
-    limits: {
-      pdfImportsPerMonth: Infinity,
-      categories: Infinity,
-    },
-  },
-} as const;
-
-export type TierName = keyof typeof TIERS;
-export type Feature = typeof TIERS[TierName]["features"][number];
-
-// Lookup tier from Stripe Price ID
-export function getTierFromPriceId(priceId: string): TierName | null {
-  for (const [tierName, tier] of Object.entries(TIERS)) {
-    if (tier.priceIds.monthly === priceId || tier.priceIds.annual === priceId) {
-      return tierName as TierName;
-    }
-  }
-  return null;
-}
-```
-
-**Environment variables (add to .env.example):**
-```bash
-# Stripe Price IDs - Primary Tier
-STRIPE_PRIMARY_MONTHLY_PRICE_ID=""
-STRIPE_PRIMARY_ANNUAL_PRICE_ID=""
-
-# Stripe Price IDs - Enhanced Tier
-STRIPE_ENHANCED_MONTHLY_PRICE_ID=""
-STRIPE_ENHANCED_ANNUAL_PRICE_ID=""
-
-# Stripe Price IDs - Advanced Tier
-STRIPE_ADVANCED_MONTHLY_PRICE_ID=""
-STRIPE_ADVANCED_ANNUAL_PRICE_ID=""
-```
-
----
-
-### Pattern 2: Server-Side Feature Gating
-
-**What:** Utility function to check if user has access to a feature.
-
-**Implementation:**
-```typescript
-// src/lib/billing/feature-gate.ts
-
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { getTierFromPriceId, TIERS, type Feature } from "@/lib/stripe/products";
-
-export async function hasFeature(feature: Feature): Promise<boolean> {
-  const session = await auth();
-  if (!session?.user?.id) return false;
-
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
-    columns: {
-      billingStatus: true,
-      stripePriceId: true,
-      trialEndDate: true,
-    },
-  });
-
-  if (!user) return false;
-
-  // Trial users get Enhanced tier features
-  if (user.billingStatus === "trial" && user.trialEndDate && new Date(user.trialEndDate) > new Date()) {
-    return TIERS.enhanced.features.includes(feature);
-  }
-
-  // Paid users get features based on their tier
-  if (user.billingStatus === "active" && user.stripePriceId) {
-    const tier = getTierFromPriceId(user.stripePriceId);
-    if (tier) {
-      return TIERS[tier].features.includes(feature);
-    }
-  }
-
-  return false;
-}
-
-export async function requireFeature(feature: Feature): Promise<void> {
-  const allowed = await hasFeature(feature);
-  if (!allowed) {
-    throw new Error(`Feature "${feature}" requires an upgraded plan`);
-  }
-}
-
-export async function getUserTier(): Promise<TierName | "trial" | "free"> {
-  const session = await auth();
-  if (!session?.user?.id) return "free";
-
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
-    columns: {
-      billingStatus: true,
-      stripePriceId: true,
-      trialEndDate: true,
-    },
-  });
-
-  if (!user) return "free";
-
-  if (user.billingStatus === "trial" && user.trialEndDate && new Date(user.trialEndDate) > new Date()) {
-    return "trial";
-  }
-
-  if (user.billingStatus === "active" && user.stripePriceId) {
-    const tier = getTierFromPriceId(user.stripePriceId);
-    return tier ?? "free";
-  }
-
-  return "free";
-}
-```
-
-**Usage in API route:**
-```typescript
-// src/app/api/patterns/detect/route.ts
-import { requireFeature } from "@/lib/billing/feature-gate";
-
-export async function POST(request: Request) {
-  // Gate the feature
-  await requireFeature("pattern_detection");
-
-  // ... rest of the route
-}
-```
-
----
-
-### Pattern 3: Client-Side Feature Gate Component
-
-**What:** React component to conditionally render content based on tier.
-
-**Implementation:**
-```typescript
-// src/components/billing/feature-gate.tsx
-"use client";
-
-import { useUserStatus } from "@/lib/hooks";
-import { getTierFromPriceId, TIERS, type Feature } from "@/lib/stripe/products";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Lock } from "lucide-react";
-
-interface FeatureGateProps {
-  feature: Feature;
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
-}
-
-export function FeatureGate({ feature, children, fallback }: FeatureGateProps) {
-  const { user, isTrialActive, isPaid, isLoading } = useUserStatus();
-
-  if (isLoading) {
-    return null; // Or skeleton loader
-  }
-
-  // Trial users get Enhanced tier features
-  if (isTrialActive && TIERS.enhanced.features.includes(feature)) {
-    return <>{children}</>;
-  }
-
-  // Paid users get features based on their tier
-  if (isPaid && user?.stripePriceId) {
-    const tier = getTierFromPriceId(user.stripePriceId);
-    if (tier && TIERS[tier].features.includes(feature)) {
-      return <>{children}</>;
-    }
-  }
-
-  // Show fallback or default upgrade prompt
-  return (
-    <>
-      {fallback ?? (
-        <UpgradePrompt feature={feature} />
-      )}
-    </>
-  );
-}
-
-function UpgradePrompt({ feature }: { feature: Feature }) {
-  // Find which tier has this feature
-  const requiredTier = Object.entries(TIERS).find(([_, tier]) =>
-    tier.features.includes(feature)
-  )?.[0];
-
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-8 text-center">
-      <Lock className="h-8 w-8 text-muted-foreground" />
-      <div>
-        <h3 className="font-semibold">Upgrade Required</h3>
-        <p className="text-sm text-muted-foreground">
-          This feature is available on the {requiredTier ? TIERS[requiredTier as keyof typeof TIERS].name : "paid"} plan and above.
-        </p>
-      </div>
-      <Button asChild>
-        <Link href="/settings/billing">Upgrade Now</Link>
-      </Button>
-    </div>
-  );
-}
-```
-
-**Usage in component:**
-```tsx
-<FeatureGate feature="pattern_detection">
-  <PatternSuggestionsCard patterns={patterns} />
-</FeatureGate>
-```
-
----
-
-### Pattern 4: Extend useUserStatus Hook
-
-**What:** Add tier and feature information to existing hook.
-
-**Extended hook:**
-```typescript
-// Add to src/lib/hooks/use-user.ts
-
-export function useUserStatus() {
-  const { data, isLoading, error } = useUser();
-
-  const user = data?.user;
-  const now = new Date();
-  const trialEndDate = user?.trialEndDate ? new Date(user.trialEndDate) : null;
-
-  const isTrialActive =
-    user?.billingStatus === "trial" && trialEndDate && trialEndDate > now;
-
-  const isPaid = user?.billingStatus === "active";
-  const isActive = isTrialActive || isPaid;
-
-  const daysLeftInTrial = trialEndDate
-    ? Math.max(0, Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
-    : 0;
-
-  // NEW: Get current tier
-  const tier = useMemo(() => {
-    if (isTrialActive) return "trial";
-    if (isPaid && user?.stripePriceId) {
-      return getTierFromPriceId(user.stripePriceId) ?? "free";
-    }
-    return "free";
-  }, [isTrialActive, isPaid, user?.stripePriceId]);
-
-  // NEW: Feature check helper
-  const hasFeature = useCallback((feature: Feature): boolean => {
-    if (tier === "trial") {
-      return TIERS.enhanced.features.includes(feature);
-    }
-    if (tier !== "free" && tier !== "trial") {
-      return TIERS[tier].features.includes(feature);
-    }
-    return false;
-  }, [tier]);
-
-  return {
-    user,
-    isLoading,
-    error,
-    isTrialActive,
-    isPaid,
-    isActive,
-    daysLeftInTrial,
-    billingStatus: user?.billingStatus,
-    needsOnboarding: user && !user.onboardingCompleted,
-    tier,        // NEW
-    hasFeature,  // NEW
-  };
-}
-```
-
----
-
-### Pattern 5: Voucher/Coupon Code Implementation
-
-**What:** Use Stripe's built-in coupon and promotion code system.
-
-**No code changes needed.** The existing checkout session already has `allow_promotion_codes: true`:
-
-```typescript
-// src/app/api/billing/create-checkout/route.ts (already implemented)
-const checkoutSession = await stripe.checkout.sessions.create({
-  // ...
-  allow_promotion_codes: true, // <-- Already enabled!
-  // ...
-});
-```
-
-**Stripe Dashboard setup (manual):**
-
-1. Go to Stripe Dashboard > Products > Coupons
-2. Create coupon: "1 Month Free" - 100% off, duration "once"
-3. Create promotion code: "FREEMONTH" linking to the coupon
-4. Set restrictions: first-time customers only, expires after X redemptions
-
-**For programmatic coupon creation:**
-```typescript
-// src/app/api/admin/coupons/route.ts (if needed)
-export async function POST(request: Request) {
-  const stripe = getStripeClient();
-
-  // Create coupon
-  const coupon = await stripe.coupons.create({
-    duration: "once",
-    percent_off: 100,
-    id: "free-month",
-    max_redemptions: 100,
-  });
-
-  // Create promotion code
-  const promoCode = await stripe.promotionCodes.create({
-    coupon: coupon.id,
-    code: "FREEMONTH2026",
-    restrictions: {
-      first_time_transaction: true,
-    },
-  });
-
-  return NextResponse.json({ coupon, promoCode });
-}
-```
-
----
-
-### Pattern 6: Extend Checkout for Multi-Tier
-
-**What:** Update checkout endpoint to accept tier + billing period.
-
-**Extended endpoint:**
-```typescript
-// src/app/api/billing/create-checkout/route.ts
-import { z } from "zod";
-import { TIERS, type TierName } from "@/lib/stripe/products";
-
-const checkoutSchema = z.object({
-  tier: z.enum(["primary", "enhanced", "advanced"]),
-  period: z.enum(["monthly", "annual"]),
-});
-
-export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const body = await request.json();
-  const result = checkoutSchema.safeParse(body);
-
-  if (!result.success) {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-  }
-
-  const { tier, period } = result.data;
-  const tierConfig = TIERS[tier];
-  const priceId = tierConfig.priceIds[period];
-
-  if (!priceId) {
-    return NextResponse.json({ error: "Price not configured" }, { status: 500 });
-  }
-
-  // ... rest of checkout logic (unchanged)
-  const checkoutSession = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    payment_method_types: ["card"],
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${APP_URL}/settings/billing?success=true`,
-    cancel_url: `${APP_URL}/settings/billing?canceled=true`,
-    subscription_data: {
-      metadata: { userId: user.id, tier },
-    },
-    allow_promotion_codes: true,
-    billing_address_collection: "auto",
-  });
-
-  return NextResponse.json({ url: checkoutSession.url });
-}
-```
-
----
-
-## What NOT to Change
-
-### Schema Changes (Not Needed)
-
-The existing users table already has all needed fields:
-
-| Field | Purpose | Already Has |
-|-------|---------|-------------|
-| billingStatus | Trial/active/cancelled/past_due | Yes |
-| stripeCustomerId | Link to Stripe customer | Yes |
-| stripeSubscriptionId | Active subscription | Yes |
-| stripePriceId | Current price (reveals tier) | Yes |
-| currentPeriodEnd | When subscription renews | Yes |
-| trialStartDate / trialEndDate | Trial tracking | Yes |
-
-**No new columns needed.** The `stripePriceId` field already tells us which tier the user is on. We look up the tier from the price ID.
-
-### Webhook Changes (Minimal)
-
-The existing webhook handler already handles:
-- checkout.session.completed
-- customer.subscription.created/updated/deleted
-- invoice.payment_succeeded/failed
-
-**Only addition:** Log tier name in subscription metadata for debugging.
-
----
-
-## Stripe Dashboard Configuration
-
-### Products to Create
-
-| Tier | Product Name | Monthly Price | Annual Price |
-|------|--------------|---------------|--------------|
-| Primary | Subscription Manager - Primary | $4.99/month | $39.99/year |
-| Enhanced | Subscription Manager - Enhanced | $9.99/month | $79.99/year |
-| Advanced | Subscription Manager - Advanced | $19.99/month | $159.99/year |
-
-**After creating, copy price IDs to environment variables.**
-
-### Customer Portal Configuration
-
-1. Go to Stripe Dashboard > Settings > Customer Portal
-2. Enable subscription upgrades/downgrades
-3. Enable promotion codes in portal
-4. Set default behavior for cancellations
+## Recommended Stack Additions
+
+### Core Technologies (New)
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| `@supabase/supabase-js` | `^2.97.0` | Supabase Storage: upload, signed URLs, download | The only official SDK for Supabase Storage. The project uses `postgres` directly for DB (no supabase-js needed there), but Storage has no postgres-compatible alternative — supabase-js is required. Bundles storage-js internally. |
+| `react-pdf` | `^10.3.0` | In-app PDF rendering (canvas-based, no iframe) | Most-maintained open source PDF renderer for React. v10 supports React 19, pdfjs-dist 5.x, and confirmed Next.js App Router compatibility (requires Next.js >=14.1.1; project is on 16.1.4). Renders in `<canvas>` — no iframe, no browser chrome, no CORS issues with signed blob URLs. |
+
+### Supporting Libraries (None New)
+
+The vault UI requires no additional libraries beyond the two above. Everything else is
+already installed:
+
+| Capability | Already Available | Package |
+|------------|------------------|---------|
+| Dual-view tabs (file cabinet / timeline) | `@radix-ui/react-tabs` | Installed via `radix-ui ^1.4.3` |
+| Virtualized file list | `@tanstack/react-virtual` | `^3.13.18` already installed |
+| Drag-and-drop upload | `react-dropzone` | `^14.3.8` already installed |
+| PDF download button | Native `URL.createObjectURL + <a download>` | No library needed; file-saver is a legacy polyfill |
+| Date grouping for timeline view | `date-fns` | `^4.1.0` already installed |
+| File hash for deduplication | Custom SHA-256 util | Already in `/lib/utils/file-hash.ts` |
 
 ---
 
 ## Installation
 
 ```bash
-# No new packages to install!
-
-# Verify existing packages
-npm list stripe @stripe/stripe-js
-# Expected: stripe@20.2.0, @stripe/stripe-js@8.6.3
-
-# Add environment variables for new price IDs
-# (see .env.example updates above)
+# Exactly two new packages
+npm install @supabase/supabase-js react-pdf
 ```
+
+`pdfjs-dist` (react-pdf's rendering engine) installs automatically as a dependency of
+react-pdf at version 5.4.x. Do NOT install it separately — react-pdf pins a compatible
+version.
+
+---
+
+## Environment Variables to Add
+
+```bash
+# Add to .env.local and .env.example
+# Supabase Storage client (separate from DATABASE_URL which stays as-is for Drizzle)
+NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT_REF].supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="[anon key — safe to expose in browser]"
+SUPABASE_SERVICE_ROLE_KEY="[service role key — server-side ONLY, never NEXT_PUBLIC_]"
+```
+
+`DATABASE_URL` continues to serve Drizzle. The Supabase JS client only touches Storage,
+not the Postgres database directly.
+
+---
+
+## Integration Patterns
+
+### Pattern 1: Two Supabase Clients
+
+Create separate clients for server vs. client contexts. Never use the service role key
+in browser code.
+
+```typescript
+// src/lib/supabase/server.ts  (server components, API routes)
+import { createClient } from "@supabase/supabase-js";
+
+export function createSupabaseServerClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!  // Bypasses RLS — trusted server ops only
+  );
+}
+
+// src/lib/supabase/client.ts  (browser — upload only)
+import { createClient } from "@supabase/supabase-js";
+
+export const supabaseBrowserClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!  // RLS-governed, safe for browser
+);
+```
+
+### Pattern 2: Upload Flow (Bypassing the 4.5 MB Vercel Limit)
+
+Direct-to-storage upload via signed URL. File never passes through the Next.js
+serverless function body.
+
+```
+Browser
+  1. Hash PDF client-side → POST /api/batch/check-hash  (existing)
+  2. POST /api/statements/create-upload-url  (NEW)
+     → Server: auth check, create statement record (pending)
+     → Server: supabase.storage.createSignedUploadUrl(path, 7200)
+     → Returns { signedUrl, token, storagePath }
+  3. Browser: supabaseBrowserClient.storage.uploadToSignedUrl(
+       "statements", storagePath, token, file
+     )
+     → Writes directly from browser to Supabase Storage bucket
+     → Zero serverless function body involvement
+  4. Browser: POST /api/batch/process  (existing — receives PDF from Storage)
+     → Server reads file: supabase.storage.download(storagePath)
+     → Processes with pdf2json + OpenAI
+     → Updates statements.pdf_storage_path via Drizzle
+```
+
+### Pattern 3: PDF Viewer Setup (react-pdf + Next.js)
+
+The PDF viewer component must be a client component loaded with `ssr: false`. The
+worker must be configured in the same module that renders `<Document>` / `<Page>`.
+
+```typescript
+// src/components/vault/PdfViewer.tsx
+"use client";
+
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+// Worker must be configured HERE, not in a separate file
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
+
+export function PdfViewer({ url }: { url: string }) {
+  const [numPages, setNumPages] = useState<number>(0);
+  return (
+    <Document file={url} onLoadSuccess={({ numPages }) => setNumPages(numPages)}>
+      {Array.from({ length: numPages }, (_, i) => (
+        <Page key={i + 1} pageNumber={i + 1} width={600} />
+      ))}
+    </Document>
+  );
+}
+```
+
+```typescript
+// Consume with dynamic import — prevents SSR crash
+// src/components/vault/PdfViewerLazy.tsx
+import dynamic from "next/dynamic";
+
+export const PdfViewerLazy = dynamic(
+  () => import("./PdfViewer").then((m) => m.PdfViewer),
+  { ssr: false, loading: () => <PdfViewerSkeleton /> }
+);
+```
+
+No `next.config.ts` webpack changes needed — the ES module `import.meta.url` worker
+reference is resolved correctly by Next.js 16's bundler.
+
+Add `canvas` to `serverExternalPackages` if server-side PDF operations fail (typically
+only needed if server-side rendering of PDF pages is attempted):
+
+```typescript
+// next.config.ts — only if needed
+serverExternalPackages: ["pino", "pino-pretty"],  // canvas omitted unless needed
+```
+
+### Pattern 4: Serving PDFs (Signed URL for Viewer)
+
+PDFs live in a private bucket. Never expose storage paths directly. Generate 5-minute
+signed URLs server-side after auth + ownership checks.
+
+```typescript
+// src/app/api/statements/[id]/pdf-url/route.ts  (NEW)
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Verify ownership via Drizzle (not Supabase)
+  const statement = await db.query.statements.findFirst({
+    where: and(eq(statements.id, params.id), eq(statements.userId, session.user.id)),
+    columns: { pdfStoragePath: true },
+  });
+
+  if (!statement?.pdfStoragePath) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.storage
+    .from("statements")
+    .createSignedUrl(statement.pdfStoragePath, 300);  // 5-minute expiry
+
+  if (error) return NextResponse.json({ error: "Storage error" }, { status: 500 });
+
+  return NextResponse.json({ signedUrl: data.signedUrl });
+}
+```
+
+---
+
+## Supabase Storage Bucket Configuration
+
+**Bucket name:** `statements`
+**Access mode:** Private (not public — never expose files without auth)
+**Max file size:** 50 MB (matches existing `MAX_FILE_SIZE` constant in batch/upload)
+**Allowed MIME types:** `application/pdf` only
+
+**Storage path convention:** `{userId}/{statementId}.pdf`
+Maps directly into `statements.pdf_storage_path` (already in schema as nullable text).
+
+**RLS policies (SQL — run in Supabase Dashboard SQL editor):**
+
+```sql
+-- Users can upload only to their own userId folder
+create policy "Users upload own statements"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'statements'
+  and (storage.foldername(name))[1] = (select auth.jwt()->>'sub')
+);
+
+-- Users can read only their own files
+create policy "Users read own statements"
+on storage.objects for select
+to authenticated
+using (
+  bucket_id = 'statements'
+  and (storage.foldername(name))[1] = (select auth.jwt()->>'sub')
+);
+
+-- Users can delete their own files
+create policy "Users delete own statements"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'statements'
+  and (storage.foldername(name))[1] = (select auth.jwt()->>'sub')
+);
+```
+
+Note: The server client uses `SUPABASE_SERVICE_ROLE_KEY` which bypasses RLS.
+The browser client uses `NEXT_PUBLIC_SUPABASE_ANON_KEY` and is governed by these
+policies. The path-based approach (`foldername(name)[1] = auth.uid()`) is the
+canonical Supabase pattern for per-user file isolation.
+
+---
+
+## What NOT to Use
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| Routing PDF uploads through Next.js API route body | Vercel 4.5 MB hard limit on serverless function bodies; bank statements exceed this regularly | Signed upload URL → direct browser-to-Supabase upload |
+| `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` | Exposes service role to browser, bypassing all RLS and granting any user full storage access | `SUPABASE_SERVICE_ROLE_KEY` (no NEXT_PUBLIC_ prefix) — server only |
+| `pdfjs-dist` installed separately | react-pdf pins a compatible version; installing separately risks version mismatch causing silent render failures or CORS errors with the worker | Let react-pdf manage pdfjs-dist as a transitive dependency |
+| `@supabase/storage-js` installed separately | Already bundled inside `@supabase/supabase-js` — installing separately adds nothing | `@supabase/supabase-js` only |
+| `@supabase/auth-helpers-nextjs` | Deprecated; project uses NextAuth (not Supabase Auth) — auth helpers are irrelevant | NextAuth session + custom Supabase admin client |
+| `<iframe src={signedUrl}>` for PDF viewing | Browser adds its own PDF toolbar/chrome breaking vault UI; CORS headers on signed URLs can block iframes | `react-pdf` canvas-based rendering |
+| Storing PDF blobs in Postgres `bytea` | Column size limits, backup bloat, no CDN delivery, no streaming support | Supabase Storage (S3-backed with global CDN) |
+| `file-saver` for download | Legacy polyfill for old browsers; modern targets (React 19 / Next.js 16) support native `URL.createObjectURL + <a download>` pattern natively | Native blob URL download |
 
 ---
 
 ## Alternatives Considered
 
-| Instead of | Could Use | Why Not |
-|------------|-----------|---------|
-| Per-tier environment variables | Stripe Product metadata | Environment variables are simpler, work in all environments |
-| Feature flags service | LaunchDarkly, Statsig | Over-engineering for tier-based gating. Simple constant + lookup is sufficient |
-| Embedded Stripe Elements | @stripe/react-stripe-js | Adds complexity. Checkout redirect is simpler and handles all edge cases |
-| Custom coupon system | Database coupon table | Stripe handles redemption limits, expiration, fraud prevention |
-| Clerk/use-stripe-subscription | Already have NextAuth.js | Would require auth migration |
+| Recommended | Alternative | Why Not |
+|-------------|-------------|---------|
+| `react-pdf` (wojtekmaj) | `@pdf-viewer/react` | Commercial/paid for production use; react-pdf is fully open source and sufficient for read-only vault display |
+| `react-pdf` (wojtekmaj) | Raw `pdfjs-dist` directly | react-pdf is a maintained React wrapper — using pdfjs-dist directly adds significant boilerplate with no benefit |
+| Supabase Storage | Vercel Blob | Project is already on Supabase infrastructure; Vercel Blob adds a second vendor for the same capability with no advantage |
+| Supabase Storage | AWS S3 direct | S3 requires additional SDK, IAM setup, credential rotation — Supabase Storage is already provisioned with the project |
+| Signed URL (5 min expiry) | Public bucket URLs | Public URLs expose all user financial documents without authentication; signed URLs enforce auth per-request |
 
 ---
 
-## Confidence Assessment
+## Version Compatibility
 
-| Area | Confidence | Rationale |
-|------|-----------|-----------|
-| Stripe SDK | HIGH | Already installed and working, v20.2.0 is latest |
-| Multi-tier products | HIGH | Stripe natively supports multiple products/prices |
-| Feature gating | HIGH | Simple lookup from price ID to tier features |
-| Voucher codes | HIGH | allow_promotion_codes already enabled, Stripe handles everything |
-| Customer portal | HIGH | Already implemented, supports tier switching |
-| Schema changes | HIGH | No changes needed - existing fields sufficient |
+| Package | Compatible With | Notes |
+|---------|-----------------|-------|
+| `react-pdf@10.3.0` | React `^19.2.3`, Next.js `16.1.4` | v10 explicitly supports React 19 peer dep; Next.js compatibility confirmed >=14.1.1 |
+| `react-pdf@10.3.0` | `pdfjs-dist@5.4.624` | Pinned automatically as dependency |
+| `react-pdf@10.3.0` | `pdf2json@4.0.2` (existing) | No conflict — react-pdf handles client rendering, pdf2json handles server text extraction |
+| `react-pdf@10.3.0` | `@tanstack/react-virtual@3.13.18` | No conflict; virtual scrolling applies to file list, not the PDF canvas renderer |
+| `@supabase/supabase-js@2.97.0` | Node.js 18+, browser ESM | Works in both API routes and browser; no SSR gotchas for storage-only usage |
+| `@supabase/supabase-js@2.97.0` | `postgres@3.4.8` (existing Drizzle) | No conflict — supabase-js is storage-only; postgres client remains the DB transport |
 
-**Overall confidence:** HIGH - This is an architectural expansion of existing, working code. No new dependencies required.
+---
+
+## Stack Patterns by Variant
+
+**If PDF files regularly exceed 6 MB:**
+- Use Supabase resumable uploads (TUS protocol via `tus-js-client`) instead of `uploadToSignedUrl`
+- Because the standard signed upload URL approach may time out on slow connections for large files
+- Note: Most bank statements are under 6 MB; start with standard signed URL and add resumable if monitoring shows failures
+
+**If the vault file list grows beyond ~500 items per user:**
+- Already handled — `@tanstack/react-virtual` is installed and virtualizes any list
+- No additional setup needed
+
+**If multi-page PDFs need in-vault scrolling:**
+- Use react-pdf's `<Page>` in a `@tanstack/react-virtual` container
+- Lazy-load pages only as they enter the viewport (react-pdf supports this natively via `<Document onLoadSuccess>` + per-page rendering)
+- Do NOT pre-render all pages on mount — a 200-page statement would allocate hundreds of canvas elements
+
+**If the Supabase project uses Supabase Auth (it does not — uses NextAuth):**
+- The signed URL approach would integrate with `supabase.auth.getSession()` instead
+- This project keeps NextAuth for auth and uses Supabase service role server-side; the browser upload uses anon key with path-based RLS
 
 ---
 
 ## Sources
 
-### Primary (HIGH confidence)
-
-**Stripe SDK:**
-- Codebase: package.json (stripe@20.2.0, @stripe/stripe-js@8.6.3)
-- Codebase: src/lib/stripe/client.ts (getStripeClient implementation)
-- Codebase: src/app/api/webhooks/stripe/route.ts (webhook handling)
-- [Stripe Subscriptions Build Guide](https://docs.stripe.com/billing/subscriptions/build-subscriptions)
-
-**Coupons & Promotion Codes:**
-- [Stripe Coupons & Promotion Codes Documentation](https://docs.stripe.com/billing/subscriptions/coupons)
-- [Stripe Promotion Codes API](https://docs.stripe.com/api/promotion_codes)
-- Codebase: create-checkout/route.ts already has `allow_promotion_codes: true`
-
-**Implementation Patterns:**
-- [T3's Stripe Recommendations](https://github.com/t3dotgg/stripe-recommendations) - Sync pattern, single source of truth
-- [Clerk use-stripe-subscription](https://github.com/clerk/use-stripe-subscription) - Feature gating via product metadata pattern
-- [Pedro Alonso Stripe + Next.js 15 Guide](https://www.pedroalonso.net/blog/stripe-nextjs-complete-guide-2025/)
-
-### Secondary (MEDIUM confidence)
-
-- [Vercel Next.js Subscription Payments](https://github.com/vercel/nextjs-subscription-payments) - Reference architecture
-- [Stripe Tiered Pricing Guide](https://docs.stripe.com/subscriptions/pricing-models/tiered-pricing)
+- `npm view react-pdf version` → `10.3.0` — verified 2026-02-19 (HIGH confidence)
+- `npm view @supabase/supabase-js version` → `2.97.0` — verified 2026-02-19 (HIGH confidence)
+- `npm view pdfjs-dist version` → `5.4.624` — verified 2026-02-19 (HIGH confidence)
+- [react-pdf GitHub (wojtekmaj/react-pdf)](https://github.com/wojtekmaj/react-pdf) — Next.js App Router worker setup, React 19 peer dep confirmation (HIGH confidence)
+- [Supabase Docs: createSignedUploadUrl](https://supabase.com/docs/reference/javascript/storage-from-createsigneduploadurl) — signed upload URL pattern (HIGH confidence)
+- [Supabase Docs: Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control) — RLS path-based policy SQL with `storage.foldername()` (HIGH confidence)
+- [Supabase Docs: File Limits](https://supabase.com/docs/guides/storage/uploads/file-limits) — 50 MB free tier limit, 500 GB Pro (HIGH confidence)
+- [Vercel KB: Bypass 4.5 MB body limit](https://vercel.com/kb/guide/how-to-bypass-vercel-body-size-limit-serverless-functions) — confirmed hard limit for serverless functions (HIGH confidence)
+- Codebase: `src/app/api/batch/upload/route.ts` — existing `MAX_FILE_SIZE = 50MB` constant, confirms 50MB intended limit (HIGH confidence)
+- Codebase: `src/lib/db/schema.ts` — `statements.pdf_storage_path` already exists as nullable text (HIGH confidence)
+- WebSearch: react-pdf v10 Next.js worker config patterns, multiple community sources — confirmed consistent with official docs (MEDIUM confidence)
 
 ---
 
-## Next Steps for Roadmap
-
-Based on research, suggested phase structure:
-
-1. **Phase 1: Multi-Tier Product Setup**
-   - Create products/prices in Stripe Dashboard
-   - Extend products.ts with tier configuration
-   - Add environment variables for price IDs
-   - Update checkout endpoint to accept tier
-   - **Estimated complexity:** Low
-
-2. **Phase 2: Feature Gating Infrastructure**
-   - Create server-side hasFeature/requireFeature utilities
-   - Create client-side FeatureGate component
-   - Extend useUserStatus hook with tier/hasFeature
-   - **Estimated complexity:** Medium
-
-3. **Phase 3: Apply Feature Gates**
-   - Gate PDF import by tier
-   - Gate pattern detection by tier
-   - Gate statement browser by tier
-   - Add upgrade prompts where features are gated
-   - **Estimated complexity:** Medium (many touchpoints)
-
-4. **Phase 4: Pricing UI Updates**
-   - Update pricing page with three tiers
-   - Update billing settings page
-   - Add tier comparison table
-   - **Estimated complexity:** Low
-
-5. **Phase 5: Voucher Code Setup**
-   - Create coupons in Stripe Dashboard
-   - Create promotion codes
-   - Test redemption flow (already enabled)
-   - **Estimated complexity:** Low (Stripe Dashboard only)
-
-**Phase ordering rationale:**
-- Phase 1 is foundational (products must exist before gating)
-- Phase 2 creates infrastructure for Phase 3
-- Phase 3 applies gates across app
-- Phase 4 updates UI to reflect new structure
-- Phase 5 is independent, can run in parallel
-
-**No additional research flags:** All technologies are already in use, just being extended.
+*Stack research for: Financial Data Vault — PDF Blob Storage + In-App Viewer + Vault UI*
+*Researched: 2026-02-19*

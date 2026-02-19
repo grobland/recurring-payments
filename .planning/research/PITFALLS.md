@@ -1,845 +1,409 @@
-# Domain Pitfalls: Statement Hub Features
+# Pitfalls Research
 
-**Domain:** Batch Import, Statement Data Retention, Statement Browsing
-**Context:** Adding these features to existing subscription manager
-**Researched:** 2026-02-08
+**Domain:** Financial Data Vault — PDF blob storage, in-app viewing, and vault UI added to existing Next.js + Supabase subscription manager
+**Researched:** 2026-02-19
+**Confidence:** HIGH (Vercel limits and Supabase Storage limits confirmed via official docs; PDF viewer issues confirmed via multiple GitHub issues; RLS issues corroborated by official Supabase docs and community reports)
+
+---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, data loss, or major performance issues.
+### Pitfall 1: Routing PDF Uploads Through the Vercel Serverless Function
 
-### Pitfall 1: Memory Exhaustion in Batch PDF Processing
+**What goes wrong:**
+The existing import flow receives PDFs as base64 through `POST /api/import`. When adding persistent storage, the natural instinct is to extend the same route to also forward the bytes to Supabase Storage. This hits Vercel's hard 4.5 MB request body limit and returns HTTP 413: `FUNCTION_PAYLOAD_TOO_LARGE`. The problem is invisible in development with small test files — it only surfaces with real bank statement PDFs, which commonly range from 3-15 MB.
 
-**What goes wrong:** Processing 12+ PDFs simultaneously causes Node.js heap memory overflow, crashing the import process and losing all user progress.
+Base64 encoding adds approximately 33% overhead, meaning a 3.3 MB PDF becomes a 4.5 MB encoded payload, hitting the limit exactly. Any statement larger than 3.3 MB will fail silently from the user's perspective.
 
-**Why it happens:** PDF libraries (pdf-lib, pdf-parse) load entire documents into memory. A 50-page statement can consume 50-100MB per file. Processing 12 files at once = 600MB-1.2GB memory usage, exceeding Node.js default heap limits (512MB-1.7GB).
+**Why it happens:**
+The existing import route already handles the file server-side. Developers naturally extend it to also persist the file. Dev test files are usually small. The 4.5 MB limit is not obvious during local development (no Vercel function wrapper locally).
 
-**Consequences:**
-- Import fails silently or with cryptic "heap out of memory" errors
-- User loses all work (no partial progress saved)
-- Server becomes unresponsive during processing
-- OpenAI API calls may succeed but results are lost when process crashes
+**How to avoid:**
+Use Supabase's signed upload URL pattern for direct client-to-storage uploads. The server creates a signed upload URL (expires in 2 hours), returns it to the browser, and the browser uploads directly to Supabase Storage — bypassing Vercel entirely. The server only processes metadata after the upload completes.
 
-**Prevention:**
-
-1. **Process PDFs sequentially, not in parallel**
 ```typescript
-// BAD - All PDFs in memory at once
-const results = await Promise.all(
-  files.map(file => extractTextFromPDF(file))
-);
+// Server action: generate signed URL and scoped path only
+const path = `${userId}/${year}-${month}/${statementId}.pdf`;
+const { data } = await supabase.storage
+  .from('statements')
+  .createSignedUploadUrl(path);
+// Return { signedUrl, token, path } to client
 
-// GOOD - One at a time with streaming
-for (const file of files) {
-  const text = await extractTextFromPDF(file);
-  await processWithOpenAI(text);
-  // File memory released before next iteration
-}
+// Client: upload directly to Supabase Storage (bypasses Vercel)
+await supabase.storage
+  .from('statements')
+  .uploadToSignedUrl(path, token, file);
+
+// Client then notifies server with the storage path only
+await fetch('/api/import', { method: 'POST', body: JSON.stringify({ storagePath: path }) });
 ```
 
-2. **Use streaming PDF libraries**
-```typescript
-// Use pdfreader for large files (streaming, event-driven)
-// NOT pdf-parse (loads entire file)
-import { PdfReader } from 'pdfreader';
+**Warning signs:**
+- Uploads work in dev with small 1-2 MB test PDFs but fail in production
+- HTTP 413 errors in Vercel function logs
+- Users report "upload failed" for files over 3-4 MB
+- The existing `react-dropzone` 10 MB client-side limit gives false confidence that large files work
 
-// Process page-by-page, not all-at-once
-```
-
-3. **Increase Node.js heap limit**
-```bash
-# In package.json or deployment config
-NODE_OPTIONS="--max-old-space-size=4096"
-```
-
-4. **Store PDFs externally**
-```typescript
-// Store in S3/Supabase Storage, pass URLs not buffers
-const fileUrl = await uploadToStorage(file);
-const extractionJob = await queueExtraction(fileUrl);
-```
-
-**Detection:**
-- Monitor `process.memoryUsage()` during imports
-- Watch for "JavaScript heap out of memory" errors
-- Track import failure rate vs file count correlation
-- Server CPU/memory spikes during batch imports
-
-**Phase impact:** Must address in Phase 1 (Batch Upload Infrastructure) before UI work. Without this, batch feature is unusable.
-
-**Severity:** CRITICAL
+**Phase to address:** Storage Foundation phase (the first phase that wires up Supabase Storage). This architectural decision must be made before any upload code is written.
 
 ---
 
-### Pitfall 2: Unbounded Table Growth Without Archival Strategy
+### Pitfall 2: react-pdf / pdfjs-dist Breaks the Next.js App Router Build
 
-**What goes wrong:** Statement line items table grows to millions of rows (1000s per user × 1000s of users), causing query slowdowns, index bloat, and backup/restore issues.
+**What goes wrong:**
+Installing `react-pdf` (which depends on `pdfjs-dist`) and importing it in a standard App Router component causes build failures or silent runtime crashes. Documented failure modes as of 2025:
+- `TypeError: Promise.withResolvers is not a function` during `next build`
+- `Can't resolve 'pdfjs-dist/build/pdf.worker.min.mjs'` webpack error
+- Blank white box where the PDF should appear (worker silently failed, no error thrown)
+- The `pdfjs-dist` bundle (~3 MB) inflates the server function bundle and can approach the 250 MB unzipped Vercel limit
 
-**Why it happens:** Every statement import adds 50-200 line items. With no archival or cleanup, table grows indefinitely. PostgreSQL MVCC creates "dead tuples" on updates, causing bloat. Autovacuum can't keep up with write volume.
+**Why it happens:**
+`react-pdf` depends on browser-only APIs (Canvas, Web Workers). The Next.js App Router server-renders components unless explicitly opted out. PDF.js ships a Web Worker that webpack does not know how to bundle without explicit configuration. Setting `pdfjs.GlobalWorkerOptions.workerSrc` in a shared utility file is unreliable — due to module execution order, the default value can overwrite the custom setting.
 
-**Consequences:**
-- Queries slow to 10-30 seconds for transaction browsing
-- Database size explodes (10GB → 100GB+ within months)
-- Backups take hours instead of minutes
-- Index maintenance consumes CPU during peak hours
-- Cost escalation on Supabase (storage + compute)
+**How to avoid:**
+Three-layer dynamic import pattern — not optional, required:
 
-**Prevention:**
-
-1. **Partition table by user and date**
-```sql
--- Partition by user_id for data isolation
--- Sub-partition by month for time-based cleanup
-CREATE TABLE statement_line_items (
-  id uuid,
-  user_id uuid NOT NULL,
-  transaction_date date NOT NULL,
-  -- other columns
-) PARTITION BY HASH (user_id);
-
--- Create partitions per user
-CREATE TABLE statement_line_items_u1 PARTITION OF statement_line_items
-  FOR VALUES WITH (MODULUS 10, REMAINDER 0)
-  PARTITION BY RANGE (transaction_date);
-```
-
-2. **Implement data retention policy**
 ```typescript
-// Keep only last 24 months of line items
-// Archive older data to cold storage (S3 + CSV)
-const retentionMonths = 24;
-const archiveThreshold = subMonths(new Date(), retentionMonths);
+// Layer 1: PDFViewerCore.tsx — actual react-pdf components
+// THIS FILE must be "use client" and must set workerSrc locally
+'use client';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 
-// Nightly cron: archive old data
-await archiveToS3(user.id, archiveThreshold);
-await db.delete(statementLineItems)
-  .where(
-    and(
-      eq(statementLineItems.userId, user.id),
-      lt(statementLineItems.transactionDate, archiveThreshold)
-    )
-  );
-```
+// Set workerSrc IN THIS SAME FILE — not in a separate module
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
-3. **Tune autovacuum for high-write tables**
-```sql
--- Default: vacuum after 20% of rows change (too high for large tables)
-ALTER TABLE statement_line_items SET (
-  autovacuum_vacuum_scale_factor = 0.01, -- Vacuum after 1% change
-  autovacuum_analyze_scale_factor = 0.005,
-  autovacuum_vacuum_cost_limit = 1000 -- Speed up vacuum
-);
-```
+// Layer 2: PDFViewer.tsx — wrapper that disables SSR
+import dynamic from 'next/dynamic';
+const PDFViewerCore = dynamic(() => import('./PDFViewerCore'), { ssr: false });
+export default function PDFViewer(props) { return <PDFViewerCore {...props} />; }
 
-4. **Use pg_repack or VACUUM FULL annually**
-```bash
-# Reclaim dead tuple space without table locking
-pg_repack --table statement_line_items
-```
-
-**Detection:**
-- Query `pgstattuple` for bloat percentage (>30% = problem)
-- Monitor table size growth rate (GB/month)
-- Track query duration on transaction list page (p95 > 3s = problem)
-- Autovacuum lag (dead tuples accumulating)
-
-**Phase impact:** Must design in Phase 2 (Statement Storage Schema). Retrofitting partitioning later requires full table rebuild.
-
-**Severity:** CRITICAL
-
----
-
-### Pitfall 3: Pagination Performance Collapse at Scale
-
-**What goes wrong:** Transaction browsing becomes unusable (20+ second page loads) when paginating deep into dataset using OFFSET-based pagination.
-
-**Why it happens:** `OFFSET 10000 LIMIT 50` forces database to scan and discard 10,000 rows before returning 50. Performance degrades linearly with offset depth.
-
-**Consequences:**
-- Page 1 loads in 200ms, page 200 loads in 30 seconds
-- Users can't browse historical transactions beyond first few pages
-- Database CPU spikes when multiple users paginate deeply
-- Timeout errors on deep pages
-
-**Prevention:**
-
-1. **Use keyset (cursor-based) pagination**
-```typescript
-// BAD - Offset pagination (slow for deep pages)
-const items = await db
-  .select()
-  .from(statementLineItems)
-  .where(eq(statementLineItems.userId, userId))
-  .orderBy(desc(statementLineItems.transactionDate))
-  .offset((page - 1) * 50)
-  .limit(50);
-
-// GOOD - Keyset pagination (constant time)
-const items = await db
-  .select()
-  .from(statementLineItems)
-  .where(
-    and(
-      eq(statementLineItems.userId, userId),
-      cursor ? lt(statementLineItems.transactionDate, cursor) : undefined
-    )
-  )
-  .orderBy(desc(statementLineItems.transactionDate))
-  .limit(50);
-
-// Return last item's date as cursor for next page
-return {
-  items,
-  nextCursor: items[items.length - 1]?.transactionDate
+// Layer 3: next.config.ts — prevent canvas binary from breaking webpack
+// and exclude pdfjs from server bundle
+const nextConfig = {
+  webpack: (config) => {
+    config.resolve.alias.canvas = false;
+    return config;
+  },
+  serverExternalPackages: ['pdfjs-dist'], // Next.js 15+
 };
 ```
 
-2. **Create composite indexes for filtered queries**
-```sql
--- Index covering userId + date + amount for common filters
-CREATE INDEX idx_line_items_user_date_amount
-  ON statement_line_items (user_id, transaction_date DESC, amount);
+**Warning signs:**
+- `TypeError: Promise.withResolvers is not a function` during `next build`
+- `Can't resolve 'pdfjs-dist/build/pdf.worker.min.mjs'` in webpack output
+- PDF component renders in dev but deployment fails
+- Blank PDF area on production with no console error (worker failed silently)
+- Vercel deployment logs show function bundle approaching 250 MB
 
--- Partial index for untagged items filter
-CREATE INDEX idx_line_items_untagged
-  ON statement_line_items (user_id, transaction_date DESC)
-  WHERE subscription_id IS NULL;
-```
-
-3. **Use BRIN indexes for time-series data**
-```sql
--- For large tables with sequential inserts
-CREATE INDEX idx_line_items_date_brin
-  ON statement_line_items
-  USING BRIN (transaction_date);
--- Much smaller than B-tree, good for range scans
-```
-
-**Detection:**
-- Test pagination at page 100, 500, 1000 during development
-- Monitor query duration by OFFSET value (should be flat, not linear)
-- Use `EXPLAIN ANALYZE` to check for "Seq Scan" on large offsets
-
-**Phase impact:** Must implement in Phase 3 (Statement Browser UI). Changing pagination strategy later requires API breaking changes.
-
-**Severity:** CRITICAL
+**Phase to address:** PDF Viewer phase — isolate this from the storage phase to contain the webpack complexity.
 
 ---
 
-### Pitfall 4: Deduplication Logic Failure on Re-imports
+### Pitfall 3: Supabase Storage RLS Left Open or Blocking All Access
 
-**What goes wrong:** Re-importing the same statement creates duplicate line items or false negatives (missing items user expects).
+**What goes wrong:**
+Two opposite failure modes on the same bucket:
 
-**Why it happens:** Statement re-imports are common (user fixes account name, re-processes with better AI prompt). Naive deduplication using hash of (date + amount + merchant) fails because:
-- Merchants have slight name variations ("Netflix" vs "NETFLIX INC")
-- Multiple legitimate charges on same date from same merchant (Uber rides)
-- Floating-point amount precision mismatches ($10.00 vs $9.99999)
+(a) **Too open:** No RLS policies on the bucket (or RLS disabled) — any authenticated user can read any other user's bank statements by constructing the storage path. Financial data exposed.
 
-**Consequences:**
-- Duplicate transactions confuse users and break analytics
-- False positives: legitimate charges rejected as duplicates
-- False negatives: actual duplicates slip through
-- Data integrity erosion over time
+(b) **Too closed:** RLS enabled but no policies created — every upload and download returns a 403 error. No data can be written or read. Manifests as mysterious "Unauthorized" errors that look like auth bugs.
 
-**Prevention:**
+A 2025 security audit found that 83% of exposed Supabase databases involved RLS misconfigurations.
 
-1. **Use composite fingerprint with fuzzy tolerance**
-```typescript
-// Generate stable fingerprint for deduplication
-function generateTransactionFingerprint(tx: Transaction): string {
-  const normalizedMerchant = tx.merchant
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, ''); // "Netflix Inc." -> "NETFLIXINC"
+**Why it happens:**
+The Supabase Dashboard SQL editor runs as the postgres superuser, which bypasses all RLS. Developers test their queries in the dashboard, see correct results, deploy, and discover real users get 403 errors or cross-user access. Storage bucket RLS policies are configured separately from database table RLS and require distinct SQL policies scoped to `storage.objects`.
 
-  const roundedAmount = Math.round(tx.amount * 100) / 100; // Normalize cents
+**How to avoid:**
+Create explicit RLS policies scoped to the user's own folder path before writing any upload code. The convention `userId/...` as the path prefix makes the policy simple:
 
-  const datePlusMinus2Days = [
-    subDays(tx.date, 2),
-    subDays(tx.date, 1),
-    tx.date,
-    addDays(tx.date, 1),
-    addDays(tx.date, 2)
-  ].map(d => format(d, 'yyyy-MM-dd')).join('|');
-
-  // Hash combination
-  return createHash('sha256')
-    .update(`${normalizedMerchant}:${roundedAmount}:${datePlusMinus2Days}`)
-    .digest('hex');
-}
-
-// Check for duplicates before inserting
-const fingerprint = generateTransactionFingerprint(item);
-const existing = await db
-  .select()
-  .from(statementLineItems)
-  .where(
-    and(
-      eq(statementLineItems.userId, userId),
-      eq(statementLineItems.fingerprint, fingerprint)
-    )
-  )
-  .limit(1);
-
-if (existing.length > 0) {
-  // Skip duplicate
-  continue;
-}
-```
-
-2. **Store import source file hash**
-```typescript
-// Track which file each line item came from
-const fileHash = createHash('sha256')
-  .update(fileBuffer)
-  .digest('hex');
-
-await db.insert(statementLineItems).values({
-  // ... other fields
-  sourceFileHash: fileHash,
-  importAuditId: auditId
-});
-
-// On re-import: if file hash matches, skip entire file
-const existingImport = await db
-  .select()
-  .from(importAudits)
-  .where(
-    and(
-      eq(importAudits.userId, userId),
-      eq(importAudits.sourceFileHash, fileHash)
-    )
-  );
-
-if (existingImport.length > 0) {
-  return { status: 'already_imported', auditId: existingImport[0].id };
-}
-```
-
-3. **Implement idempotent import API**
-```typescript
-// Import API should be safe to retry without side effects
-POST /api/import/confirm
-{
-  idempotency_key: "import_2026-02-08_user123_file456",
-  // ... import data
-}
-
-// Store idempotency key in import_audits
-// Subsequent calls with same key return original result
-```
-
-**Detection:**
-- Monitor duplicate rate: `SELECT merchant, date, COUNT(*) FROM items GROUP BY merchant, date HAVING COUNT(*) > 1`
-- Track user complaints about missing or duplicate transactions
-- Test re-importing same file multiple times in E2E tests
-
-**Phase impact:** Must design in Phase 2 (Statement Storage Schema) before data accumulates. Changing deduplication logic later requires backfilling fingerprints.
-
-**Severity:** CRITICAL
-
----
-
-### Pitfall 5: Manual Tag Overwrites Lost on Re-import
-
-**What goes wrong:** User manually tags a transaction with a subscription. Then re-imports the statement (fixing account name). Manual tag is overwritten or deleted.
-
-**Why it happens:** Re-import logic doesn't preserve user modifications. It treats all line items as new data, overwriting existing records.
-
-**Consequences:**
-- Users lose hours of manual tagging work
-- Trust in system eroded
-- User complaints and support burden
-- Data integrity issues (subscriptions lose tagged transactions)
-
-**Prevention:**
-
-1. **Never UPDATE line items, only INSERT new ones**
-```typescript
-// BAD - Updates destroy manual tags
-await db.update(statementLineItems)
-  .set({ merchant: newName })
-  .where(eq(statementLineItems.id, itemId));
-
-// GOOD - Insert new row, mark old as replaced
-await db.insert(statementLineItems).values({
-  ...existingItem,
-  id: uuid(), // New ID
-  replacesId: existingItem.id,
-  importAuditId: newAuditId
-});
-
-// Keep old row with manual tags
-// Query filters: WHERE replacesId IS NULL
-```
-
-2. **Track user modifications with flag**
 ```sql
--- Add column to track manual edits
-ALTER TABLE statement_line_items ADD COLUMN user_modified BOOLEAN DEFAULT FALSE;
+-- Enable RLS on storage.objects (required first)
+-- This is done via the Supabase Dashboard Storage settings or:
+-- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
--- Set flag when user tags transaction
-UPDATE statement_line_items
-SET subscription_id = $1, user_modified = TRUE
-WHERE id = $2;
+-- Allow users to upload only to their own folder
+CREATE POLICY "users upload own statements"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'statements' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
 
--- On re-import: skip items with user_modified = TRUE
+-- Allow users to read only their own statements
+CREATE POLICY "users read own statements"
+ON storage.objects FOR SELECT
+USING (
+  bucket_id = 'statements' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow users to delete only their own statements
+CREATE POLICY "users delete own statements"
+ON storage.objects FOR DELETE
+USING (
+  bucket_id = 'statements' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
 ```
 
-3. **Implement tag preservation logic**
-```typescript
-// When re-importing, preserve manual tags
-const existingTags = await db
-  .select()
-  .from(statementLineItems)
-  .where(
-    and(
-      eq(statementLineItems.userId, userId),
-      eq(statementLineItems.fingerprint, fingerprint),
-      isNotNull(statementLineItems.subscriptionId) // Has manual tag
-    )
-  );
+Test RLS by creating two separate authenticated Supabase clients with two different user sessions and attempting cross-user read — do not test from the dashboard.
 
-// Merge tags into new import
-newItems.forEach(item => {
-  const existing = existingTags.find(e =>
-    e.fingerprint === item.fingerprint
-  );
-  if (existing?.subscriptionId) {
-    item.subscriptionId = existing.subscriptionId; // Preserve tag
-  }
-});
-```
+**Warning signs:**
+- All storage operations succeed in testing with the service role key — test switched to anon key reveals 403
+- No RLS policies listed in Supabase Dashboard > Storage > Policies
+- User A can construct a URL for User B's PDF and view it
+- All uploads return 403 in production but not in local dev (service role vs authenticated client)
 
-**Detection:**
-- Track manual tag count before/after re-import
-- Add audit log for tag deletions
-- User testing: tag a transaction, re-import statement, verify tag persists
-
-**Phase impact:** Must implement in Phase 4 (Manual Tagging System). Fixing this later requires data recovery from backups.
-
-**Severity:** CRITICAL
+**Phase to address:** Storage Foundation phase — configure RLS before writing any upload code. This is a security-first decision.
 
 ---
 
-## Moderate Pitfalls
+### Pitfall 4: Storage File and Database Record Get Out of Sync
 
-Mistakes that cause delays, technical debt, or degraded UX.
+**What goes wrong:**
+The upload flow requires two steps that must both succeed: (1) file uploaded to Supabase Storage, (2) database record created in `import_audits` (or a new `statements` table). If step 1 succeeds and step 2 fails due to a network blip, validation error, or DB timeout, you get an orphaned file in S3 with no database reference. Conversely, if the database record is written first and storage upload fails, the DB shows a record pointing to a non-existent file. Neither failure is automatically cleaned up.
 
-### Pitfall 6: Transaction Browser Lacks Filter Performance
+**Why it happens:**
+Storage and database are separate systems. Supabase does queue an internal `ObjectAdminDelete` event if the S3 upload commits but the `storage.objects` row fails (internal storage consistency), but this does not cover failures in your application code's database write. The supabase-js client does not support cross-service transactions.
 
-**What goes wrong:** Applying filters (date range, amount range, merchant search) causes 10+ second query times, making browser unusable.
+**How to avoid:**
+Upload-then-record protocol with explicit compensating action on DB failure:
 
-**Why it happens:** Generic indexes don't cover filter combinations. Full table scans required for complex queries.
-
-**Prevention:**
-- Create partial indexes for common filter combinations
-- Use PostgreSQL full-text search for merchant name filtering
-- Pre-filter by userId before applying other filters
-```sql
--- Composite index for common filter combo
-CREATE INDEX idx_line_items_user_date_amount_merchant
-  ON statement_line_items (user_id, transaction_date DESC, amount, merchant);
-
--- Full-text search index for merchant
-CREATE INDEX idx_line_items_merchant_fts
-  ON statement_line_items
-  USING gin(to_tsvector('english', merchant));
-```
-
-**Detection:**
-- Test filters with 100K+ rows in local DB
-- Monitor query duration by filter type
-- Use `EXPLAIN ANALYZE` during development
-
-**Severity:** IMPORTANT
-
----
-
-### Pitfall 7: Batch Import Progress Not Saved on Failure
-
-**What goes wrong:** Batch import fails on file 8 of 12. User must re-upload all 12 files and re-process 1-7.
-
-**Why it happens:** Import treated as single transaction. Partial progress not persisted.
-
-**Prevention:**
-- Process and persist each file independently
-- Store per-file import status (pending, processing, completed, failed)
-- Allow resuming failed batch from last successful file
 ```typescript
-// Store per-file status
-const batchId = uuid();
-for (const file of files) {
-  await db.insert(importFiles).values({
-    batchId,
-    fileName: file.name,
-    status: 'pending'
+async function uploadAndRecord(file: File, userId: string) {
+  const path = `${userId}/${generateStatementPath(file)}`;
+
+  // Step 1: Upload file to storage
+  const { error: uploadError } = await supabase.storage
+    .from('statements').upload(path, file);
+  if (uploadError) throw uploadError; // Safe: nothing written yet
+
+  // Step 2: Write database record
+  const { error: dbError } = await db.insert(importAudits).values({
+    storagePath: path,
+    userId,
+    fileHash: await computeSHA256(file),
+    // ...
   });
-}
 
-// Process each file independently
-for (const fileRecord of files) {
-  try {
-    await processFile(fileRecord);
-    await db.update(importFiles)
-      .set({ status: 'completed' })
-      .where(eq(importFiles.id, fileRecord.id));
-  } catch (error) {
-    await db.update(importFiles)
-      .set({ status: 'failed', errorMessage: error.message })
-      .where(eq(importFiles.id, fileRecord.id));
-    // Continue to next file instead of failing entire batch
+  // Step 3: Compensate if DB write failed
+  if (dbError) {
+    // Clean up the orphaned storage file
+    await supabase.storage.from('statements').remove([path]);
+    throw dbError;
   }
 }
 ```
 
-**Detection:**
-- Kill import process mid-batch, check if partial progress saved
-- Test error scenarios (corrupted PDF, API timeout)
+Additionally: build a periodic cleanup cron that queries `storage.objects` for files with no matching `import_audits.storage_path` and removes them via the Storage API. **Never delete storage files via SQL `DELETE FROM storage.objects`** — this leaves the S3 object intact (orphaned at the S3 level) while only removing the metadata row.
 
-**Severity:** IMPORTANT
+**Warning signs:**
+- Storage bucket size grows faster than database record count
+- Users see entries in the vault UI that return 404 when clicked
+- DB write failure error logs with no corresponding storage cleanup log
+- Orphaned file count in storage grows over time
+
+**Phase to address:** Storage Foundation phase — design the upload protocol correctly from day one; retrofitting compensating logic is error-prone.
 
 ---
 
-### Pitfall 8: No Loading State for Long Batch Imports
+### Pitfall 5: Signed URL Expiry Breaks the Vault UI After the Tab Has Been Open
 
-**What goes wrong:** User uploads 12 files, sees spinner, waits 5 minutes with no feedback, thinks app froze.
+**What goes wrong:**
+Private bucket files require signed URLs to serve. Signed URLs expire (the default is 1 hour, configurable). The vault UI fetches signed URLs when the page loads and stores them in React state or TanStack Query's cache with its default 1-minute stale time. A user opens the vault, browses statements, leaves the tab open for 90 minutes, comes back, and clicks a PDF — the URL is expired and the viewer shows a blank page or a 400 error. The URL string in state still looks valid; no obvious indicator.
 
-**Why it happens:** Batch processing takes 20-60 seconds per file (PDF extraction + OpenAI API). No progress indication.
+An additional quirk: `createSignedUrl()` generates a different signature each time it is called, which means HTTP-level `If-None-Match` caching does not work — every call generates a fresh round-trip to Supabase, even for the same file.
 
-**Prevention:**
-- Use WebSockets or SSE for real-time progress updates
-- Show per-file status (File 3 of 12 processing...)
-- Display estimated time remaining
-- Allow canceling in-progress batch
+**Why it happens:**
+Signed URLs are the correct security mechanism for private bucket files. But developers fetch them eagerly for the entire vault list (to avoid delays on click) and cache them alongside other data. The expiry is invisible to application state management.
+
+**How to avoid:**
+Generate signed URLs on-demand (at the moment of user action) rather than eagerly for the entire vault list. The vault list page stores only the `storagePath` from the database. A signed URL is generated only when the user clicks "View" or "Download":
+
 ```typescript
-// Server sends progress via SSE
-const sendProgress = (fileNum: number, total: number, status: string) => {
-  res.write(`data: ${JSON.stringify({
-    current: fileNum,
-    total,
-    status,
-    percent: Math.round((fileNum / total) * 100)
-  })}\n\n`);
-};
-
-// Client displays progress
-<Progress value={progress.percent} />
-<p>Processing file {progress.current} of {progress.total}...</p>
-```
-
-**Detection:**
-- Upload 12 files and monitor user confusion in testing
-- Track support tickets about "app frozen during import"
-
-**Severity:** IMPORTANT
-
----
-
-### Pitfall 9: Statement Browser Mobile UX Breaks
-
-**What goes wrong:** Transaction table with 10 columns doesn't fit on mobile. Horizontal scrolling feels broken.
-
-**Why it happens:** Desktop-first design. Table component not responsive.
-
-**Prevention:**
-- Use card layout on mobile, table on desktop
-- Show only essential columns on mobile (date, merchant, amount)
-- Expand to full details on tap
-```typescript
-// Responsive component
-{isMobile ? (
-  <div className="space-y-2">
-    {items.map(item => (
-      <Card key={item.id}>
-        <CardContent className="p-4">
-          <div className="flex justify-between">
-            <div>
-              <p className="font-medium">{item.merchant}</p>
-              <p className="text-sm text-muted-foreground">
-                {format(item.date, 'MMM d, yyyy')}
-              </p>
-            </div>
-            <p className="font-semibold">{formatCurrency(item.amount)}</p>
-          </div>
-        </CardContent>
-      </Card>
-    ))}
-  </div>
-) : (
-  <Table>
-    {/* Desktop table */}
-  </Table>
-)}
-```
-
-**Detection:**
-- Test on real mobile device (not just browser DevTools)
-- Check Playwright E2E tests on mobile viewport
-
-**Severity:** MODERATE
-
----
-
-### Pitfall 10: Tagging UX Requires Too Many Clicks
-
-**What goes wrong:** Tagging a transaction requires: click row → open dialog → search subscription → select → save. Users give up after tagging 5-10 items.
-
-**Why it happens:** Desktop CRUD patterns don't scale for bulk operations.
-
-**Prevention:**
-- Inline combobox in table row (click directly on tag cell)
-- Keyboard shortcuts (select row, press 'T' to tag)
-- Bulk actions (select multiple rows, tag all at once)
-- Recently used subscriptions quick-access
-```typescript
-// Inline editing with shadcn Combobox
-<TableCell>
-  {editingRowId === row.id ? (
-    <SubscriptionCombobox
-      value={row.subscriptionId}
-      onChange={(value) => {
-        handleTag(row.id, value);
-        setEditingRowId(null);
-      }}
-      recentSubscriptions={recentTags} // Quick access
-    />
-  ) : (
-    <button onClick={() => setEditingRowId(row.id)}>
-      {row.subscription?.name || 'Untagged'}
-    </button>
-  )}
-</TableCell>
-```
-
-**Detection:**
-- User test: "Tag 20 transactions from this list"
-- Track average time per tag
-- Monitor tag abandonment rate (how many users tag 1 item then quit)
-
-**Severity:** MODERATE
-
----
-
-## Minor Pitfalls
-
-Mistakes that cause annoyance but are fixable.
-
-### Pitfall 11: Date Range Filter Doesn't Account for Timezones
-
-**What goes wrong:** User selects "January 2026" filter. Sees transactions from December 2025 due to UTC vs local time conversion.
-
-**Why it happens:** Storing timestamps with timezone but comparing dates naively.
-
-**Prevention:**
-```typescript
-// Store transaction_date as DATE, not TIMESTAMP
-transaction_date DATE NOT NULL
-
-// Or if using timestamp, convert to user timezone
-const userTz = user.timezone || 'America/New_York';
-const startDate = zonedTimeToUtc(dateRange.start, userTz);
-const endDate = zonedTimeToUtc(dateRange.end, userTz);
-```
-
-**Detection:** Test with user in different timezone than server
-
-**Severity:** MINOR
-
----
-
-### Pitfall 12: Export to CSV Fails with Large Datasets
-
-**What goes wrong:** User clicks "Export to CSV" for 10,000 transactions. Server times out or browser crashes loading massive file.
-
-**Why it happens:** Trying to load and serialize entire dataset in memory.
-
-**Prevention:**
-- Stream CSV generation
-- Limit export to 5,000 rows with warning
-- Generate export asynchronously, email download link
-```typescript
-// Stream CSV response
-res.setHeader('Content-Type', 'text/csv');
-res.setHeader('Content-Disposition', 'attachment; filename=transactions.csv');
-
-const stream = db
-  .select()
-  .from(statementLineItems)
-  .where(eq(statementLineItems.userId, userId))
-  .stream(); // Don't load all into memory
-
-for await (const row of stream) {
-  res.write(`${row.date},${row.merchant},${row.amount}\n`);
-}
-res.end();
-```
-
-**Detection:** Try exporting 50K+ rows in development
-
-**Severity:** MINOR
-
----
-
-## Phase-Specific Warnings
-
-| Phase | Likely Pitfall | Mitigation |
-|-------|---------------|------------|
-| Phase 1: Batch Upload | Pitfall 1 (Memory exhaustion) | Use sequential processing + streaming PDF library |
-| Phase 2: Statement Storage | Pitfall 2 (Table bloat), Pitfall 4 (Deduplication) | Design partitioning + fingerprinting upfront |
-| Phase 3: Statement Browser | Pitfall 3 (Pagination performance) | Use keyset pagination from day 1 |
-| Phase 4: Manual Tagging | Pitfall 5 (Tags lost on re-import) | Never UPDATE, only INSERT + mark replaced |
-| Phase 5: Re-import | Pitfall 7 (No progress saved) | Per-file status tracking |
-
----
-
-## Integration Pitfalls with Existing System
-
-Specific to adding Statement Hub to this subscription manager.
-
-### Pitfall 13: Statement Line Items Schema Doesn't Reference Existing subscriptions Table
-
-**What goes wrong:** Creating separate `statement_transactions` table without foreign key to `subscriptions` table. Manual tagging system can't enforce referential integrity.
-
-**Why it happens:** Designing new schema in isolation without considering integration points.
-
-**Prevention:**
-```sql
-CREATE TABLE statement_line_items (
-  id uuid PRIMARY KEY,
-  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
-
-  -- Link to existing subscription when tagged
-  subscription_id uuid REFERENCES subscriptions(id) ON DELETE SET NULL,
-
-  -- Other fields...
-);
-```
-
-**Detection:** Try deleting a subscription that has tagged transactions. Does it fail gracefully?
-
-**Severity:** IMPORTANT
-
----
-
-### Pitfall 14: Existing import_audits Table Not Extended for Line Items
-
-**What goes wrong:** New statement imports don't update `import_audits.confirmedCount` to include line item imports, only subscription imports.
-
-**Why it happens:** Forgetting to update existing audit logic when adding new feature.
-
-**Prevention:**
-- Extend `import_audits` to track both subscription imports AND line item imports
-- Add columns: `lineItemsImported`, `lineItemsDuplicate`
-```sql
-ALTER TABLE import_audits
-  ADD COLUMN line_items_imported INTEGER DEFAULT 0,
-  ADD COLUMN line_items_duplicate INTEGER DEFAULT 0;
-```
-
-**Detection:** Import statement with line items, check import_audits shows both counts
-
-**Severity:** MODERATE
-
----
-
-### Pitfall 15: Duplicate Detection Between Subscriptions and Line Items Fails
-
-**What goes wrong:** Existing subscription duplicate detection (used during PDF import) doesn't consider new statement line items. User imports statement, gets Netflix subscription. Then imports PDF with same Netflix charge, gets duplicate subscription.
-
-**Why it happens:** Two separate deduplication systems that don't talk to each other.
-
-**Prevention:**
-- Query both `subscriptions` AND `statement_line_items` when checking duplicates
-- Unified deduplication service
-```typescript
-async function isDuplicateCharge(
-  userId: string,
-  merchant: string,
-  amount: number,
-  date: Date
-): Promise<boolean> {
-  // Check existing subscriptions
-  const existingSub = await db.select()
-    .from(subscriptions)
-    .where(/* match logic */);
-
-  // Check line items
-  const existingLineItem = await db.select()
-    .from(statementLineItems)
-    .where(/* same match logic */);
-
-  return existingSub.length > 0 || existingLineItem.length > 0;
+// WRONG: pre-fetch signed URLs for all visible files
+const vaultItems = useQuery(['vault'], async () => {
+  const files = await fetchStatements(); // Returns storagePaths
+  return Promise.all(files.map(f =>
+    supabase.storage.from('statements').createSignedUrl(f.storagePath, 3600)
+  ));
+});
+
+// CORRECT: generate signed URL only when user acts
+async function handleViewStatement(storagePath: string) {
+  const { data, error } = await supabase.storage
+    .from('statements')
+    .createSignedUrl(storagePath, 3600); // 1-hour URL
+  if (error) throw error;
+  openPDFViewer(data.signedUrl);
 }
 ```
 
-**Detection:** Import PDF creating subscription, then import statement with same charge. Should be detected as duplicate.
+If the PDF viewer needs to hold the URL for a session, add a refresh mechanism that detects 400 responses and re-fetches the signed URL automatically.
 
-**Severity:** MODERATE
+**Warning signs:**
+- Users report "PDF won't load" intermittently — especially after leaving the app open
+- 400/403 errors in browser console on Supabase storage URLs
+- Errors appear only hours after page load, not on first visit
+- Refreshing the page fixes the problem
+
+**Phase to address:** PDF Viewer / Vault UI phase — this must be a design decision before the URL-fetching logic is built.
+
+---
+
+## Technical Debt Patterns
+
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Proxy PDF bytes through Next.js API route (not signed URL) | Simpler auth check in one place | Hits 4.5 MB Vercel body limit; latency doubles; costs compute | Never |
+| Public bucket instead of private + signed URLs | No URL generation code | Bank statements publicly accessible by URL, no revocation possible | Never for financial data |
+| Store signed URLs in database column | Avoids generating at read time | URLs expire; stale column values; if leaked, cannot revoke | Never |
+| Store signed URLs in TanStack Query with default staleTime | Fewer API calls | Expired URLs silently fail after 1 hour | Never — generate on-demand |
+| Skip file hash before upload | Simpler upload flow | Users re-upload same statement, trigger duplicate AI extraction, waste storage quota | Acceptable in MVP if storage is low; add hash check when adding bulk upload |
+| Use `import_audit.id` as the storage file path | Simple unique mapping | UUID paths give no human-readable debugging info | Acceptable — but `userId/YYYY-MM/statementId.pdf` is better for ops |
+| Delete storage files via SQL `DELETE FROM storage.objects` | Familiar SQL pattern | S3 object persists; orphaned at S3 level; storage bill grows | Never — always use the Storage API |
+| Load all PDF pages simultaneously in viewer | Simpler component | Multi-page bank statements (20-50 pages) freeze or crash browser tab | Never — paginate from page 1, load pages on demand |
+
+---
+
+## Integration Gotchas
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Supabase Storage + existing `/api/import` route | Extend existing route to also receive and store the PDF | Client uploads directly to storage via signed URL; server route receives only the storage path post-upload |
+| Supabase Storage + Drizzle schema | Store `signedUrl` in a database column | Store `storagePath` (e.g., `userId/2025-01/abc.pdf`); generate signed URLs at read time |
+| react-pdf + Next.js App Router | Import `react-pdf` in a Server Component or without `ssr: false` | Always wrap in `dynamic(() => import('./...'), { ssr: false })`; set `workerSrc` in the same client component file |
+| Supabase Storage + account deletion API | Delete the user from DB, leave storage files | Add storage file cleanup step to account deletion route (`/api/user/delete`) before `db.delete(users)` — this is already identified as a bug in `CONCERNS.md` |
+| Supabase Storage + GDPR right-to-erasure | Delete DB record, leave PDF in S3 | Delete storage file first via Storage API, then delete DB record; compensate if DB delete fails |
+| Bulk historical upload + existing `import_audits` | Re-process statements already in the database | Check SHA-256 file hash against existing `import_audits.file_hash` before triggering OpenAI extraction; skip known files |
+| Supabase Storage RLS + service role key | Use `SUPABASE_SERVICE_ROLE_KEY` for all storage ops — bypasses RLS silently | Use the user's authenticated Supabase client (anon key + user session JWT) for user-scoped storage operations; reserve service role only for admin cron jobs |
+| Free tier storage quota | Assume 1 GB is sufficient long-term | 1 GB fits roughly 67-333 statements (3-15 MB each) across all users; design a per-user storage quota warning and a file retention policy from the start |
+
+---
+
+## Performance Traps
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Generating signed URLs for entire vault list on page load | Vault page takes 3-8s to load with 24 months of statements (24+ Supabase API calls) | Generate signed URLs only on user action (click to view/download) | ~12 files visible in vault |
+| Rendering all PDF pages simultaneously in viewer | Browser tab freezes or crashes on 20+ page statements | Render one page at a time; use `pageNumber` state; provide next/prev controls | Bank statements with 20-50 pages |
+| Loading PDF as base64 in React state | 5 MB PDF = 6.7 MB in memory; viewer component re-renders with full string | Pass a signed URL string to react-pdf, not the file bytes | Files over 2-3 MB |
+| No pagination on vault query | Vault loads 24+ statements with full metadata on every render | Add `limit`/`offset` to vault API; default to 12-24 per page | 24+ months of statements per user |
+| No index on `import_audits.storage_path` and `file_hash` | Orphan cleanup cron and duplicate-check queries do full table scans | Add indexes on `storage_path`, `user_id`, `file_hash` at schema creation | Thousands of import records |
+| pdfjs-dist included in server bundle | Build size inflates; may approach 250 MB Vercel unzipped limit | Add to `serverExternalPackages` in `next.config.ts` | Always — pdfjs-dist is ~3 MB and has no server use |
+| No upload progress feedback | Users submit same file multiple times believing upload froze | Show upload progress using `XMLHttpRequest.upload.onprogress`; react-dropzone supports this | Any file over 1-2 MB on slow connections |
+
+---
+
+## Security Mistakes
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Private bucket without user-scoped RLS | Any authenticated user reads any user's bank statements by constructing the path | `(storage.foldername(name))[1] = auth.uid()::text` RLS policy; test with two separate user sessions |
+| Storing signed URLs in database | URLs expire; revocation not possible if URL is leaked before expiry | Store only `storagePath`; generate signed URLs at read time |
+| Serving PDF via API route that pipes storage bytes | Exposes to 4.5 MB Vercel limit; route must be perfectly auth-gated or anyone with the URL can access any file | Use storage-generated signed URLs — Supabase enforces auth, not your route |
+| No server-side file type validation | Users upload malicious files renamed as `.pdf`; stored and served to the user or other users | Validate MIME type AND check magic bytes (`%PDF` header) server-side before triggering any storage operation |
+| Signed upload URL not scoped to the authenticated user's path | Theoretical: user manipulates the path in the signed URL request to write to another user's folder | Always construct the path with `${userId}/...` on the server before calling `createSignedUploadUrl`; never accept path from client |
+| No file size check before generating signed URL | User submits 200 MB file; signed URL is generated; upload starts; storage quota exhausted | Check `file.size` client-side AND verify server-side when issuing the signed URL; Supabase free tier maximum is 50 MB per file |
+| Bank statement files in public bucket | Statement URLs are shareable, indexable, and not revocable | Always create the bucket with `public: false`; never store financial data in a public bucket |
+
+---
+
+## UX Pitfalls
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| No upload progress indicator for large PDFs | User believes upload froze; uploads same file multiple times; duplicate records created | Show per-file progress bar using `XMLHttpRequest.upload.onprogress`; react-dropzone exposes this |
+| Dual-view (file cabinet / timeline) state not persisted across navigation | User switches to timeline, navigates to a subscription, returns to file cabinet view | Persist active view in localStorage or as a URL search param (`?view=timeline`) |
+| No visual status badge on vault cards | User cannot tell if a statement has been processed, is processing, or failed | Display status badge: "Stored" / "Processing" / "Extracted" / "Failed" on each vault entry |
+| PDF viewer opens in-page without escape | Mobile users trapped in full-page PDF with no visible close button | Always render the viewer in a modal with a prominent close button; add keyboard `Escape` listener |
+| Re-uploading same statement not caught with feedback | User uploads January 2024 statement twice; duplicate AI extraction triggered; duplicate subscriptions created | Check SHA-256 hash before upload; display "Already uploaded — [link to existing entry]" message |
+| Bulk upload shows no per-file status | User uploads 12 statements; 3 fail silently; user unaware | Show per-file status in the upload queue: queued / uploading / success / failed with error message |
+| File cabinet view shows files with no bank/source label | User has 24 PDFs with no indication which bank they belong to | Require bank/source label at upload time; display prominently in vault grid |
+| Vault loads slowly on first visit | User sees empty state or spinner for several seconds | Implement skeleton loading (shadcn/ui Skeleton) for vault cards while metadata loads; signed URL generation happens only on click |
+
+---
+
+## "Looks Done But Isn't" Checklist
+
+- [ ] **Storage upload:** Works in dev with 1 MB test PDF — verify with a real 8-15 MB multi-page bank statement in a Vercel preview deployment
+- [ ] **Vercel body limit:** Upload succeeds through the current flow — verify the upload path bypasses the server function entirely (confirm via Vercel function logs showing no body received for large files)
+- [ ] **RLS policies:** Storage operations work in dashboard testing — verify by creating two Supabase client instances with two different user JWTs and attempting cross-user read (should return 403)
+- [ ] **PDF viewer build:** Component renders in development — run `next build` and check for webpack errors related to pdfjs before any deployment
+- [ ] **PDF viewer pages:** Renders page 1 — verify with a 30-page statement; verify page navigation controls work; verify no browser crash
+- [ ] **Signed URL expiry:** PDF loads on first click — generate a signed URL, wait 90 minutes (or test with a 10-second expiry URL), attempt to load; confirm graceful error message and re-fetch
+- [ ] **Account deletion:** User removed from DB — check Supabase Storage dashboard after deleting a test account to confirm storage files were also removed
+- [ ] **Upload failure compensation:** Upload completes normally — simulate a forced DB write failure after a successful storage upload; verify the orphaned file is deleted from storage
+- [ ] **Duplicate detection:** New upload accepted — upload the exact same PDF file a second time; confirm hash check catches it and shows the correct feedback
+- [ ] **Bulk upload partial failure:** All 5 test files upload successfully — upload a batch where 1 file is corrupt; verify the other 4 still succeed and per-file status reflects the failure accurately
+- [ ] **Free tier capacity:** Uploads work now — calculate: 24 months x average statement size (5-10 MB) x expected user count; 1 GB free tier is roughly 100-200 statements across all users at 5-10 MB each
+- [ ] **Mobile PDF viewer:** Looks correct on desktop — verify on a 375 px wide viewport; PDF.js canvas does not auto-scale to mobile width by default and requires explicit width configuration
+
+---
+
+## Recovery Strategies
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Orphaned storage files (file in S3, no DB record) | LOW | Query `storage.objects` LEFT JOIN `import_audits` on `storage_path`; call `supabase.storage.from('statements').remove([path])` for unmatched entries via cron or one-off script |
+| Expired signed URL in viewer | LOW | Add error handler in the PDF viewer that automatically calls `createSignedUrl` again on 400/403 response and retries load |
+| RLS too permissive discovered post-launch | MEDIUM | Immediately add restrictive policies; audit Supabase Storage access logs for unauthorized reads; notify affected users if cross-user access occurred |
+| react-pdf build failure after Next.js upgrade | MEDIUM | Pin `react-pdf` to last-known-good version; check the `wojtekmaj/react-pdf` GitHub issues for the Next.js version combination; as a fallback, render PDF in an `<iframe>` with the signed URL (no webpack issues, but limited UI control) |
+| Storage approaching 1 GB free tier limit | MEDIUM | Add per-user storage usage display; implement file retention/deletion UI so users can manage their vault; upgrade to Supabase Pro ($25/mo, 100 GB) if needed |
+| Vercel 4.5 MB body limit blocking real PDF uploads | HIGH if existing flow was used | This requires an architectural change — cannot be patched with configuration. Must refactor to signed upload URL pattern. Mitigation: deploy the fix as emergency, use Supabase Storage resumable upload URL for interim period |
+| Duplicate AI extractions from re-uploaded statements | MEDIUM | Add `file_hash` column to `import_audits`; backfill by hashing existing stored files via a migration script; add unique constraint on `(user_id, file_hash)` going forward |
+
+---
+
+## Pitfall-to-Phase Mapping
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Vercel 4.5 MB body limit on uploads | Storage Foundation (Phase 1 of milestone) | Upload a real 10 MB bank statement; confirm no 413 error; confirm Vercel function logs show no large body |
+| Supabase Storage RLS misconfiguration | Storage Foundation (Phase 1) | Test with two user accounts; confirm cross-user read returns 403 |
+| Storage-database split-brain on failure | Storage Foundation (Phase 1) | Simulate DB write failure after storage upload; verify file is cleaned up from storage |
+| react-pdf webpack/SSR build failures | PDF Viewer phase (isolated from storage phase) | Run `next build` after adding react-pdf; zero webpack errors related to pdfjs |
+| pdfjs-dist inflating server function bundle | PDF Viewer phase | Check function bundle size after adding react-pdf; confirm `serverExternalPackages` is set |
+| Signed URL expiry in vault UI | PDF Viewer / Vault UI phase | Generate URL, simulate expiry, attempt load; confirm graceful error handling and re-fetch |
+| Orphaned files on account deletion | Storage Foundation or Account Management phase | Delete test account; check storage bucket in Supabase dashboard for remaining files |
+| Duplicate re-uploads triggering redundant AI extraction | Bulk Upload / Historical Upload phase | Upload same PDF twice; confirm second upload is caught by file hash and blocked with feedback |
+| No per-file status in bulk upload | Bulk Upload / Historical Upload phase | Upload 5 files where 1 is deliberately invalid; verify other 4 succeed with clear per-file status |
+| GDPR right-to-erasure for bank statement PDFs | Storage Foundation (design decision: retain path for deletion) | Document deletion cascade; verify deleting a user removes their storage files |
+| Free tier storage quota exhaustion | Monitoring / Vault Management phase | Build storage usage query; alert when approaching 800 MB (80% of 1 GB) |
 
 ---
 
 ## Sources
 
-### Primary Sources (HIGH confidence)
+**Official documentation (HIGH confidence):**
+- [Vercel Functions Limits — 4.5 MB body limit, 300s timeout, 2 GB memory confirmed](https://vercel.com/docs/functions/limitations)
+- [Supabase Storage File Size Limits — 50 MB max per file on free tier, 1 GB total storage](https://supabase.com/docs/guides/storage/uploads/file-limits)
+- [Supabase Storage Access Control / RLS — official policy examples](https://supabase.com/docs/guides/storage/security/access-control)
+- [Supabase create signed upload URL — API reference](https://supabase.com/docs/reference/javascript/storage-from-createsigneduploadurl)
+- [Supabase Storage Bandwidth — 10 GB/month free tier egress (5 GB cached + 5 GB uncached)](https://supabase.com/docs/guides/storage/serving/bandwidth)
+- [Supabase Delete Objects — must use Storage API, not SQL DELETE](https://supabase.com/docs/guides/storage/management/delete-objects)
 
-**PDF Processing & Memory:**
-- [Batch Processing Large Datasets in Node.js Without Running Out of Memory](https://dev.to/rabbitramang/batch-processing-large-datasets-in-nodejs-without-running-out-of-memory-9a1)
-- [7 PDF Parsing Libraries for Extracting Data in Node.js](https://strapi.io/blog/7-best-javascript-pdf-parsing-libraries-nodejs-2025)
-- [Know your limits: Node.js Memory Management (Part 1)](https://medium.com/@dev.abdullah.muhammed/know-your-limits-node-js-memory-management-part-1-v8-heap-gc-and-memory-leaks-5f9959e8221c)
+**GitHub issues (MEDIUM-HIGH confidence — multiple corroborating reports):**
+- [react-pdf + Next.js 14: Promise.withResolvers build failure (vercel/next.js #70239)](https://github.com/vercel/next.js/issues/70239)
+- [react-pdf worker path resolution in App Router (wojtekmaj/react-pdf #1855)](https://github.com/wojtekmaj/react-pdf/issues/1855)
+- [Supabase orphaned files — objects deleted via SQL leave S3 intact (Discussion #34254)](https://github.com/orgs/supabase/discussions/34254)
+- [Supabase Storage transaction atomicity (Discussion #19895)](https://github.com/orgs/supabase/discussions/19895)
+- [Signed URL different signature each call — caching implications (Discussion #7626)](https://github.com/orgs/supabase/discussions/7626)
 
-**Database Performance & Pagination:**
-- [How to Implement Keyset Pagination for Large Datasets](https://oneuptime.com/blog/post/2026-02-02-keyset-pagination/view)
-- [Handling Large Datasets & High-Traffic Queries: Optimizing Pagination, Sorting & Filtering](https://medium.com/@jatin.jain_69313/handling-large-datasets-high-traffic-queries-optimizing-pagination-sorting-filtering-bf9a2d5a9813)
-- [PostgreSQL Performance Tuning: Optimizing Database Indexes](https://www.tigerdata.com/learn/postgresql-performance-tuning-optimizing-database-indexes)
+**Community articles (MEDIUM confidence — verified against official docs):**
+- [Bypass Vercel 4.5 MB limit using Supabase direct upload](https://medium.com/@jpnreddy25/how-to-bypass-vercels-4-5mb-body-size-limit-for-serverless-functions-using-supabase-09610d8ca387)
+- [Signed URL uploads with Next.js and Supabase](https://medium.com/@olliedoesdev/signed-url-file-uploads-with-nextjs-and-supabase-74ba91b65fe0)
+- [Next.js PDF viewer with React-PDF and Nutrient SDK — three-layer pattern](https://www.nutrient.io/blog/how-to-build-a-nextjs-pdf-viewer/)
 
-**Table Bloat & Cleanup:**
-- [How to Reduce Bloat in Large PostgreSQL Tables](https://www.tigerdata.com/learn/how-to-reduce-bloat-in-large-postgresql-tables)
-- [Massive Data Updates in PostgreSQL: How We Processed 80M Records with Minimal Impact](https://medium.com/@nikhil.srivastava944/massive-data-updates-in-postgresql-how-we-processed-80m-records-with-minimal-impact-20babd2cfe6f)
-- [How to Prevent Table Bloat with Autovacuum Tuning in PostgreSQL](https://oneuptime.com/blog/post/2026-01-25-postgresql-autovacuum-tuning-prevent-table-bloat/view)
-
-**Deduplication:**
-- [Deduplication at Scale](https://www.moderntreasury.com/journal/deduplication-at-scale)
-- [Understanding Fuzzy Data Deduplication](https://www.latentview.com/blog/understanding-fuzzy-data-deduplication/)
-- [Data Deduplication Strategies: Reducing Storage and Improving Query Performance](https://talent500.com/blog/data-deduplication-strategies-reducing-storage-and-improving-query-performance/)
-
-**Idempotency:**
-- [Why Idempotency Matters in Payments](https://www.moderntreasury.com/journal/why-idempotency-matters-in-payments)
-- [Idempotency's role in financial services](https://www.cockroachlabs.com/blog/idempotency-in-finance/)
-
-**UI/UX Patterns:**
-- [Infinite Scroll vs Pagination: Which Wins for SEO & UX?](https://www.designstudiouiux.com/blog/pagination-vs-infinite-scroll-seo-ux-comparison/)
-- [UX: Infinite Scrolling vs. Pagination](https://uxplanet.org/ux-infinite-scrolling-vs-pagination-1030d29376f1)
-
-### Secondary Sources (MEDIUM confidence)
-
-**Batch Processing:**
-- [Data batching in NodeJS](https://medium.com/@rusieshvili.joni/data-batching-in-nodejs-a38e92aee910)
-- [n8n Batch Processing: Handle Large Datasets Without Crashing](https://logicworkflow.com/blog/n8n-batch-processing/)
-
-**Data Integrity:**
-- [Common Data Integrity Issues (and How to Overcome Them)](https://www.dataversity.net/articles/common-data-integrity-issues-and-how-to-overcome-them/)
-- [Financial Data Integrity Issues: Risk Prevention Strategies](https://profisee.com/blog/data-integrity-issues/)
-
-### Codebase Analysis (HIGH confidence)
-
-- `src/lib/db/schema.ts` - Existing schema structure, import_audits table (lines 323-368)
-- `.planning/phases/06-statement-source-tracking/06-RESEARCH.md` - Pattern for autocomplete, import flow
-- `CLAUDE.md` - Tech stack (Next.js, Drizzle ORM, PostgreSQL/Supabase)
+**Security research (MEDIUM confidence):**
+- [Supabase RLS — 83% of exposed databases involve RLS misconfigurations (2025)](https://designrevision.com/blog/supabase-row-level-security)
+- [Supabase Storage RLS policy violation on admin upload](https://www.technetexperts.com/supabase-storage-rls-admin-upload-fix/)
 
 ---
-
-## Confidence Assessment
-
-| Pitfall Category | Confidence | Rationale |
-|------------------|------------|-----------|
-| PDF Memory Issues | HIGH | Direct documentation from pdf-lib issues, Node.js memory management guides |
-| Database Bloat | HIGH | PostgreSQL official docs + real-world case studies with 80M+ rows |
-| Pagination Performance | HIGH | Multiple sources + PostgreSQL 17 keyset pagination blog |
-| Deduplication | MEDIUM | Modern Treasury + LatentView sources, but specific fingerprinting needs testing |
-| Integration Issues | MEDIUM | Based on codebase analysis, not verified in production |
-| UI/UX Patterns | MEDIUM | Multiple UX sources agree, but financial app context may differ |
-
----
-
-**Research completed:** 2026-02-08
-**Recommended review:** When statement line items table exceeds 100K rows per user
+*Pitfalls research for: Financial Data Vault (PDF blob storage + in-app viewer + vault UI added to existing Vercel-deployed Next.js + Supabase subscription manager)*
+*Researched: 2026-02-19*

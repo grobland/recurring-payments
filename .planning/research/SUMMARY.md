@@ -1,186 +1,253 @@
 # Project Research Summary
 
-**Project:** Subscription Manager - Billing & Monetization (v2.1)
-**Domain:** SaaS Subscription Billing
-**Researched:** 2026-02-11
+**Project:** Subscription Manager — v2.2 Financial Data Vault
+**Domain:** PDF blob storage, in-app viewing, dual-view vault UI layered on existing statement infrastructure
+**Researched:** 2026-02-19
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This milestone adds tiered billing infrastructure to an existing subscription tracking application that already has a solid Stripe foundation. The codebase already includes Stripe SDK integration (v20.2.0), checkout sessions, webhook handling, customer portal, and trial management. The core work is **architectural expansion, not technology addition** — no new libraries are required.
+The v2.2 milestone transforms the existing statement tracking system into a true financial data vault by adding three capabilities: persistent PDF storage in Supabase Storage, in-app viewing via react-pdf, and a dedicated vault UI with dual-view browsing (file cabinet + timeline). The foundation is already present — the `statements` table has a `pdfStoragePath` column (currently NULL), a SHA-256 hash for deduplication, and a `// TODO: upload to Supabase Storage` comment in the upload route. This milestone fills that gap and builds the browsing UI on top. Only two new packages are required: `@supabase/supabase-js` (for Storage access) and `react-pdf` (for in-browser rendering).
 
-The recommended approach is to extend the existing single-tier setup to three tiers (Primary/Enhanced/Advanced) by: (1) creating tier-aware product configuration, (2) building feature gating utilities for both server and client, (3) applying gates across existing features, and (4) leveraging Stripe's built-in promotion code system for vouchers. The existing `stripePriceId` field on the users table already captures which tier a user is on — we map price IDs to tiers rather than adding redundant tier columns.
+The recommended approach is a server-side upload pattern: the `/api/batch/upload` route already has the PDF bytes in memory, so it uploads directly to Supabase Storage using the service role key (bypassing RLS at the app layer, where auth is already verified). PDF access for the viewer is served via short-lived signed URLs generated on-demand, never as permanent public URLs. The vault UI at `/vault` presents two views of the same data — grouped by source (file cabinet) and chronological (timeline) — backed by a single TanStack Query call. All UI components reuse existing patterns: shadcn Tabs for view toggle, existing accordion structure for file cabinet, date-fns for month grouping in timeline.
 
-Key risks center on webhook reliability and feature gating race conditions. The existing webhook handler lacks idempotency tracking, which could cause duplicate processing during retries. Feature gating must include server-side verification — client-side checks alone can be bypassed. Additionally, the `allow_promotion_codes: true` flag is already enabled in checkout, so promo codes are live from day one and need proper redemption limits to prevent abuse.
+The single most critical risk is the Vercel serverless function 4.5 MB body limit. Bank statements routinely exceed this, and routing PDF bytes through a Next.js API route body will silently fail for real-world files while appearing to work with small test PDFs. The architecture research resolves this conclusively: upload happens server-side from in-memory bytes in the existing `/api/batch/upload` route — the file is never re-transmitted through the function body from storage. The second critical risk is react-pdf's incompatibility with Next.js SSR — the component must be wrapped in `dynamic(() => import(...), { ssr: false })` with the pdfjs worker configured in the same dynamically-imported file. Both risks have clear, well-documented solutions.
+
+---
 
 ## Key Findings
 
 ### Recommended Stack
 
-**No new packages required.** The existing stack is sufficient for all billing requirements.
+The project requires only two new packages. `@supabase/supabase-js@^2.97.0` is required because Supabase Storage has no postgres-compatible alternative — the existing Drizzle/postgres client handles the database, but storage operations require the Supabase JS SDK. `react-pdf@^10.3.0` (wojtekmaj, 2M weekly downloads) wraps Mozilla's PDF.js and supports React 19 and Next.js 16 with confirmed App Router compatibility. Everything else needed for the vault UI is already installed: `@radix-ui/react-tabs` (view toggle), `@tanstack/react-virtual` (virtualized file list), `react-dropzone` (upload), `date-fns` (month grouping).
 
-**Core technologies (already installed):**
-- **stripe@20.2.0**: Server-side Stripe API — already handling checkout, webhooks, portal
-- **@stripe/stripe-js@8.6.3**: Client-side Stripe redirect — no embedded elements needed
-- **Drizzle ORM**: Database operations — schema already has billing fields (billingStatus, stripeCustomerId, stripePriceId, etc.)
-- **NextAuth.js v5**: Session management — user context available for tier checks
-- **TanStack Query**: State management — useUserStatus hook already provides billing state
+Three new environment variables are needed: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for browser-side storage operations, and `SUPABASE_SERVICE_ROLE_KEY` (no `NEXT_PUBLIC_` prefix) for server-side operations. The existing `DATABASE_URL` continues to serve Drizzle unchanged.
+
+**Core technologies:**
+- `@supabase/supabase-js@2.97.0`: Supabase Storage SDK — the only supported way to interact with storage buckets; manages signed URL generation, upload, and delete operations
+- `react-pdf@10.3.0`: Canvas-based PDF renderer — wraps PDF.js with a React API; avoids iframe CORS issues and browser chrome; compatible with React 19 and Next.js 16
+- `pdfjs-dist@5.4.624`: Installed automatically as a react-pdf dependency — do not install separately; version is pinned by react-pdf for compatibility
 
 **What NOT to add:**
-- @stripe/react-stripe-js — Using Checkout redirect, not embedded elements
-- Feature flag services (LaunchDarkly) — Simple tier-based gating is sufficient
-- Custom coupon database — Stripe handles redemption limits, expiration, fraud
+- `@supabase/storage-js` separately (already bundled in supabase-js)
+- `pdfjs-dist` separately (react-pdf pins a compatible version; separate install risks version mismatch)
+- `@supabase/auth-helpers-nextjs` (deprecated; project uses NextAuth, not Supabase Auth)
+- `file-saver` (native `URL.createObjectURL + <a download>` is sufficient on React 19 / Next.js 16)
 
 ### Expected Features
 
-**Must have (table stakes):**
-- Stripe Checkout flow (already implemented)
-- Monthly and annual billing (already implemented)
-- Email receipts/invoices (Stripe automatic)
-- Subscription cancellation (Customer portal)
-- Plan upgrade/downgrade with proration (Customer portal)
-- Payment method update (Customer portal)
-- Failed payment retry (Stripe Smart Retries)
+PDF storage is the keystone feature — every vault capability depends on it. The existing `pdfStoragePath` nullable column in the `statements` table is the integration point. Once storage is wired in, the remaining features are UI layers on top of existing infrastructure.
 
-**Should have (differentiators):**
-- Three-tier product structure (Primary $4.99, Enhanced $9.99, Advanced $19.99)
-- Feature gating with contextual upgrade prompts
-- Voucher/coupon codes for free months (Stripe promotion codes)
-- Annual discount incentive (33% savings)
+**Must have (table stakes for vault launch):**
+- PDF storage in Supabase Storage private bucket — without this, "vault" is meaningless
+- In-app PDF viewer via react-pdf modal — users need to verify AI extraction against source documents
+- Download PDF — baseline expectation for any document storage product
+- File cabinet view — source-grouped accordion extending existing `source-list.tsx`
+- Timeline view — chronological list of all statements with month separators
+- View toggle — shadcn Tabs switching between the two views; persist preference in localStorage
+- "No file stored" badge — statements imported before the vault was built have `pdfStoragePath = NULL`; must be indicated clearly
+- Empty state with upload CTA — required for new users who navigate to vault before uploading
 
-**Defer (v2.2+):**
-- Referral program (requires tracking infrastructure)
-- Team/family plans (multi-user access model)
-- Retention coupon on cancel attempt
-- Trial extension for high-engagement users
+**Should have (add after core vault is live):**
+- Coverage visualization — 12-month grid per source showing "PDF stored" / "data only" / "missing" states; extends existing `coverage-gap-warning` component
+- Historical upload wizard — guided backfill flow using existing batch uploader infrastructure; select source, view coverage calendar, upload missing months
+- Delete PDF — remove stored file while preserving extracted transaction data; requires confirmation dialog with clear messaging
+- Statement notes — plain text annotation field on `statements` row; far simpler than PDF annotation and covers 95% of the use case
+
+**Defer (v2+):**
+- Statement-to-subscription deep linkage — provenance tracking already exists via `importAuditId`; useful but not blocking vault launch
+- Batch date auto-detection — AI cost and complexity not justified for v1; manual date assignment is acceptable
+- Full-text search across PDF contents — extracted transactions are already searchable; vault is a browser, not a search engine at this stage
+- Bank API integration (Plaid/MX) — compliance burden and cost prohibitive for this stage
+
+**Anti-features (do not build for this milestone):**
+- PDF annotation — PSPDFKit costs $400-1200/month; notes field covers the use case at a fraction of complexity
+- Custom folder organization — conflicts with source-type mental model; the file cabinet view IS the folder metaphor
+- Automatic bank statement download — requires financial institution partnerships, OAuth flows, compliance
+- Mobile camera upload — breaks the PDF-only processing pipeline; tell users to use their phone's scanner app
 
 ### Architecture Approach
 
-The architecture extends the existing billing layer by adding tier awareness. The `stripePriceId` field already on the users table serves as the source of truth for tier determination — a lookup function maps price IDs to tiers. Feature access is controlled by a configuration constant (TIER_LIMITS/TIER_FEATURES) that defines which features belong to which tier. Gating happens at two levels: client-side for UI (FeatureGate component) and server-side for API routes (requireFeature utility). Trial users get Enhanced tier access to experience premium features before conversion.
+The vault extends the existing system at two primary integration points: the `/api/batch/upload` route is modified to upload file bytes to Supabase Storage immediately after creating the statement row, and a new `/api/statements/[id]/pdf` route generates short-lived signed URLs on demand. The vault UI lives at `/app/(dashboard)/vault/page.tsx` within the existing dashboard route group, inheriting the auth guard and sidebar layout automatically. No new database tables are required.
+
+The dual-view architecture uses a single `useVault` TanStack Query hook fetching from a new `/api/vault` endpoint. Both views (`VaultGrid` for file cabinet, `VaultTimeline` for timeline) consume the same data — tab switching is pure UI state with no additional data fetching. The `PdfViewerModal` is a shadcn Dialog wrapping a dynamically-imported `PDFDocumentInner` component; the dynamic import boundary is mandatory for SSR bypass. The pdfjs worker configuration must live in the same file as the `<Document>` component — setting it in a shared utility file is unreliable.
 
 **Major components:**
-1. **lib/stripe/products.ts (extended)** — Tier definitions, price ID mappings, feature lists per tier
-2. **lib/billing/feature-gate.ts (new)** — Server-side hasFeature(), requireFeature(), getUserTier() utilities
-3. **components/billing/feature-gate.tsx (new)** — Client-side FeatureGate component with upgrade prompts
-4. **lib/hooks/use-user.ts (extended)** — Add tier and hasFeature to existing useUserStatus hook
-5. **webhooks/stripe (updated)** — Add idempotency tracking, extract tier from price ID on subscription events
+1. `src/lib/supabase/admin.ts` (new) — service role Supabase client for all server-side storage operations
+2. `src/app/api/batch/upload/route.ts` (modified) — adds storage upload after statement row creation; non-fatal on storage failure
+3. `src/app/api/statements/[id]/pdf/route.ts` (new) — auth + ownership check, generates 5-minute signed URL
+4. `src/app/api/vault/route.ts` (new) — filtered statement list with `hasPdf` boolean, supports source/date filters
+5. `src/app/(dashboard)/vault/page.tsx` (new) — dual-view page with Tabs, filters, and PDF viewer modal
+6. `src/components/vault/pdf-document-inner.tsx` (new) — react-pdf Document/Page with worker config (dynamic import target)
+7. `src/components/vault/pdf-viewer-modal.tsx` (new) — Dialog wrapper with page navigation and zoom controls
+8. `src/components/vault/vault-grid.tsx` + `vault-timeline.tsx` (new) — two layout components consuming shared data
+9. `src/lib/hooks/use-vault.ts` + `use-pdf-url.ts` (new) — TanStack Query hooks for vault list and on-demand signed URL
+
+**Build order (each step independently deployable and verifiable):**
+1. Supabase Storage infrastructure — create bucket, configure RLS policies, add env vars, create admin client
+2. Modify upload route — wire storage upload into existing flow; verify `pdfStoragePath` is set in DB with a real PDF
+3. Signed URL API route — new endpoint; test with curl before building UI
+4. PDF viewer components — install react-pdf, build modal in isolation; run `next build` to catch webpack issues early
+5. Vault list API — new `/api/vault` endpoint with filters and `hasPdf` field
+6. Vault UI — page, grid, timeline, filters, sidebar link; wire `PdfViewerModal` into page
 
 ### Critical Pitfalls
 
-1. **Non-Idempotent Webhooks** — Stripe retries webhooks for up to 3 days. Without tracking processed event IDs, duplicate charges and data corruption occur. Create a `stripe_events` table and check `event.id` before processing.
+1. **Vercel 4.5 MB body limit on PDF uploads** — routing PDF bytes through a Next.js API route body will return HTTP 413 for any bank statement over ~3.3 MB (base64 encoding adds 33% overhead). Invisible in development with small test files. Resolution: upload happens from the file buffer already in memory in `/api/batch/upload` — the bytes go directly from the serverless function's memory to Supabase Storage, never re-entering an API route body. The function already has the bytes via FormData.
 
-2. **Feature Gating Race Conditions** — User upgrades but webhook hasn't processed yet. Client-side cache shows old tier. Always verify tier server-side for premium actions, invalidate cache on checkout success redirect.
+2. **react-pdf / pdfjs-dist SSR crash** — importing react-pdf in any component that Next.js attempts to server-render throws `TypeError: Promise.withResolvers is not a function` at build time, or silently renders a blank canvas at runtime. Resolution: mandatory two-file split: `PDFDocumentInner` (actual react-pdf code + worker config in same file) loaded exclusively via `dynamic(() => import('./pdf-document-inner'), { ssr: false })`. Also add `config.resolve.alias.canvas = false` to webpack config and `pdfjs-dist` to `serverExternalPackages` in `next.config.ts`.
 
-3. **Voucher Code Exploitation** — Promo codes shared publicly with no limits. Always set `max_redemptions`, use `first_time_transaction` restriction, monitor usage in Stripe dashboard.
+3. **Supabase Storage RLS misconfiguration** — two opposite failure modes with the same root cause (policies not configured correctly): no policies leaves financial documents accessible to any authenticated user by path; RLS enabled but no policies blocks all access with 403 errors. Resolution: configure three explicit RLS policies (INSERT, SELECT, DELETE) using `(storage.foldername(name))[1] = auth.uid()::text` before writing any upload code. Test with two separate authenticated Supabase clients — not the Supabase dashboard, which bypasses RLS.
 
-4. **Trial-to-Paid Conversion Gaps** — Trial expires during checkout flow. Extend trial by 24 hours when checkout initiated, resolve state conflicts in webhook handler.
+4. **Storage-database split-brain** — if the storage upload succeeds but the `pdfStoragePath` DB update fails, an orphaned file exists in Supabase Storage with no database reference. Resolution: non-fatal design — log the storage error, continue processing (text extraction still works from in-memory bytes), set `pdfStoragePath = NULL`. The statement remains fully functional without a stored PDF. Add a periodic orphan cleanup cron for safety.
 
-5. **Client-Side Only Feature Gating** — Users can bypass React component checks by calling API directly. Always validate tier in API routes for premium features.
+5. **Signed URL expiry breaking the viewer** — signed URLs expire (5-minute design). Pre-fetching URLs for the entire vault list means they will be stale when users click. Resolution: generate signed URLs on-demand only when the modal opens; the vault list stores only `hasPdf: boolean`. TanStack Query caches the URL for 4 minutes (`staleTime: 4 * 60 * 1000`) and garbage-collects at 5 minutes, which aligns with the URL lifetime.
+
+---
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+Research reveals a clear dependency chain: storage must exist before the viewer can function, the viewer must be proven before vault UI delivers value, and the core vault must be stable before enhancement features (coverage visualization, historical upload wizard) are layered on top. This drives a 4-phase structure.
 
-### Phase 1: Webhook Infrastructure Hardening
-**Rationale:** Foundation that all billing depends on. Current handler lacks idempotency — must fix before adding complexity.
-**Delivers:** Reliable webhook processing with idempotency tracking, complete event coverage
-**Addresses:** Subscription lifecycle sync, trial-to-paid transitions
-**Avoids:** Duplicate processing (Pitfall 1), webhook timeouts (Pitfall 2), missing event coverage (Pitfall 8)
-**Estimated effort:** Medium
+### Phase 1: Storage Foundation
 
-### Phase 2: Multi-Tier Product Setup
-**Rationale:** Products must exist in Stripe before checkout can reference them. Configuration-only phase.
-**Delivers:** Three products in Stripe, six prices (monthly/annual each), extended products.ts with tier configuration
-**Uses:** Stripe Dashboard, environment variables for price IDs
-**Implements:** TIERS configuration, getTierFromPriceId() lookup
-**Estimated effort:** Low
+**Rationale:** PDF storage is the keystone dependency — every other vault feature requires `pdfStoragePath` to be non-null on at least some statements. This phase also contains the two highest-risk architectural decisions (upload flow design, RLS configuration) that cannot be changed without significant rework later. Must be built and verified in isolation before any UI work begins.
 
-### Phase 3: Feature Gating Infrastructure
-**Rationale:** Gating utilities must exist before applying gates to features. Server and client components.
-**Delivers:** hasFeature/requireFeature utilities, FeatureGate component, extended useUserStatus hook
-**Addresses:** Tier-based access control (table stakes for multi-tier)
-**Avoids:** Client-only gating bypass (Pitfall 5), multi-tier confusion (Pitfall 9)
-**Estimated effort:** Medium
+**Delivers:** PDFs uploaded through the existing batch import flow are now persisted in Supabase Storage. The `pdfStoragePath` column is populated on new uploads. Historical statements retain `pdfStoragePath = NULL` (expected — those files are gone and unrecoverable).
 
-### Phase 4: Feature Gate Rollout
-**Rationale:** Apply gates to existing features now that infrastructure is ready.
-**Delivers:** PDF import gated by tier, pattern detection gated, statement browser gated (Advanced only), upgrade prompts at gate points
-**Implements:** Usage limits per tier, contextual upgrade CTAs
-**Estimated effort:** Medium (many touchpoints across app)
+**Addresses features:** PDF storage in Supabase private bucket (P1 table stakes)
 
-### Phase 5: Pricing & Billing UI
-**Rationale:** UI updates after backend is complete. Pricing page, billing settings, tier comparison.
-**Delivers:** Three-tier pricing page, updated billing settings with current tier display, plan switching with proration preview
-**Avoids:** Plan switching proration confusion (Pitfall 10)
-**Estimated effort:** Low
+**Avoids pitfalls:**
+- Vercel 4.5 MB body limit (resolved by uploading from in-memory bytes, not a second request body)
+- RLS misconfiguration (configure before writing upload code; test with two user accounts)
+- Storage-database split-brain (non-fatal design from day one)
+- Account deletion leaving orphaned files (design the deletion cascade in this phase)
 
-### Phase 6: Voucher System
-**Rationale:** Independent feature, can run parallel with Phase 4-5. Leverages existing allow_promotion_codes.
-**Delivers:** Stripe coupons and promotion codes created, documented redemption flows, admin guide for creating codes
-**Addresses:** Acquisition tool requirement, free months promotional capability
-**Avoids:** Voucher exploitation (Pitfall 4), portal promo exposure (Pitfall 6)
-**Estimated effort:** Low (mostly Stripe Dashboard configuration)
+**Needs research-phase:** No — Supabase Storage upload from a Node.js buffer is standard, well-tested, and fully documented. RLS policy SQL is provided verbatim in ARCHITECTURE.md.
+
+---
+
+### Phase 2: PDF Viewer
+
+**Rationale:** The viewer is the feature that makes "vault" meaningful over "import history." It must be built and verified in isolation before being integrated into the vault page — the react-pdf + Next.js webpack configuration is the most technically complex part of this milestone and deserves its own phase to contain the risk. A broken viewer would block all vault UI work.
+
+**Delivers:** Users can click "View PDF" on any statement with `pdfStoragePath` set and see it rendered in a modal dialog. Page navigation (prev/next) and zoom controls work. Signed URL is fetched on modal open (not pre-fetched for the list). PDF fails gracefully with a "Download original file" fallback link.
+
+**Addresses features:** In-app PDF viewer (P1), download PDF (P1 — signed URL pattern reused for download button)
+
+**Avoids pitfalls:**
+- react-pdf SSR crash (mandatory dynamic import + worker config in same dynamically-imported file)
+- pdfjs-dist inflating server bundle (add to `serverExternalPackages` in `next.config.ts`)
+- Signed URL expiry in open viewer (generate on-demand; TanStack Query cache timed to URL lifetime)
+- Multi-page browser freeze (render one page at a time; prev/next controls)
+
+**Needs research-phase:** No — the two-file dynamic import pattern is documented in ARCHITECTURE.md with working TypeScript code. Verify with `next build` after installing react-pdf before proceeding.
+
+---
+
+### Phase 3: Vault UI
+
+**Rationale:** With storage working and the PDF viewer proven, building the vault page is a UI composition task with no novel technical risk. The dual-view interface reuses existing patterns throughout: shadcn Tabs for view toggle, the existing source-list accordion structure extended for file cabinet, date-fns month grouping for timeline. The `StatementCard` component is built once and shared across both views — no duplicate implementations.
+
+**Delivers:** A new `/vault` page accessible from the sidebar. File cabinet view: statements grouped by source in an accordion, each with a StatementCard showing filename, date, file size, "View PDF" button, "Download" button, and "No file stored" badge where applicable. Timeline view: same cards sorted chronologically with month-group separators. Empty state with upload CTA for new users. View preference saved to localStorage.
+
+**Addresses features:** File cabinet view (P1), timeline view (P1), view toggle (P1), empty state (P1), "No file stored" indicator (P1)
+
+**Avoids pitfalls:**
+- Pre-fetching signed URLs for vault list (vault list returns `hasPdf: boolean` only; signed URLs fetched on click)
+- Slow vault page load (skeleton loading while metadata fetches; URL generation only on user action)
+- No pagination on vault query (limit/offset on `/api/vault`; default 100 per load)
+
+**Needs research-phase:** No — standard TanStack Query + shadcn Tabs + existing component extension. No novel patterns.
+
+---
+
+### Phase 4: Coverage Visualization and Historical Upload Wizard
+
+**Rationale:** These two differentiator features are tightly coupled — the wizard's value proposition is "fill the gaps shown in coverage view." Both reuse existing infrastructure (`coverage-gap-warning` component, `batch-uploader.tsx`). They are deferred until core vault is live so implementation is validated against real uploaded statements rather than assumed data shapes and real usage patterns.
+
+**Delivers:** A 12-month coverage grid per source showing "PDF stored" (green), "data only — no file" (yellow), and "no data" (gray) per month. A multi-step guided wizard: select source → view coverage calendar → drag-and-drop batch upload for missing months using existing `batch-uploader.tsx` → confirm updated coverage.
+
+**Addresses features:** Coverage visualization (P2 differentiator), historical upload wizard (P2 differentiator)
+
+**Avoids pitfalls:**
+- Duplicate re-uploads during bulk backfill (hash check already wired in batch uploader; surface "Already uploaded" message clearly)
+- Bulk upload partial failure being invisible (per-file status in upload queue for all 5+ file batches)
+- Rebuilding the upload engine (wizard is UX scaffolding only; `batch-uploader.tsx` is the engine)
+
+**Needs research-phase:** Yes, lightly — the month-grid visualization has no established component in this codebase. The data model is clear (`statementDate` + `pdfStoragePath IS NOT NULL` per month per source), but the grid rendering approach (CSS Grid, Recharts cell chart, or shadcn-compatible calendar component) should be scoped during planning before committing to implementation.
+
+---
 
 ### Phase Ordering Rationale
 
-- **Phase 1 is non-negotiable first** — All subsequent phases depend on reliable webhooks for tier sync
-- **Phase 2 before Phase 3** — Feature gating needs to know tier; tier comes from Stripe price IDs
-- **Phase 3 before Phase 4** — Must have gating utilities before applying gates
-- **Phase 4 before Phase 5** — Gates must work before showing tier-specific UI
-- **Phase 6 is independent** — Can run in parallel with 4-5, only needs Stripe products from Phase 2
+- Storage before viewer: react-pdf needs a real signed URL pointing to a real stored file — cannot meaningfully test or prove the viewer without Phase 1 complete
+- Viewer before vault UI: `PdfViewerModal` is a core component of the vault page; isolating it in Phase 2 lets webpack and worker issues surface before vault UI development begins, avoiding rework
+- Vault UI before enhancements: Coverage visualization is meaningless without a population of real statements with mixed `pdfStoragePath` states; the wizard's UX cannot be validated without seeing the vault with real data
+- Phase 4 grouped as one: Coverage visualization and historical wizard are tightly coupled — the wizard fills the gaps shown in the coverage grid; building them separately would require connecting them afterward
 
 ### Research Flags
 
-**Phases with well-documented patterns (skip phase research):**
-- **Phase 1 (Webhooks):** Stripe documentation is comprehensive, existing codebase has foundation
-- **Phase 2 (Products):** Stripe Dashboard configuration, no code research needed
-- **Phase 3 (Feature Gating):** Standard SaaS pattern, multiple reference implementations available
-- **Phase 6 (Vouchers):** Stripe handles everything, allow_promotion_codes already enabled
+Needs deeper research during planning:
+- **Phase 4:** Coverage grid rendering approach — evaluate CSS Grid (lightweight, manual), shadcn calendar-like component (consistent with existing UI), or Recharts cell/calendar chart before planning this phase. Data model is clear; rendering approach is not.
 
-**Phases that may need implementation validation:**
-- **Phase 4 (Gate Rollout):** Needs per-feature decisions on which tier gets what — review during planning
-- **Phase 5 (Pricing UI):** May need proration preview API testing — verify Stripe invoice preview behavior
+Standard patterns (skip research-phase):
+- **Phase 1:** Supabase Storage upload from Node.js buffer is standard. RLS policy SQL is provided verbatim in ARCHITECTURE.md. Bucket creation is a one-time dashboard action.
+- **Phase 2:** react-pdf + Next.js dynamic import pattern is fully documented in ARCHITECTURE.md with working code. Worker configuration is established. Verify with `next build` immediately after installing the package.
+- **Phase 3:** TanStack Query + shadcn Tabs + extension of existing components. No novel patterns; well-established across the existing codebase.
+
+---
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | No new packages needed; all technologies already installed and working |
-| Features | HIGH | Stripe documentation verified; existing codebase analyzed; feature gaps are clear |
-| Architecture | HIGH | Extends existing patterns; no new paradigms; users table already has billing fields |
-| Pitfalls | HIGH | Official Stripe docs on webhooks/coupons; codebase analysis confirms current gaps |
+| Stack | HIGH | Both packages verified via npm on 2026-02-19. Version compatibility with React 19 and Next.js 16 confirmed. Existing package inventory verified against `package.json`. |
+| Features | HIGH | Feature list derived primarily from codebase analysis (existing components, schema fields, TODO comment in upload route). Anti-features validated against cost and complexity data from official sources. |
+| Architecture | HIGH | Integration points verified against actual codebase files: `src/app/api/batch/upload/route.ts` (TODO at line 97), `src/lib/db/schema.ts` (`pdfStoragePath` nullable text column). Data flow patterns are fully specified with working TypeScript code examples. |
+| Pitfalls | HIGH | Vercel 4.5 MB limit confirmed via official Vercel docs. react-pdf SSR failure modes confirmed via tracked GitHub issues with multiple corroborating reports. RLS misconfiguration patterns confirmed via Supabase official docs and a 2025 security study. Signed URL expiry behavior confirmed via Supabase community discussion. |
 
 **Overall confidence:** HIGH
 
-This is an architectural expansion of existing, working code. The Stripe foundation is solid. Risk is execution, not technology.
-
 ### Gaps to Address
 
-- **Proration behavior testing:** Need to verify Stripe invoice preview API for plan switching before Phase 5 implementation
-- **Tier feature allocation:** Research did not prescribe exactly which features belong to which tier — this needs product decision during Phase 4 planning
-- **Webhook queue pattern:** Current recommendation is idempotency table; queue-based async processing is optional optimization if timeout issues occur
+- **Coverage grid component approach (Phase 4):** The month-grid visualization has a clear data model but no established rendering approach in this codebase. Scope this during Phase 4 planning — evaluate CSS Grid, a shadcn-compatible calendar, or Recharts before committing to implementation.
+
+- **Supabase free tier storage quota:** The 1 GB free tier fits roughly 100-200 statements at 5-10 MB each across all users. At scale, this becomes a billing consideration. Design a per-user storage usage query from Phase 1 so the monitoring data is available before the quota becomes urgent.
+
+- **Worker path: legacy vs. standard:** ARCHITECTURE.md uses `pdfjs-dist/legacy/build/pdf.worker.min.mjs` while STACK.md uses `pdfjs-dist/build/pdf.worker.min.mjs`. After installing `react-pdf@10.3.0`, validate which path resolves correctly in the Next.js 16 bundler — the non-legacy path is preferred for modern targets.
+
+- **Vercel function timeout for large uploads:** The 4.5 MB body limit is the primary concern, but Vercel also has a 10-second default function timeout. A 10-15 MB PDF upload on a slow connection could time out during the storage upload step. Monitor after Phase 1 launch; if failures occur, evaluate Supabase resumable uploads (TUS protocol via `tus-js-client`).
+
+---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Stripe SDK: package.json (stripe@20.2.0, @stripe/stripe-js@8.6.3)
-- Stripe Subscriptions Build Guide: https://docs.stripe.com/billing/subscriptions/build-subscriptions
-- Stripe Coupons & Promotion Codes: https://docs.stripe.com/billing/subscriptions/coupons
-- Stripe Webhooks Best Practices: https://docs.stripe.com/webhooks/best-practices
-- Stripe Customer Portal Configuration: https://docs.stripe.com/customer-management/configure-portal
-- Codebase: src/lib/stripe/client.ts, src/app/api/webhooks/stripe/route.ts, src/lib/db/schema.ts
+- `src/lib/db/schema.ts` — `statements` table schema, `pdfStoragePath` nullable text column confirmed
+- `src/app/api/batch/upload/route.ts` — upload flow, TODO comment at line 97, `MAX_FILE_SIZE = 50MB` constant
+- `npm view react-pdf version` → `10.3.0` — verified 2026-02-19
+- `npm view @supabase/supabase-js version` → `2.97.0` — verified 2026-02-19
+- `npm view pdfjs-dist version` → `5.4.624` — verified 2026-02-19
+- [Vercel Functions Limits](https://vercel.com/docs/functions/limitations) — 4.5 MB body limit confirmed
+- [Supabase Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control) — RLS policy SQL with `storage.foldername()`
+- [Supabase createSignedUrl API](https://supabase.com/docs/reference/javascript/storage-from-createsigneduploadurl) — signed URL generation and expiry
+- [Supabase Storage File Limits](https://supabase.com/docs/guides/storage/uploads/file-limits) — 50 MB per file max, 1 GB free tier total storage
+- [Supabase Delete Objects](https://supabase.com/docs/guides/storage/management/delete-objects) — must use Storage API, not SQL DELETE
 
 ### Secondary (MEDIUM confidence)
-- T3's Stripe Recommendations: https://github.com/t3dotgg/stripe-recommendations
-- Vercel nextjs-subscription-payments: https://github.com/vercel/nextjs-subscription-payments
-- Pedro Alonso Stripe + Next.js 15 Guide: https://www.pedroalonso.net/blog/stripe-nextjs-complete-guide-2025/
-- Clerk use-stripe-subscription: https://github.com/clerk/use-stripe-subscription
+- [react-pdf GitHub (wojtekmaj/react-pdf)](https://github.com/wojtekmaj/react-pdf) — Next.js App Router compatibility, worker config requirement, React 19 peer dep
+- [vercel/next.js #70239](https://github.com/vercel/next.js/issues/70239) — `Promise.withResolvers` build failure with pdfjs-dist in Next.js
+- [wojtekmaj/react-pdf #1855](https://github.com/wojtekmaj/react-pdf/issues/1855) — worker path resolution issues in App Router
+- [Supabase Discussion #34254](https://github.com/orgs/supabase/discussions/34254) — orphaned files when deleting via SQL (S3 object persists)
+- [Supabase Discussion #7626](https://github.com/orgs/supabase/discussions/7626) — signed URL generates different signature each call (no HTTP-level caching)
+- [Supabase RLS security research 2025](https://designrevision.com/blog/supabase-row-level-security) — 83% of exposed Supabase databases involve RLS misconfigurations
+- [Bypass Vercel 4.5 MB limit with Supabase direct upload](https://medium.com/@jpnreddy25/how-to-bypass-vercels-4-5mb-body-size-limit-for-serverless-functions-using-supabase-09610d8ca387)
 
-### Tertiary (for reference)
-- SaaS Tiered Billing Guide - Maxio
-- SaaS Pricing Strategy Guide 2026 - Momentum Nexus
-- BigBinary Database Design for Subscriptions
+### Tertiary (LOW confidence)
+- Competitor analysis: Dext Vault, FutureVault, SmartVault — feature comparison used to validate table stakes and identify differentiators; not directly applicable to implementation decisions. Key insight: all competitors default to custom folder hierarchies; source-type grouping is simpler and more appropriate for bank statements.
 
 ---
-*Research completed: 2026-02-11*
+
+*Research completed: 2026-02-19*
 *Ready for roadmap: yes*

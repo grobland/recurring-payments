@@ -1,600 +1,300 @@
-# Feature Landscape: Data & Intelligence
+# Feature Research
 
-**Domain:** Subscription intelligence features (duplicate detection, pattern recognition, analytics, forecasting, anomaly alerts)
-**Researched:** 2026-02-05
-**Context:** Adding intelligence layer to existing subscription manager with PDF import, CRUD, and email reminders
+**Domain:** Financial Data Vault — document storage, dual-view browsing, in-app PDF viewing, historical upload
+**Researched:** 2026-02-19
+**Confidence:** HIGH (core vault patterns, Supabase storage), MEDIUM (PDF viewer specifics, competitor UX)
 
-## Table Stakes
+---
 
-Features users expect from intelligent subscription/finance apps. Missing = product feels incomplete.
+## Context: What Already Exists
+
+Before mapping features, it is essential to understand existing infrastructure so the roadmap does not rebuild what is already there.
+
+### Already Built (Do Not Re-Build)
+- `statements` table with `pdfStoragePath` (nullable — the vault fills this in)
+- `pdfHash` (SHA-256) for duplicate detection on upload
+- `sourceType` grouping (the "file cabinet" dimension already has a data model)
+- `statementDate` for chronological ordering (the "timeline" dimension already has a data model)
+- `/sources` page — accordion list of sources with statement counts and coverage stats
+- `/statements/[id]` page — transaction table for a given statement, re-import wizard
+- `source-dashboard`, `source-list`, `source-row`, `statement-list`, `statement-detail` components
+- Batch upload UI with drag-and-drop, progress, sequential processing (`import/batch/page.tsx`)
+- Duplicate statement detection (hash-based) already wired in
+- `coverage-gap-warning` and `incomplete-batch-banner` components (existing gap detection UI)
+- `account-combobox.tsx` for source-name autocomplete
+
+### What the Vault Adds
+The vault is fundamentally four things on top of this foundation:
+1. **Persist the actual PDF file** in Supabase Storage (currently `pdfStoragePath` is nullable — files were never stored)
+2. **Let users view the PDF in-app** (currently there is no viewer — only extracted data is shown)
+3. **Refactor or extend the sources/statements UI** into a dual-view vault interface (file cabinet + timeline)
+4. **Historical upload flow** — guide users through uploading 12–24 months of backfill statements
+
+---
+
+## Feature Landscape
+
+### Table Stakes (Users Expect These)
+
+Features users assume exist in a "vault." Missing these means the vault does not feel like a vault.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **Duplicate detection on import** | Prevent importing same subscription twice; standard in all import flows | Low | Already implemented in v1.0 via `detectDuplicates()` - just need UI |
-| **Manual duplicate marking** | Users need control to mark manual entries as duplicates | Low | "Mark as duplicate" action in subscription list |
-| **Basic spending totals** | Users expect to see total monthly/annual spend | Low | Sum of active subscriptions grouped by period |
-| **Category spending breakdown** | See which categories cost most; standard in finance apps | Low | Group by category with visual breakdown (pie/bar chart) |
-| **Subscription list sorting** | Sort by cost, date, name; basic table functionality | Low | Client-side sorting in subscription list |
-| **Active subscription count** | Dashboard widget showing number of active subscriptions | Low | Simple count query with visual indicator |
-| **Upcoming renewals** | Next 30/60/90 days renewal calendar | Medium | Query by `nextRenewalDate` with grouped display |
-| **Historical spending view** | See past spending for specific time periods | Medium | Aggregate subscription costs by month/quarter/year |
-| **Price increase detection** | Alert when subscription price changes | Medium | Compare current price to previous `importAudits` records |
-| **Trend direction indicators** | Up/down arrows showing spending changes MoM or YoY | Low | Calculate percentage change, show visual indicator |
+| **PDF storage — original file kept permanently** | "Vault" implies permanence. If the file disappears after extraction, it is not a vault. | LOW | Schema already has `pdfStoragePath`. Need Supabase Storage bucket, RLS policy, and upload wiring in existing import flow. |
+| **In-app PDF viewer** — open original statement without downloading | Users want to verify AI extraction against source. Leaving the app to view a file feels broken. | MEDIUM | Use `react-pdf` (wojtekmaj, 2M weekly downloads, wraps PDF.js). Must use `dynamic(() => import(...), { ssr: false })` — PDF.js requires browser APIs. Open in Dialog or Sheet component. |
+| **Download PDF** — save original to local disk | Users expect local backup capability. Baseline expectation for any document storage product. | LOW | Supabase signed URL with `Content-Disposition: attachment`, or `<a href={signedUrl} download>`. Signed URL expiry: 60 seconds for download, 3600 seconds for viewing. |
+| **File cabinet view** — statements grouped by source | Source grouping is already the established mental model from the existing `/sources` page. The vault must preserve this navigation pattern. | MEDIUM | Accordion by `sourceType`. Each group shows statement cards sorted by `statementDate DESC`. Extends existing `source-list` component. |
+| **Timeline view** — all statements in chronological order | Second navigation paradigm: "what did I upload when" vs "what source is this from." Standard in all document management tools. | MEDIUM | Flat list or month-grouped list of statement cards, sorted by `statementDate DESC`. Shared `StatementCard` component with file cabinet view. |
+| **View toggle** — switch between file cabinet and timeline | Users switch mental models depending on task (finding by bank vs. finding by date). | LOW | Two-button toggle using shadcn `Tabs` or a toggle button group. Persist preference in `localStorage`. |
+| **Statement metadata on card** — filename, date, source, file size, upload date | Users need to identify which statement they are looking at before opening it. | LOW | Already partially in `statement-detail.tsx`. Extend to card display in vault views. |
+| **"No file stored" indicator** | Some statements exist without a stored PDF (imported before vault was built). Users must understand this gap. | LOW | Badge or icon showing "No file stored" on cards where `pdfStoragePath IS NULL`. |
+| **Empty state + upload CTA** | When vault is empty, users need clear direction. | LOW | Illustration or icon plus "Upload your first statement" button linking to batch upload flow. |
 
-## Differentiators
+### Differentiators (Competitive Advantage)
 
-Features that set product apart from basic subscription trackers. Competitive advantages.
+Features that set this vault apart from generic document management tools. Not required for launch but highly valued.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Background duplicate scanning** | Proactively find duplicates in existing subscriptions, not just imports | Medium | Fuzzy matching across all user subscriptions; run periodically |
-| **Multi-statement pattern detection** | Identify recurring charges across multiple imports → suggest as subscription | High | Detect patterns in `importAudits.raw_data` over 2-3+ months |
-| **Confidence-based duplicate UI** | Show match confidence (95% = same service, 70% = maybe duplicate) | Medium | Fuzzy matching with Levenshtein/Jaro-Winkler similarity scores |
-| **Smart duplicate resolution** | Merge duplicates with data consolidation (keep best data from each) | High | Merge logic for fields: earliest start date, most recent price, combine notes |
-| **Spending forecast calendar** | Visual calendar showing predicted future spending | High | Project renewals onto calendar with accumulated monthly totals |
-| **Spending projections** | "At this rate, you'll spend $X in next 12 months" | Medium | Sum recurring charges projected forward with confidence intervals |
-| **MoM/YoY trend charts** | Line charts showing spending evolution over time | Medium | Time-series data with Recharts; requires historical data aggregation |
-| **Category trend analysis** | Which categories are growing/shrinking over time | Medium | Time-series by category with visual trend indicators |
-| **Anomaly detection alerts** | Notify when spending deviates from normal patterns | High | Statistical models (threshold-based + time-series); low false positive rate critical |
-| **Missed renewal detection** | Alert when subscription should have renewed but didn't (cancellation/payment failure) | Medium | Check expected renewal date vs actual transaction in statements |
-| **Seasonal adjustment** | Recognize annual subscriptions and normalize monthly comparisons | Medium | Flag annual vs monthly periods; normalize to monthly equivalent for comparison |
-| **Spending insights** | AI-generated insights: "Your entertainment spending increased 25% this quarter" | High | Pattern analysis with natural language generation |
-| **Subscription clustering** | Group similar subscriptions: "You have 3 video streaming services costing $45/mo total" | Medium | Category-based grouping with aggregate metrics |
-| **Cost per category benchmarking** | Compare your spending to category averages (if available) | Low | Show user's category spend vs app average (requires aggregate data) |
-| **Renewal density heatmap** | Calendar heatmap showing which days/weeks have most renewals | Low | Visual calendar with color intensity based on renewal count |
+| **Coverage visualization** — month-grid showing which months have stored PDFs | Users know at a glance which months are "vaulted" vs data-only vs missing. No competitor in the personal finance space offers this for bank statements. | MEDIUM | 12-month grid per source. Green = PDF stored, Yellow = extracted-only (no file), Gray = no data. Extends existing `coverage-gap-warning` component. |
+| **Historical upload wizard** — guided flow for uploading 12–24 months of backfill statements | No competitor guides users through systematic backfill. Most apps accept one file at a time. A wizard with calendar coverage visualization changes the value proposition. | HIGH | Show coverage calendar (months covered vs gaps). Drag-and-drop multiple files per source. Uses existing `batch-uploader.tsx`. Coverage gap detection reuses `coverage-gap-warning`. |
+| **Dual-view with persistent preference** — vault remembers last-used view | Eliminates friction for power users who always prefer one view. Small UX polish that feels professional. | LOW | `localStorage` key `vault_view_preference`. Restore on page load. |
+| **Statement-to-subscription linkage** — from vault, see which subscriptions came from each statement | Closes the loop: users can verify extraction by comparing PDF to extracted subscriptions. | MEDIUM | Statement detail already shows transactions. Add "X subscriptions extracted" count and navigation link. `subscriptions.importAuditId` already tracks provenance. |
+| **Upload deduplication messaging** — if user tries to upload a statement already in vault, clear "Already uploaded" feedback | Users uploading 24 months of history will inevitably try to upload the same statement twice. Clear messaging prevents confusion. | LOW | Already implemented via `pdfHash` unique constraint. Vault UI just needs to surface the duplicate message clearly, not silently drop the upload. |
+| **Signed URL PDF viewer** — PDF served via time-limited Supabase signed URL | Financial documents are sensitive. Time-limited URLs (1-hour expiry) prevent indefinite exposure of financial records. | LOW | `supabase.storage.from('statements').createSignedUrl(path, 3600)`. Regenerate on viewer open. |
 
-## Anti-Features
+### Anti-Features (Commonly Requested, Often Problematic)
 
-Features to explicitly NOT build. Common mistakes or overengineering to avoid.
+Features that seem natural to request but create significant problems for this milestone.
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| **Real-time bank monitoring** | Requires Plaid/Yodlee integration; security/compliance burden; scope creep | Rely on periodic PDF imports; user-controlled |
-| **Auto-merge duplicates without confirmation** | Data loss risk; false positives would frustrate users | Always require user confirmation before merging |
-| **Complex ML forecasting models** | Overengineering for subscription data; training data requirements; maintenance burden | Simple time-series projection based on known renewal dates is sufficient |
-| **Anomaly detection for every field** | Notification fatigue; too many false positives; users will ignore alerts | Focus on price changes and missed renewals only |
-| **Predictive cancellation alerts** | "We think you'll cancel Netflix" - creepy, low accuracy, annoying | Only detect missed renewals (already happened), not predict future behavior |
-| **Comparative spending analysis** | "You spend more than 80% of users" - privacy concerns, potentially shaming | Show user's own trends only, no peer comparison |
-| **Automatic subscription cancellation** | Liability risk; requires account access; legal issues | Notification and link to cancel, user does action |
-| **Blockchain/crypto payment tracking** | Different domain; complex; low user demand for personal subscriptions | Focus on fiat currency subscriptions |
-| **Investment-style portfolio analysis** | Wrong mental model; subscriptions are expenses not investments | Spending analytics, not portfolio optimization |
-| **Multi-user collaborative budgeting** | B2B feature; this is B2C product; sharing complexity | Single user analytics only |
-| **Notification for every anomaly** | Alert fatigue; users will disable notifications | High threshold for alerts; weekly digest option |
-| **Sub-dollar change detection** | Noise; users don't care about 10¢ fluctuations | Alert threshold: >5% change or >$2 absolute |
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| **OCR re-extraction on demand** — "re-run AI on this PDF" button in vault | Users want to improve extracted data when AI made mistakes | Triggers fresh OpenAI API calls (cost); creates duplicate transactions; conflict resolution between old and new extractions is non-trivial | The existing `reimport-wizard` in `statement-detail.tsx` already handles this. Use that. |
+| **Custom folder organization** — let users create folders ("Tax 2024", "Business") | Feels natural from file-system mental model | Two navigation hierarchies (source × folder) conflict. For bank statements, source type is the correct natural grouping. Custom folders add management overhead with low payoff. | The file cabinet view (grouped by source type) IS the folder metaphor. Sufficient for this domain. |
+| **PDF annotation** — highlight transactions, add notes in the PDF | Power users want to mark up statements | Requires a commercial PDF viewer SDK (PSPDFKit, Nutrient) at $400–1200/month, or complex custom canvas overlay. ROI extremely low for a subscription manager. | Store notes as a `notes` text field on the `statements` row. Covers 95% of the use case at 2% of the complexity. |
+| **Automatic bank statement download** — connect to bank API | Users love automation | Bank APIs (Plaid, MX) require financial institution partnerships, OAuth flows, and $50–500/month API costs at scale. Compliance burden is substantial. | Manual PDF upload. Consider as a v3+ milestone only after vault is established. |
+| **PDF editing** — redact, merge, split PDFs in-app | Redact account numbers before "vaulting" | Server-side PDF processing libraries add significant complexity. Solves a rare problem. | Show a note: "Consider redacting sensitive data before uploading." Do not build editing. |
+| **Shared vault access** — share statements with accountant | Tax season use case | Multi-tenancy, access control, expiring share links, and audit logs are each non-trivial. Current auth model is single-user only. | Use the download button to share files externally. |
+| **Mobile camera upload** — photograph paper statement | Some users receive paper statements | Mobile images require a different AI processing pipeline (not PDF-based), different file handling, and much lower extraction accuracy. Breaks the PDF-only assumption. | Keep PDF-only. Messaging: "Use your phone's built-in scanner app to create a PDF." |
+| **Full-text search across PDF contents** | Users want to search for a merchant name across all statements | Requires indexing PDF text in a search engine (Elasticsearch, Typesense). Storage is relatively small in early months but infrastructure cost and complexity are high. | The extracted `transactions` table is already searchable. For v1, the vault is a browser, not a search engine. |
+
+---
 
 ## Feature Dependencies
 
-### Duplicate Detection Flow
 ```
-Import New Subscription
-  ↓
-Immediate Duplicate Check (existing)
-  - Compare to user's active subscriptions
-  - Match on: name similarity, amount, billing cycle
-  - Show warning in import confirmation UI
-  ↓
-Background Duplicate Scanning (new)
-  - Periodic job (daily/weekly)
-  - Fuzzy match all subscriptions
-  - Calculate confidence score (0-100)
-  ↓
-Duplicate Dashboard (new)
-  - List potential duplicates with confidence
-  - Show matched fields (name, amount, cycle)
-  - "Keep Both" | "Mark as Duplicate" | "Merge"
-  ↓
-Merge Flow (new)
-  - User selects which data to keep
-  - Consolidate: earliest start, latest price, combined notes
-  - Soft-delete duplicate, keep one master record
-```
+[PDF Storage in Supabase]
+    └──required for──> [In-App PDF Viewer]
+    └──required for──> [Download PDF]
+    └──required for──> [Coverage Visualization] (differentiates "PDF stored" from "data only")
+    └──required for──> [Delete PDF]
 
-### Pattern Detection Flow
-```
-Multiple PDF Imports Over Time
-  ↓
-Store Transaction Data
-  - import_audits.raw_data (JSONB)
-  - Keep merchant name, amount, date for each transaction
-  ↓
-Pattern Analysis Job (new)
-  - Run monthly
-  - Find recurring charges (same merchant, similar amount, 3+ occurrences)
-  - Calculate frequency (monthly, quarterly, annual)
-  ↓
-Suggestion Dashboard (new)
-  - "We found 3 charges from 'Dropbox' at $11.99/month"
-  - "Add as subscription?" button
-  - Pre-fill form with detected data
-```
+[Statement Card Component]
+    └──shared by──> [File Cabinet View]
+    └──shared by──> [Timeline View]
 
-### Analytics & Forecasting Flow
-```
-Subscription Data
-  ↓
-Historical Aggregation (new)
-  - Calculate spending by month/quarter/year
-  - Group by category
-  - Store in time-series format
-  ↓
-Trend Calculation (new)
-  - MoM change: (current - previous) / previous * 100
-  - YoY change: (current - year_ago) / year_ago * 100
-  - Rolling averages for smoothing
-  ↓
-Visualization (new)
-  - Line charts (Recharts)
-  - Trend indicators (↑↓ with %)
-  - Period selectors (30d, 90d, 1y, all)
-  ↓
-Forecasting (new)
-  - Project known renewals onto future calendar
-  - Sum monthly totals
-  - Show confidence: "Based on X active subscriptions"
+[File Cabinet View]
+    └──extends──> [Existing /sources page accordion (source-list.tsx)]
+    └──requires──> [Statement Card Component]
+
+[Timeline View]
+    └──requires──> [Statement Card Component]
+    └──parallel with──> [File Cabinet View]
+
+[View Toggle]
+    └──requires──> [File Cabinet View] + [Timeline View]
+
+[Historical Upload Wizard]
+    └──requires──> [PDF Storage in Supabase]
+    └──enhances──> [Coverage Visualization] (wizard fills gaps shown in coverage view)
+    └──uses existing──> [Batch upload infrastructure (batch-uploader.tsx)]
+    └──uses existing──> [Duplicate detection via pdfHash]
+    └──uses existing──> [account-combobox.tsx for source selection]
+
+[Coverage Visualization]
+    └──extends existing──> [coverage-gap-warning component]
+    └──uses existing──> [statementDate on statements table]
+    └──depends on──> [PDF Storage] (to distinguish "PDF stored" from "data only")
+
+[Statement-to-Subscription Linkage]
+    └──uses existing──> [importAuditId on subscriptions table]
+    └──uses existing──> [statement-detail.tsx transaction table]
+
+[Delete PDF]
+    └──requires──> [PDF Storage in Supabase]
+    └──must NOT delete──> [statements row, transactions] (extracted data persists after file deletion)
 ```
 
-### Anomaly Detection Flow
-```
-Subscription Price History
-  ↓
-Establish Baseline (new)
-  - Track price changes in subscription updates
-  - Store price history in new table OR JSONB field
-  ↓
-Change Detection (new)
-  - Compare current price to previous
-  - Threshold: >5% increase OR >$2 absolute
-  ↓
-Alert Creation (new)
-  - "Netflix increased from $9.99 to $11.99 (+20%)"
-  - In-app notification
-  - Optional email alert
-  ↓
-Missed Renewal Detection (new)
-  - Query subscriptions where nextRenewalDate < today - 7 days
-  - No matching transaction in recent imports
-  - Alert: "Spotify renewal was expected on [date] but not found"
-```
-
-## MVP Recommendation
-
-For v1.3 Data & Intelligence milestone, prioritize in this order:
-
-### Phase 1: Duplicate Detection (Foundation)
-**Why first:** Directly impacts data quality; prevents user frustration from duplicate entries.
-
-**Table stakes:**
-1. Duplicate detection on import (improve existing UI)
-2. Manual "Mark as duplicate" action
-3. Background duplicate scanner
-
-**Differentiators:**
-4. Confidence-based duplicate UI (show similarity %)
-5. Smart merge flow with data consolidation
-
-**Complexity:** Medium
-**Dependencies:** Existing `detectDuplicates()` function
-**Effort:** 4-5 days
-
-### Phase 2: Spending Analytics (User Value)
-**Why second:** High visibility; users immediately see value; low technical risk.
-
-**Table stakes:**
-1. Basic spending totals (monthly/annual)
-2. Category spending breakdown
-3. Active subscription count widget
-4. Upcoming renewals calendar
-
-**Differentiators:**
-5. MoM/YoY trend charts
-6. Category trend analysis
-7. Subscription clustering ("3 streaming services = $45/mo")
-
-**Complexity:** Medium
-**Dependencies:** Historical data aggregation
-**Effort:** 5-6 days
-
-### Phase 3: Pattern Recognition (Intelligence)
-**Why third:** Requires historical import data; builds on existing import system.
-
-**Differentiators:**
-1. Multi-statement pattern detection
-2. Suggestion dashboard for recurring charges
-3. Auto-populate subscription form from detected patterns
-
-**Complexity:** High
-**Dependencies:** Multiple imports with `raw_data` stored
-**Effort:** 6-8 days
-
-### Phase 4: Forecasting & Projections (Advanced)
-**Why fourth:** Nice-to-have; requires clean data from earlier phases.
-
-**Differentiators:**
-1. Spending forecast calendar
-2. 12-month spending projections
-3. Renewal density heatmap
-
-**Complexity:** Medium-High
-**Dependencies:** Clean subscription data, historical trends
-**Effort:** 4-5 days
-
-### Phase 5: Anomaly Detection (Refinement)
-**Why last:** Requires historical data to establish baselines; false positive risk needs careful tuning.
-
-**Table stakes:**
-1. Price increase detection
-2. Alert UI with thresholds
-
-**Differentiators:**
-3. Missed renewal detection
-4. Spending deviation alerts (optional, test for false positives)
-
-**Complexity:** High
-**Dependencies:** Price history tracking, statistical thresholds
-**Effort:** 5-6 days
-
-## Defer to Post-v1.3
-
-These features are valuable but not critical for v1.3 milestone:
-
-- **AI-generated spending insights** - NLG complexity, uncertain ROI
-- **Category benchmarking** - Requires aggregate user data (privacy concerns)
-- **Seasonal adjustment** - Nice-to-have, not blocking
-- **Cost per category benchmarking** - Requires comparative data
-- **Spending insights with explanations** - High complexity, uncertain value
-- **Advanced forecasting with confidence intervals** - Overengineering for subscription data
-- **Multi-dimensional anomaly detection** - Too many false positives
-
-## Expected Behavior Patterns from Research
-
-### Duplicate Detection (Banking Apps Standard)
-
-**Brex/PocketSmith/Wave pattern:**
-- Analyze multiple data points: name, amount, date, billing cycle
-- Fuzzy matching with similarity threshold (typically 80%+ = duplicate)
-- Show confidence score to user: "95% match" vs "70% possible match"
-- Always require user confirmation before merging
-- Provide "Keep Both" option (false positive escape hatch)
-
-**User expectations:**
-- Automatic flagging during import (table stakes)
-- Manual marking from subscription list (table stakes)
-- Background scanning finds hidden duplicates (differentiator)
-- Clear visual indicators (badge: "Possible duplicate")
-
-### Pattern Recognition (Fintech 2026 Standard)
-
-**Rocket Money/Monarch/PocketSmith pattern:**
-- Scan transaction history for recurring charges (3+ occurrences)
-- Calculate frequency automatically (28-32 days = monthly, 90-92 days = quarterly)
-- Match fuzzy merchant names ("AMZN MKTP" = "Amazon Marketplace")
-- Pre-populate subscription form with detected data
-
-**User expectations:**
-- Suggestion dashboard: "We found potential subscriptions"
-- One-click add from suggestion
-- Ability to dismiss false positives
-- Learn from user corrections (don't suggest again)
-
-### Spending Analytics (Personal Finance App Standard)
-
-**Monarch/Simplifi/YNAB pattern:**
-- Dashboard widgets: total spending, category breakdown, trend direction
-- Time period selectors: 30d, 90d, 1y, all time
-- Visual charts: line (trends), pie (category), bar (comparison)
-- MoM/YoY percentage changes with color coding (red = increase, green = decrease for expenses)
-
-**User expectations:**
-- Instant totals visible on dashboard (table stakes)
-- Drill-down by category (table stakes)
-- Historical comparison (differentiator)
-- Export capability (nice-to-have)
-
-### Spending Forecasting (2026 Standard)
-
-**PocketSmith/Buxfer/Simplifi pattern:**
-- Project known recurring charges onto future calendar
-- Visual calendar with daily/monthly totals
-- Confidence indicator: "Based on 15 active subscriptions"
-- Scenario planning: "What if I cancel Netflix?" (advanced)
-
-**User expectations:**
-- See future spending in calendar view (differentiator)
-- Monthly projection totals (differentiator)
-- Simple projection (renewal dates × amounts), not complex ML
-
-### Anomaly Detection (Cloud Cost Management Pattern)
-
-**AWS/Azure/Oracle cost anomaly pattern (2026):**
-- Threshold-based detection: absolute ($X increase) + percentage (Y% increase)
-- Time-series models with historical patterns (60-day baseline)
-- Configurable alert thresholds to reduce false positives
-- Alert fatigue mitigation: weekly digests, not real-time for every change
-
-**User expectations:**
-- Price increase alerts (table stakes for 2026)
-- Configurable thresholds (5% or $2 minimum to alert)
-- In-app notification first, email optional
-- False positive escape: "Don't alert for this subscription"
-
-## Complexity Estimates
-
-| Feature Category | Effort | Risk | Dependencies |
-|-----------------|--------|------|--------------|
-| Duplicate Detection UI | 2-3 days | Low | Existing `detectDuplicates()` function |
-| Background Duplicate Scanner | 2-3 days | Medium | Fuzzy matching algorithm, cron job |
-| Merge Flow | 2-3 days | Medium | Transaction logic, data consolidation |
-| Basic Analytics Dashboard | 3-4 days | Low | Aggregation queries, Recharts |
-| Trend Charts (MoM/YoY) | 2-3 days | Low | Time-series calculation, Recharts |
-| Pattern Detection | 5-7 days | High | Transaction parsing, frequency detection, false positive handling |
-| Forecast Calendar | 3-4 days | Medium | Date projection, calendar UI |
-| Price Change Detection | 2-3 days | Medium | Price history tracking, threshold logic |
-| Missed Renewal Detection | 2-3 days | Medium | Date comparison logic, false positive handling |
-| Anomaly Alerts | 3-4 days | High | Statistical thresholds, alert fatigue prevention |
-
-## Technical Considerations
-
-### Duplicate Detection Algorithm
-
-**Recommended approach:**
-- **Fuzzy matching** using Levenshtein or Jaro-Winkler distance
-- **Match criteria:**
-  - Name similarity >80% (fuzzy string match)
-  - Amount within ±5% OR exact match
-  - Same billing cycle (monthly, annual, etc.)
-- **Confidence score calculation:**
-  - 100% = exact name + exact amount + same cycle
-  - 90-99% = fuzzy name match + exact amount + same cycle
-  - 70-89% = fuzzy name match + similar amount + same cycle
-  - <70% = don't flag as duplicate (too many false positives)
-
-**Performance:**
-- Import-time: Check against active subscriptions only (fast)
-- Background scan: Check all subscriptions pairwise (O(n²), run nightly)
-- Optimization: Only scan subscriptions updated in last 30 days
-
-### Pattern Detection Data Requirements
-
-**Minimum viable data:**
-- At least 3 imports spanning 2-3 months
-- Transaction data in `import_audits.raw_data` with:
-  - `merchant` (string)
-  - `amount` (decimal)
-  - `date` (ISO date)
-  - `description` (string, optional)
-
-**Pattern matching logic:**
-- Group transactions by similar merchant name (fuzzy match)
-- Calculate intervals between transactions
-- Frequency detection:
-  - Monthly: 28-32 days (allow ±4 days variance)
-  - Quarterly: 88-95 days (allow ±7 days variance)
-  - Annual: 360-370 days (allow ±10 days variance)
-- Require 3+ occurrences before suggesting
-- Amount variance: ±10% allowed (some subscriptions adjust slightly)
-
-### False Positive Prevention
-
-**Critical for user trust:**
-- **Duplicate detection:** Threshold at 80%+ confidence; show confidence score
-- **Pattern detection:** Require 3+ occurrences; allow user to dismiss
-- **Anomaly alerts:**
-  - Price increase: >5% AND >$2 minimum
-  - Missed renewal: 7+ days past due (not 1 day - payment processing delays)
-  - Weekly digest for minor anomalies, immediate for major (>$20 or >50%)
-
-**Feedback loops:**
-- Track user actions: "Keep Both", "Merge", "Dismiss"
-- Don't re-suggest dismissed patterns
-- Learn from false positive reports (future: adjust thresholds per user)
-
-## Database Schema Considerations
-
-**New tables needed:**
-
-```sql
--- Track price history for anomaly detection
-price_history (
-  id
-  subscriptionId (FK)
-  oldPrice
-  newPrice
-  changedAt
-  source (enum: 'import' | 'manual_edit' | 'statement')
-)
-
--- Track duplicate relationships
-subscription_duplicates (
-  id
-  subscriptionId (FK)
-  duplicateOfId (FK)
-  confidence (0-100)
-  status (enum: 'suggested' | 'confirmed' | 'dismissed')
-  detectedAt
-  resolvedAt
-  resolvedBy (FK to users)
-)
-
--- Track pattern detection suggestions
-pattern_suggestions (
-  id
-  userId (FK)
-  merchantName
-  amount
-  frequency (enum: 'monthly' | 'quarterly' | 'annual')
-  occurrences (array of dates)
-  confidence (0-100)
-  status (enum: 'pending' | 'accepted' | 'dismissed')
-  createdAt
-)
-
--- Track alerts/anomalies
-subscription_alerts (
-  id
-  userId (FK)
-  subscriptionId (FK, nullable)
-  alertType (enum: 'price_increase' | 'missed_renewal' | 'spending_spike')
-  severity (enum: 'low' | 'medium' | 'high')
-  title
-  description
-  metadata (JSONB)
-  status (enum: 'unread' | 'read' | 'dismissed')
-  createdAt
-)
-```
-
-**Existing schema enhancements:**
-
-```sql
--- Add to import_audits (if not already present)
-raw_data JSONB -- Store full transaction array for pattern detection
-
--- Add to subscriptions (if not already present)
-previous_price DECIMAL(10,2) -- Track last known price for change detection
-price_last_checked TIMESTAMP -- When we last verified the price
-```
-
-## UX Patterns from Research
-
-### Duplicate Detection UI
-
-```
-Subscription List
-┌─────────────────────────────────────────────────┐
-│ Netflix  $15.99/mo  [⚠️ Possible duplicate 85%] │ ← Badge with confidence
-│   ↳ Similar to: Netflix $15.99/mo              │
-│   [View Details] [Keep Both] [Mark as Dup]     │
-└─────────────────────────────────────────────────┘
-
-Merge Flow (after "Mark as Duplicate"):
-┌─────────────────────────────────────────────────┐
-│ Merge Duplicate Subscriptions                   │
-├─────────────────────────────────────────────────┤
-│ Keep data from: ( ) Subscription A              │
-│                 (•) Subscription B              │
-│                 ( ) Combine both                │
-│                                                  │
-│ Preview:                                         │
-│ Name: Netflix (from B)                          │
-│ Price: $15.99 (from B, most recent)            │
-│ Start Date: Jan 2024 (from A, earliest)        │
-│ Notes: [Combined notes from both]              │
-│                                                  │
-│ [Cancel] [Merge Subscriptions]                  │
-└─────────────────────────────────────────────────┘
-```
-
-### Pattern Suggestion Dashboard
-
-```
-Dashboard > Suggestions Tab
-┌─────────────────────────────────────────────────┐
-│ 🔍 Found 2 Potential Subscriptions              │
-├─────────────────────────────────────────────────┤
-│ Dropbox - $11.99/month                          │
-│ Found in 3 imports (Dec, Jan, Feb)             │
-│ [Add Subscription] [Dismiss]                    │
-│                                                  │
-│ AWS Cloud - $12.45/month                        │
-│ Found in 4 imports (Nov, Dec, Jan, Feb)        │
-│ [Add Subscription] [Dismiss]                    │
-└─────────────────────────────────────────────────┘
-```
-
-### Spending Analytics Dashboard
-
-```
-Dashboard > Analytics
-┌─────────────────────────────────────────────────┐
-│ Total Spending                                   │
-│ $247.85/month     ↑ 12% vs last month           │
-│                                                  │
-│ [30 Days] [90 Days] [1 Year] [All Time]        │
-│                                                  │
-│ ▂▃▅▇█▇▅▃▂  [Line chart: last 6 months]        │
-│                                                  │
-│ By Category:                                     │
-│ Entertainment  $85.00  (34%) ████████            │
-│ Productivity   $62.00  (25%) ██████              │
-│ Cloud Storage  $45.00  (18%) ████                │
-│ Other          $55.85  (23%) █████               │
-└─────────────────────────────────────────────────┘
-```
-
-### Anomaly Alert
-
-```
-Dashboard > Alerts (badge with count)
-┌─────────────────────────────────────────────────┐
-│ 🔴 Price Increase Detected                      │
-│ Netflix increased from $9.99 to $11.99 (+20%)  │
-│ Effective: Feb 1, 2026                          │
-│ [View Subscription] [Dismiss]                   │
-│                                                  │
-│ 🟡 Missed Renewal                               │
-│ Spotify renewal expected on Jan 28              │
-│ Not found in recent imports                     │
-│ [View Subscription] [Mark as Cancelled]         │
-└─────────────────────────────────────────────────┘
-```
+### Dependency Notes
+
+- **PDF Storage is the keystone feature.** Every vault-specific feature depends on it. It must be the first task of the vault milestone.
+- **File Cabinet and Timeline share a `StatementCard` component.** Build one card, use it in both layouts. Do not build two separate implementations.
+- **Historical upload wizard uses existing batch infrastructure.** The `batch-uploader.tsx`, `file-queue.tsx`, and `file-item.tsx` components are already built. The wizard adds navigation scaffolding and coverage visualization, not a new upload engine.
+- **Coverage visualization extends existing gap detection.** `coverage-gap-warning` and `incomplete-batch-banner` already exist. The vault adds a positive visualization (what IS covered) to complement the existing negative (what is MISSING).
+
+---
+
+## MVP Definition
+
+### Launch With (v1 — Vault Core)
+
+Minimum viable vault — what makes it a vault instead of just an import history list.
+
+- [ ] **PDF storage** — upload PDF to Supabase Storage private bucket, store path in `pdfStoragePath` — *without this, nothing else works*
+- [ ] **In-app PDF viewer** — Dialog or Sheet with `react-pdf` (dynamic import, no SSR) — *without this, "vault" is meaningless*
+- [ ] **Download PDF** — signed URL download link on each statement card — *baseline user expectation*
+- [ ] **File cabinet view** — existing `/sources` accordion extended with statement cards showing "View PDF" and "Download" actions — *natural extension of what already exists*
+- [ ] **Timeline view** — chronological list of all statements across all sources — *the second navigation mode that makes dual-view meaningful*
+- [ ] **View toggle** — switch between file cabinet and timeline, preference saved to `localStorage` — *low effort, high UX polish*
+- [ ] **"No file stored" indicator** — badge on cards where `pdfStoragePath IS NULL` — *data integrity: existing imports did not store files*
+- [ ] **Empty state + upload CTA** — shown when vault has no statements — *required for new users who land on vault before uploading*
+
+### Add After Validation (v1.x)
+
+Features to add once core vault is live and users are uploading statements:
+
+- [ ] **Coverage visualization** — month-grid heatmap per source showing PDF stored / data only / missing — *trigger: users ask "which months am I missing?"*
+- [ ] **Historical upload wizard** — guided backfill flow with coverage calendar — *trigger: vault is live and users want to fill gaps systematically*
+- [ ] **Delete PDF** — remove stored file while keeping extracted data — *trigger: GDPR requests, storage cost awareness; add before significant storage accumulates*
+- [ ] **Statement notes** — text field on statement for user annotations — *trigger: users ask for annotation capability; far simpler than PDF annotation*
+
+### Future Consideration (v2+)
+
+Features to defer until vault is established and usage patterns emerge:
+
+- [ ] **Statement-to-subscription deep linkage** — "X subscriptions from this statement" with navigation — *defer: useful but not blocking vault experience*
+- [ ] **Batch date auto-detection** — parse statement dates from filenames and PDF content — *defer: adds AI API cost and complexity; manual date assignment acceptable for v1*
+- [ ] **Statement search** — search by filename, source, date range across vault — *defer: small vault size makes this unnecessary early; extracted transactions are already searchable*
+
+---
+
+## Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| PDF storage in Supabase | HIGH | LOW | P1 |
+| In-app PDF viewer | HIGH | MEDIUM | P1 |
+| Download PDF | HIGH | LOW | P1 |
+| File cabinet view (extends existing) | HIGH | LOW | P1 |
+| Timeline view | HIGH | MEDIUM | P1 |
+| View toggle | MEDIUM | LOW | P1 |
+| "No file stored" indicator | HIGH | LOW | P1 |
+| Empty state + upload CTA | MEDIUM | LOW | P1 |
+| Coverage visualization | HIGH | MEDIUM | P2 |
+| Historical upload wizard | HIGH | HIGH | P2 |
+| Delete PDF | MEDIUM | MEDIUM | P2 |
+| Statement notes | LOW | LOW | P2 |
+| Statement-to-subscription linkage | MEDIUM | LOW | P3 |
+| Batch date auto-detection | MEDIUM | HIGH | P3 |
+| Statement search | LOW | MEDIUM | P3 |
+
+**Priority key:**
+- P1: Must have for vault launch (all table stakes)
+- P2: Should have — add in first iteration after vault is live
+- P3: Nice to have — future milestone
+
+---
+
+## Competitor Feature Analysis
+
+No direct competitors combine a subscription manager with a statement vault. References from adjacent markets:
+
+| Feature | Dext Vault | FutureVault | SmartVault | Our Approach |
+|---------|------------|-------------|------------|--------------|
+| PDF storage | Yes | Yes | Yes | Supabase Storage private bucket, user-scoped RLS |
+| In-app viewer | Yes (embedded) | Yes | Yes (iframe) | `react-pdf` modal — no external iframe dependency |
+| File organization | Folder hierarchy | Smart folders + AI | Folder hierarchy | Dual-view: source-grouped (file cabinet) + chronological (timeline). Simpler than folders, appropriate for bank statements. |
+| Coverage visualization | No | No | No | Differentiator: 12-month grid per source |
+| Historical upload wizard | No | No | No | Differentiator: guided backfill with coverage view |
+| Search | Full-text | AI semantic | Keyword | v1: none; transactions already searchable in existing UI |
+| Download | Yes | Yes | Yes | Signed URL with `Content-Disposition: attachment` |
+| Annotation | Yes | Yes | Yes (iframe) | Out of scope — notes field only |
+| Sharing | Yes | Yes | Yes | Out of scope — no multi-tenancy |
+
+**Key insight from competitor research:** All competitors default to a folder hierarchy. This app's source-type grouping (by bank/card name) is simpler and more appropriate for bank statements, where users think "my Chase account" not "my Q1 2024 folder." The timeline view is additive and does not conflict with the source-based mental model.
+
+---
+
+## Implementation Notes by Feature
+
+### PDF Storage (Supabase Storage)
+
+- **Bucket name:** `statements` — private bucket (NOT public)
+- **Path convention:** `{userId}/{statementId}.pdf` — user-scoped, no collision risk
+- **File size:** Supabase Free tier caps at 50MB per file. Bank statements are typically 100KB–5MB. Non-issue.
+- **Upload method:** Client-side direct upload using signed upload URL from Supabase JS client. Avoids Next.js 1MB server action body size limit. Generate signed upload URL on server, execute upload from browser.
+- **RLS policy:** User can only read/write objects where path starts with their `userId`. Standard pattern from Supabase docs.
+- **Upload trigger:** Wired into existing batch import flow. When PDF is processed, immediately upload to storage and update `pdfStoragePath`.
+
+### In-App PDF Viewer
+
+- **Library:** `react-pdf` by wojtekmaj — **not** `@react-pdf/renderer` (that generates PDFs, not displays them)
+  - Weekly downloads: 2M (react-pdf) vs 1.4M (@react-pdf/renderer)
+  - Wraps Mozilla's PDF.js
+  - Next.js App Router compatible via `dynamic(() => import('./PdfViewerInner'), { ssr: false })`
+- **Worker configuration:**
+  ```
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'npm:pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString()
+  ```
+- **UX pattern:** Open in a shadcn `Dialog` or `Sheet` (slide-over). Do not navigate away — users want to compare PDF to the transaction list on the same page.
+- **Signed URL:** Generate on viewer open via `createSignedUrl(path, 3600)` (1-hour expiry). Regenerate if user keeps viewer open longer.
+- **Fallback:** If PDF fails to load, show a "Download original file" link so users are never blocked.
+
+### File Cabinet View
+
+- Extends the existing `source-list.tsx` accordion component
+- Each accordion item (source) expands to show `StatementCard` components
+- `StatementCard` shows: filename, statement date (or "Date unknown"), file size, upload date, "View PDF" button, "Download" button, "No file" badge if `pdfStoragePath IS NULL`
+- Sort: Newest statement first within each source group
+- "Upload more statements" link within each accordion item (routes to batch upload pre-filtered to that source)
+
+### Timeline View
+
+- Flat list or month-grouped list of statement cards
+- Same `StatementCard` component as file cabinet view
+- Month separators: "January 2024", "February 2024", etc.
+- Sources differentiated by a label/badge on the card (not accordion grouping)
+- Sort: Newest statement at top
+
+### Historical Upload Wizard
+
+The wizard is UX scaffolding around existing infrastructure — not a new upload engine.
+
+- **Step 1:** Select source using existing `account-combobox.tsx`
+- **Step 2:** Show coverage calendar for that source (which months have PDF stored, which are data-only, which have no data)
+- **Step 3:** Drag-and-drop batch upload for missing months using existing `batch-uploader.tsx`
+- **Step 4:** Confirm processing and see updated coverage
+- All processing goes through the existing batch import pipeline
+
+### Delete PDF
+
+- Sets `pdfStoragePath = null` in the `statements` table
+- Deletes the object from Supabase Storage via `supabase.storage.from('statements').remove([path])`
+- Does NOT delete the `statements` row or any `transactions` rows — extracted data persists
+- Requires a confirmation dialog with clear messaging: "This deletes the original PDF. Your extracted transaction data will be preserved."
+
+---
 
 ## Sources
 
-### Duplicate Detection in Financial Apps
-- [Brex: How to Prevent Duplicate Payments in AP](https://www.brex.com/spend-trends/accounting/prevent-duplicate-payments-in-accounts-payable)
-- [NetSuite: How to Fix and Prevent Duplicate Payments](https://www.netsuite.com/portal/resource/articles/accounting/prevent-duplicate-payments.shtml)
-- [Wave Apps: Resolve duplicate transactions](https://support.waveapps.com/hc/en-us/articles/115000423886-Resolve-duplicate-transactions-imported-from-your-bank)
-- [PocketSmith: Duplicate transactions in accounts with bank feed](https://learn.pocketsmith.com/article/1419-duplicate-transactions-in-accounts-with-a-bank-feed)
+- Codebase analysis: `src/lib/db/schema.ts` (statements table, pdfStoragePath), `src/components/sources/` (existing source/statement UI), `src/components/batch/` (existing upload infrastructure)
+- [Supabase Storage — Serving assets / signed URLs](https://supabase.com/docs/guides/storage/serving/downloads) — HIGH confidence
+- [Supabase Storage — Resumable uploads and file size limits](https://supabase.com/docs/guides/storage/uploads/resumable-uploads) — HIGH confidence
+- [Supabase Storage — Access control and RLS](https://supabase.com/docs/guides/storage/security/access-control) — HIGH confidence
+- [react-pdf npm package](https://www.npmjs.com/package/react-pdf) — 2M weekly downloads, wojtekmaj — HIGH confidence
+- [react-pdf Next.js App Router starter](https://github.com/react-pdf-dev/starter-rp-nextjs-app-router-js) — MEDIUM confidence (official starter repo, SSR:false pattern confirmed)
+- [Best React PDF Viewer Libraries 2025](https://blog.react-pdf.dev/top-6-pdf-viewers-for-reactjs-developers-in-2025) — MEDIUM confidence
+- [FutureVault — AI-Powered Digital Vaults for Financial Services](https://www.futurevault.com/) — MEDIUM confidence (competitor reference)
+- [SmartVault — Document Management](https://www.smartvault.com/) — MEDIUM confidence (competitor reference)
+- [Dext Vault — Secure Electronic Document Management](https://dext.com/en/business/product/dext-vault) — MEDIUM confidence (competitor reference)
+- [Fintech UX in 2026: what users expect](https://www.stan.vision/journal/fintech-ux-in-2026-what-users-expect-from-modern-financial-products) — MEDIUM confidence
+- [Bulk Import UX — Smart Interface Design Patterns](https://smart-interface-design-patterns.com/articles/bulk-ux/) — MEDIUM confidence
+- [Accordion UI Design Best Practices 2025](https://lollypop.design/blog/2025/december/accordion-ui-design/) — LOW confidence (general UX pattern, not domain-specific)
 
-### Fuzzy Matching Algorithms
-- [Data Ladder: Fuzzy Matching 101](https://dataladder.com/fuzzy-matching-101/)
-- [Match Data Pro: Top 5 Fuzzy Matching Tools for 2026](https://matchdatapro.com/top-5-fuzzy-matching-tools-for-2026/)
-- [LeadAngel: Understanding the Fuzzy Matching Algorithm](https://www.leadangel.com/blog/operations/understanding-the-fuzzy-matching-algorithm/)
-- [Medium: Why Fuzzy Matching Isn't Enough](https://medium.com/@williamflaiz/why-fuzzy-matching-isnt-enough-and-what-actually-finds-your-hidden-duplicates-7ddfdc5c26de)
+---
 
-### Pattern Recognition in Fintech
-- [BDO: 2026 Predictions for Fintech](https://www.bdo.com/insights/industries/fintech/2026-fintech-industry-predictions)
-- [Desinance: Top Fintech Trends for 2026](https://desinance.com/finance/fintech-trends/)
-- [SolveXia: Transaction Matching Using AI](https://www.solvexia.com/blog/transaction-matching-using-ai)
-- [Expense Sorted: Advanced Bank Transaction Categorization](https://www.expensesorted.com/blog/advanced-bank-transaction-categorization-beyond-llms)
-
-### Subscription Analytics Features
-- [ReferralCandy: Subscription Analytics Ecommerce 2026 Guide](https://www.referralcandy.com/blog/subscription-analytics-ecommerce-the-complete-2026-guide-to-data-driven-growth)
-- [ChartMogul: Subscription Analytics](https://chartmogul.com/subscription-analytics/)
-- [Solidgate: Billing Dashboard Subscription Analytics](https://solidgate.com/blog/billing-dashboard-your-actionable-subscription-analytics/)
-- [Baremetrics: Subscription Analytics](https://baremetrics.com/)
-
-### Spending Forecasting in Personal Finance
-- [Post and Courier: Money tracking apps 2026](https://www.postandcourier.com/business/spending-saving-2026-budgeting-apps-advice/article_306b8abe-7007-43ea-86f7-d0c4c93d7afd.html)
-- [MoneyPatrol: Best Budgeting Apps for 2026](https://moneypatrol.com/moneytalk/budgeting/best-budgeting-and-personal-finance-apps-for-2026/)
-- [PocketSmith: The Best Budgeting Software](https://www.pocketsmith.com/)
-- [Kualto: Personal Budget & Cash Flow Forecasting](https://www.kualto.com/)
-
-### Anomaly Detection & Alerts
-- [AWS Cost Anomaly Detection](https://aws.amazon.com/aws-cost-management/aws-cost-anomaly-detection/)
-- [Microsoft: Identify anomalies in cost](https://learn.microsoft.com/en-us/azure/cost-management-billing/understand/analyze-unexpected-charges)
-- [Oracle: Cost anomaly detection](https://docs.oracle.com/en-us/iaas/releasenotes/billing/cost-anomaly-detection.htm)
-- [CloudMonitor: Real-Time Cloud Cost Anomaly Detection](https://cloudmonitor.ai/2026/02/real-time-cloud-cost-anomaly-detection/)
-
-### Alert Fatigue & False Positives
-- [Security Boulevard: Stop Chasing False Alarms](https://securityboulevard.com/2026/01/stop-chasing-false-alarms-how-ai-powered-traffic-monitoring-cuts-alert-fatigue/)
-- [CardinalOps: Rethinking False Positives](https://cardinalops.com/blog/rethinking-false-positives-alert-fatigue/)
-- [Splunk: Preventing Alert Fatigue](https://www.splunk.com/en_us/blog/learn/alert-fatigue.html)
-- [FraudNet: How False Positives Are Sinking Your Fraud Team](https://www.fraud.net/resources/drowning-in-alerts-how-false-positives-are-sinking-your-fraud-team)
-
-### Subscription Management Apps
-- [Rocket Money Review](https://www.rocketmoney.com/)
-- [Rob Berger: 7 Best Subscription Manager Apps 2026](https://robberger.com/subscription-manager-apps/)
-- [The Penny Hoarder: Rocket Money Review](https://www.thepennyhoarder.com/budgeting/rocket-money-review/)
-
-### Subscription App Development Best Practices
-- [Zluri: Top 12 Subscription Management Tools 2026](https://www.zluri.com/blog/subscription-management-tools)
-- [Minimum Code: Bubble Subscription Management 2026 Roadmap](https://www.minimum-code.com/blog/bubble-subscription-management-app)
-- [Moburst: How to Grow a Subscription App 2026](https://www.moburst.com/blog/subscription-app-guide/)
-
-**Confidence Assessment:**
-- **Table Stakes:** HIGH - Clear patterns from banking/finance apps (Brex, Wave, PocketSmith)
-- **Differentiators:** MEDIUM-HIGH - Based on 2026 fintech trends and subscription app features (Rocket Money, Monarch)
-- **Anti-Features:** HIGH - Based on alert fatigue research, scope analysis, and common overengineering pitfalls
-- **Expected Behavior:** HIGH - AWS/Azure cost anomaly patterns well-documented; personal finance forecasting patterns established
-- **Complexity Estimates:** MEDIUM - Based on general software complexity; actual effort depends on existing codebase structure
+*Feature research for: Financial Data Vault (bank statement document storage and browsing)*
+*Researched: 2026-02-19*
