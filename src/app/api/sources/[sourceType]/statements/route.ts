@@ -35,6 +35,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         statementDate: statements.statementDate,
         uploadedAt: statements.createdAt,
         transactionCount: statements.transactionCount,
+        pdfStoragePath: statements.pdfStoragePath,
       })
       .from(statements)
       .where(
@@ -99,6 +100,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         uploadedAt: stmt.uploadedAt.toISOString(),
         transactionCount: stmt.transactionCount || 0,
         stats,
+        hasPdf: stmt.pdfStoragePath !== null,
       };
     });
 

@@ -51,6 +51,8 @@ export interface StatementSummary {
     skipped: number;
     pending: number;
   };
+  /** Whether the original PDF is stored in Supabase Storage */
+  hasPdf: boolean;
 }
 
 /**
