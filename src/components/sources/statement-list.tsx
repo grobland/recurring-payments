@@ -68,9 +68,11 @@ export function StatementList({ sourceType }: StatementListProps) {
     );
   }
 
-  // Sort by statement date descending (newest first)
+  // Sort by statement date descending (newest first), empty dates go last
   const sortedStatements = [...statements].sort((a, b) => {
-    return new Date(b.statementDate).getTime() - new Date(a.statementDate).getTime();
+    const dateA = a.statementDate ? new Date(a.statementDate).getTime() : 0;
+    const dateB = b.statementDate ? new Date(b.statementDate).getTime() : 0;
+    return dateB - dateA;
   });
 
   return (
@@ -98,7 +100,7 @@ function StatementRow({ statement }: StatementRowProps) {
   } = statement;
 
   // Format statement date: "Feb 2026"
-  const formattedDate = format(parseISO(statementDate), "MMM yyyy");
+  const formattedDate = statementDate ? format(parseISO(statementDate), "MMM yyyy") : "No date";
 
   return (
     <>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { statements, transactions } from "@/lib/db/schema";
-import { eq, sql, and, desc } from "drizzle-orm";
+import { eq, sql, and, desc, inArray } from "drizzle-orm";
 import type { StatementSummary } from "@/types/source";
 
 interface RouteParams {
@@ -69,7 +69,7 @@ export async function GET(request: Request, { params }: RouteParams) {
           ),
       })
       .from(transactions)
-      .where(sql`${transactions.statementId} = ANY(${statementIds})`)
+      .where(inArray(transactions.statementId, statementIds))
       .groupBy(transactions.statementId);
 
     // Build stats map
@@ -96,8 +96,8 @@ export async function GET(request: Request, { params }: RouteParams) {
       return {
         id: stmt.id,
         originalFilename: stmt.originalFilename,
-        statementDate: stmt.statementDate?.toISOString() || "",
-        uploadedAt: stmt.uploadedAt.toISOString(),
+        statementDate: stmt.statementDate instanceof Date ? stmt.statementDate.toISOString() : (stmt.statementDate || ""),
+        uploadedAt: stmt.uploadedAt instanceof Date ? stmt.uploadedAt.toISOString() : (stmt.uploadedAt || ""),
         transactionCount: stmt.transactionCount || 0,
         stats,
         hasPdf: stmt.pdfStoragePath !== null,

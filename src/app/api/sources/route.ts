@@ -123,11 +123,11 @@ export async function GET() {
 
       return {
         sourceType: source.sourceType,
-        earliestStatementDate: source.earliestStatementDate?.toISOString() || "",
-        latestStatementDate: source.latestStatementDate?.toISOString() || "",
+        earliestStatementDate: source.earliestStatementDate instanceof Date ? source.earliestStatementDate.toISOString() : (source.earliestStatementDate || ""),
+        latestStatementDate: source.latestStatementDate instanceof Date ? source.latestStatementDate.toISOString() : (source.latestStatementDate || ""),
         statementCount: source.statementCount || 0,
         transactionCount: txStats.transactionCount,
-        lastImportDate: source.lastImportDate?.toISOString() || "",
+        lastImportDate: source.lastImportDate instanceof Date ? source.lastImportDate.toISOString() : (source.lastImportDate || ""),
         stats: {
           converted: txStats.converted,
           skipped: txStats.skipped,

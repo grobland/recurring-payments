@@ -27,14 +27,18 @@ export function SourceRow({ source }: SourceRowProps) {
 
   // Format date range: "Jan 2024 - Feb 2026"
   const formatDateRange = (): string => {
+    if (!earliestStatementDate || !latestStatementDate) return "No dates yet";
     const earliest = parseISO(earliestStatementDate);
     const latest = parseISO(latestStatementDate);
+    if (isNaN(earliest.getTime()) || isNaN(latest.getTime())) return "No dates yet";
     return `${format(earliest, "MMM yyyy")} - ${format(latest, "MMM yyyy")}`;
   };
 
   // Format last import date
   const formatLastImport = (): string => {
+    if (!lastImportDate) return "Unknown";
     const date = parseISO(lastImportDate);
+    if (isNaN(date.getTime())) return "Unknown";
     return format(date, "MMM d, yyyy");
   };
 
