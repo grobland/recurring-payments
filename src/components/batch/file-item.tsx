@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, X, RotateCcw, Check, AlertTriangle, Clock, Upload, Loader2 } from "lucide-react";
+import { FileText, X, RotateCcw, Check, AlertTriangle, Clock, Upload, Loader2, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ const statusConfig: Record<FileStatus, {
   hashing: { icon: Loader2, label: "Hashing...", color: "text-blue-500", animate: true },
   checking: { icon: Loader2, label: "Checking...", color: "text-blue-500", animate: true },
   uploading: { icon: Upload, label: "Uploading...", color: "text-blue-500", animate: true },
+  storing: { icon: Database, label: "Storing PDF...", color: "text-blue-500", animate: true },
   processing: { icon: Loader2, label: "Processing...", color: "text-blue-500", animate: true },
   complete: { icon: Check, label: "Complete", color: "text-green-500" },
   error: { icon: AlertTriangle, label: "Failed", color: "text-destructive" },
@@ -32,7 +33,7 @@ const statusConfig: Record<FileStatus, {
 
 export function FileItem({ file, onRemove, onRetry, onResolveDuplicate }: FileItemProps) {
   const { icon: StatusIcon, label, color, animate } = statusConfig[file.status];
-  const isActive = ["hashing", "checking", "uploading", "processing"].includes(file.status);
+  const isActive = ["hashing", "checking", "uploading", "storing", "processing"].includes(file.status);
   const canRemove = file.status === "pending" || file.status === "error" || file.status === "complete";
   const canRetry = file.status === "error";
 
@@ -71,6 +72,36 @@ export function FileItem({ file, onRemove, onRetry, onResolveDuplicate }: FileIt
               </span>
             )}
           </div>
+
+          {/* Storage status messages */}
+          {file.status === "complete" && file.pdfStored === false && (
+            <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-0.5">
+              PDF could not be stored — subscriptions imported successfully
+            </p>
+          )}
+          {file.status === "complete" && file.pdfStored === true && (
+            <p className="text-sm text-green-600 dark:text-green-400 mt-0.5">
+              PDF stored successfully
+            </p>
+          )}
+
+          {/* View PDF link for files with stored PDFs */}
+          {file.status === "complete" && file.pdfStored === true && file.statementId && (
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs text-primary mt-0.5"
+              onClick={async () => {
+                const res = await fetch(`/api/statements/${file.statementId}/pdf-url`);
+                if (res.ok) {
+                  const { url } = await res.json();
+                  window.open(url, "_blank");
+                }
+              }}
+            >
+              View PDF
+            </Button>
+          )}
 
           {/* Error message */}
           {file.status === "error" && file.error && (

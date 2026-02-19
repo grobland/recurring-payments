@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { statements } from "@/lib/db/schema";
 import { isUserActive } from "@/lib/auth/helpers";
 import { eq, and } from "drizzle-orm";
+import { uploadStatementPdf } from "@/lib/storage/pdf-storage";
 
 // Maximum file size: 50MB (larger than import for batch uploads)
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -94,13 +95,26 @@ export async function POST(request: Request) {
       })
       .returning({ id: statements.id });
 
-    // TODO: In future, upload PDF to Supabase Storage here
-    // For now, we skip blob storage and process immediately
+    // Upload PDF to Supabase Storage (non-fatal — import continues even if storage fails)
+    let pdfStoragePath: string | null = null;
+    try {
+      const storageResult = await uploadStatementPdf(file, session.user.id, sourceType.trim());
+      if (storageResult) {
+        pdfStoragePath = storageResult.path;
+        await db
+          .update(statements)
+          .set({ pdfStoragePath })
+          .where(eq(statements.id, newStatement.id));
+      }
+    } catch (storageErr) {
+      console.error("Storage upload failed (non-fatal):", storageErr);
+    }
 
     return NextResponse.json({
       statementId: newStatement.id,
       status: "pending",
       message: "Statement created, ready for processing",
+      pdfStored: pdfStoragePath !== null,
     });
   } catch (error) {
     console.error("Upload error:", error);

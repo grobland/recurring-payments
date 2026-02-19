@@ -11,6 +11,7 @@ export type FileStatus =
   | "hashing"      // Computing SHA-256 hash
   | "checking"     // Checking for duplicates
   | "uploading"    // Uploading to server
+  | "storing"      // Persisting PDF to Supabase Storage
   | "processing"   // Server extracting transactions
   | "complete"     // Successfully processed
   | "error"        // Failed (retryable)
@@ -28,6 +29,7 @@ interface SerializableQueueItem {
   error: string | null;
   statementId: string | null;
   transactionCount: number | null;
+  pdfStored: boolean | null;
   duplicateInfo: {
     existingId: string;
     filename: string;
@@ -45,6 +47,7 @@ export interface QueuedFile {
   error: string | null;
   statementId: string | null;
   transactionCount: number | null;
+  pdfStored: boolean | null;
   // Duplicate info
   duplicateInfo: {
     existingId: string;
@@ -88,6 +91,7 @@ function saveQueueState(queue: QueuedFile[], sourceType: string): void {
       error: f.error,
       statementId: f.statementId,
       transactionCount: f.transactionCount,
+      pdfStored: f.pdfStored,
       duplicateInfo: f.duplicateInfo,
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ queue: serializable, sourceType, timestamp: Date.now() }));
@@ -169,6 +173,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
         error: null,
         statementId: null,
         transactionCount: null,
+        pdfStored: null,
         duplicateInfo: null,
       };
     });
@@ -284,7 +289,16 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
       }
 
       const uploadData = await uploadResponse.json();
-      updateFile(id, { statementId: uploadData.statementId, progress: 60 });
+
+      // Step 3.5: Show storing status while server stores PDF to Supabase
+      // (the server already completed storage by the time we read the response,
+      //  but we show the status briefly to give UI feedback)
+      updateFile(id, { status: "storing", progress: 55 });
+      updateFile(id, {
+        statementId: uploadData.statementId,
+        pdfStored: uploadData.pdfStored ?? null,
+        progress: 60,
+      });
 
       // Step 4: Process the file (server extracts PDF text and transactions)
       updateFile(id, { status: "processing", progress: 70 });
@@ -402,7 +416,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
   const stats = {
     total: queue.length,
     pending: queue.filter(f => f.status === "pending").length,
-    processing: queue.filter(f => ["hashing", "checking", "uploading", "processing"].includes(f.status)).length,
+    processing: queue.filter(f => ["hashing", "checking", "uploading", "storing", "processing"].includes(f.status)).length,
     complete: queue.filter(f => f.status === "complete").length,
     failed: queue.filter(f => f.status === "error").length,
     duplicate: queue.filter(f => f.status === "duplicate").length,
