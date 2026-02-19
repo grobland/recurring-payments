@@ -1,0 +1,83 @@
+# Requirements: Subscription Manager
+
+**Defined:** 2026-02-19
+**Core Value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
+
+## v2.2 Requirements
+
+Requirements for the Financial Data Vault milestone. Each maps to roadmap phases.
+
+### PDF Storage
+
+- [ ] **STOR-01**: User's uploaded PDFs are persisted in Supabase Storage during batch import
+- [ ] **STOR-02**: Pre-vault statements display a "No file stored" indicator when PDF is unavailable
+
+### PDF Viewing
+
+- [ ] **VIEW-01**: User can view an uploaded PDF in-app via a modal viewer with page navigation
+- [ ] **VIEW-02**: User can download the original PDF file from the viewer
+
+### Vault Browsing
+
+- [ ] **VAULT-01**: User can browse statements in a file cabinet view grouped by source
+- [ ] **VAULT-02**: User can browse statements in a timeline view sorted chronologically with month separators
+- [ ] **VAULT-03**: User can toggle between file cabinet and timeline views with preference persisted
+- [ ] **VAULT-04**: New users see an empty state with guidance and upload CTA when vault is empty
+
+### Vault Enhancements
+
+- [ ] **VENH-01**: User can see a coverage visualization grid showing PDF stored / data only / missing per month per source
+- [ ] **VENH-02**: User can use a guided wizard to upload historical statements for missing months
+
+## Future Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Document Enrichment
+
+- **ENRCH-01**: User can add plain text notes to a statement
+- **ENRCH-02**: User can delete a stored PDF while preserving extracted transaction data
+
+### Provenance
+
+- **PROV-01**: User can trace a subscription back to its originating statement and line item
+- **PROV-02**: Batch date auto-detection from PDF content via AI
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| PDF annotation | PSPDFKit costs $400-1200/month; notes field covers use case |
+| Custom folder organization | Conflicts with source-type mental model; file cabinet view IS the folder metaphor |
+| Full-text search across PDFs | Extracted transactions are already searchable; vault is a browser, not a search engine |
+| Bank API integration (Plaid/MX) | Compliance burden and cost prohibitive for this stage |
+| Mobile camera upload | Breaks PDF-only processing pipeline; use phone scanner app |
+| OCR re-extraction | AI cost and complexity not justified; existing extraction is sufficient |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| STOR-01 | TBD | Pending |
+| STOR-02 | TBD | Pending |
+| VIEW-01 | TBD | Pending |
+| VIEW-02 | TBD | Pending |
+| VAULT-01 | TBD | Pending |
+| VAULT-02 | TBD | Pending |
+| VAULT-03 | TBD | Pending |
+| VAULT-04 | TBD | Pending |
+| VENH-01 | TBD | Pending |
+| VENH-02 | TBD | Pending |
+
+**Coverage:**
+- v2.2 requirements: 10 total
+- Mapped to phases: 0
+- Unmapped: 10 (pending roadmap creation)
+
+---
+*Requirements defined: 2026-02-19*
+*Last updated: 2026-02-19 after initial definition*
