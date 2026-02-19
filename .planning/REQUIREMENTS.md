@@ -62,22 +62,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STOR-01 | TBD | Pending |
-| STOR-02 | TBD | Pending |
-| VIEW-01 | TBD | Pending |
-| VIEW-02 | TBD | Pending |
-| VAULT-01 | TBD | Pending |
-| VAULT-02 | TBD | Pending |
-| VAULT-03 | TBD | Pending |
-| VAULT-04 | TBD | Pending |
-| VENH-01 | TBD | Pending |
-| VENH-02 | TBD | Pending |
+| STOR-01 | Phase 31 | Pending |
+| STOR-02 | Phase 31 | Pending |
+| VIEW-01 | Phase 32 | Pending |
+| VIEW-02 | Phase 32 | Pending |
+| VAULT-01 | Phase 33 | Pending |
+| VAULT-02 | Phase 33 | Pending |
+| VAULT-03 | Phase 33 | Pending |
+| VAULT-04 | Phase 33 | Pending |
+| VENH-01 | Phase 34 | Pending |
+| VENH-02 | Phase 34 | Pending |
 
 **Coverage:**
 - v2.2 requirements: 10 total
-- Mapped to phases: 0
-- Unmapped: 10 (pending roadmap creation)
+- Mapped to phases: 10
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-19*
-*Last updated: 2026-02-19 after initial definition*
+*Last updated: 2026-02-19 after roadmap creation — all 10 requirements mapped*
