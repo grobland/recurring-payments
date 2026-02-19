@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import Link from "next/link";
 import { ChevronRight, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSourceStatements } from "@/lib/hooks/use-source-statements";
 import { cn } from "@/lib/utils";
+import { PdfViewerModal } from "@/components/statements/pdf-viewer-modal";
 import type { StatementSummary } from "@/types/source";
 
 function PdfStatusIcon({ hasPdf }: { hasPdf: boolean }) {
@@ -85,6 +87,8 @@ interface StatementRowProps {
 }
 
 function StatementRow({ statement }: StatementRowProps) {
+  const [pdfOpen, setPdfOpen] = useState(false);
+
   const {
     id,
     originalFilename,
@@ -97,44 +101,64 @@ function StatementRow({ statement }: StatementRowProps) {
   const formattedDate = format(parseISO(statementDate), "MMM yyyy");
 
   return (
-    <div className="flex items-center justify-between rounded-md py-2 px-2 hover:bg-muted/50 transition-colors">
-      <div className="flex items-start gap-3 min-w-0">
-        <div className="mt-0.5">
-          <PdfStatusIcon hasPdf={statement.hasPdf} />
-        </div>
-        <div className="min-w-0 space-y-0.5">
-          {/* Filename */}
-          <p className="text-sm font-medium truncate">
-            {originalFilename}
-          </p>
-          {/* Date and transaction count */}
-          <p className="text-xs text-muted-foreground">
-            {formattedDate} • {transactionCount} {transactionCount === 1 ? "transaction" : "transactions"}
-          </p>
-          {/* Status breakdown */}
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-green-600 dark:text-green-400">
-              {stats.converted} converted
-            </span>
-            <span className="text-muted-foreground">•</span>
-            <span className="text-muted-foreground">
-              {stats.skipped} skipped
-            </span>
-            <span className="text-muted-foreground">•</span>
-            <span className="text-yellow-600 dark:text-yellow-400">
-              {stats.pending} pending
-            </span>
+    <>
+      <div className="flex items-center justify-between rounded-md py-2 px-2 hover:bg-muted/50 transition-colors">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="mt-0.5">
+            <button
+              onClick={() => statement.hasPdf && setPdfOpen(true)}
+              disabled={!statement.hasPdf}
+              aria-label={statement.hasPdf ? "View PDF" : "No PDF stored"}
+              className={cn(
+                "rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                statement.hasPdf ? "cursor-pointer hover:opacity-80" : "cursor-default"
+              )}
+            >
+              <PdfStatusIcon hasPdf={statement.hasPdf} />
+            </button>
+          </div>
+          <div className="min-w-0 space-y-0.5">
+            {/* Filename */}
+            <p className="text-sm font-medium truncate">
+              {originalFilename}
+            </p>
+            {/* Date and transaction count */}
+            <p className="text-xs text-muted-foreground">
+              {formattedDate} • {transactionCount} {transactionCount === 1 ? "transaction" : "transactions"}
+            </p>
+            {/* Status breakdown */}
+            <div className="flex items-center gap-1 text-xs">
+              <span className="text-green-600 dark:text-green-400">
+                {stats.converted} converted
+              </span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground">
+                {stats.skipped} skipped
+              </span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-yellow-600 dark:text-yellow-400">
+                {stats.pending} pending
+              </span>
+            </div>
           </div>
         </div>
+        <Link
+          href={`/statements/${id}`}
+          className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
+        >
+          View details
+          <ChevronRight className="h-3 w-3" />
+        </Link>
       </div>
-      <Link
-        href={`/statements/${id}`}
-        className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
-      >
-        View details
-        <ChevronRight className="h-3 w-3" />
-      </Link>
-    </div>
+      {statement.hasPdf && (
+        <PdfViewerModal
+          statementId={statement.id}
+          filename={statement.originalFilename}
+          open={pdfOpen}
+          onClose={() => setPdfOpen(false)}
+        />
+      )}
+    </>
   );
 }
 

@@ -24,6 +24,7 @@ import {
   getImportStatus,
 } from "@/components/sources/transaction-status-badge";
 import { ReimportWizard } from "@/components/sources/reimport-wizard";
+import { PdfViewerModal } from "@/components/statements/pdf-viewer-modal";
 
 function PdfStatusIcon({ hasPdf }: { hasPdf: boolean }) {
   return (
@@ -51,6 +52,7 @@ interface StatementDetailProps {
 export function StatementDetail({ statementId }: StatementDetailProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showWizard, setShowWizard] = useState(false);
+  const [pdfOpen, setPdfOpen] = useState(false);
 
   const {
     data: statementData,
@@ -178,7 +180,17 @@ export function StatementDetail({ statementId }: StatementDetailProps) {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-semibold">{statement.originalFilename}</h2>
-              <PdfStatusIcon hasPdf={statement.hasPdf ?? false} />
+              <button
+                onClick={() => statement.hasPdf && setPdfOpen(true)}
+                disabled={!statement.hasPdf}
+                aria-label={statement.hasPdf ? "View PDF" : "No PDF stored"}
+                className={cn(
+                  "rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  statement.hasPdf ? "cursor-pointer hover:opacity-80" : "cursor-default"
+                )}
+              >
+                <PdfStatusIcon hasPdf={statement.hasPdf ?? false} />
+              </button>
             </div>
             <p className="text-sm text-muted-foreground">
               {statement.sourceType}
@@ -290,6 +302,16 @@ export function StatementDetail({ statementId }: StatementDetailProps) {
           transactionIds={Array.from(selectedIds)}
           onComplete={handleWizardComplete}
           onCancel={handleWizardCancel}
+        />
+      )}
+
+      {/* PDF Viewer Modal */}
+      {statement.hasPdf && (
+        <PdfViewerModal
+          statementId={statementId}
+          filename={statement.originalFilename}
+          open={pdfOpen}
+          onClose={() => setPdfOpen(false)}
         />
       )}
     </div>
