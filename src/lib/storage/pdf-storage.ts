@@ -73,10 +73,15 @@ export async function uploadStatementPdf(
 /**
  * Generate a signed URL for a stored PDF (1-hour expiry).
  *
+ * @param pdfStoragePath - Storage path of the PDF file
+ * @param options.download - When provided, adds Content-Disposition: attachment header to the URL.
+ *   Pass the desired filename (e.g. "statement-2024-01.pdf") to trigger browser save dialog.
+ *   When omitted, URL is suitable for in-browser viewing.
  * @returns signed URL string on success, null on failure
  */
 export async function generatePdfSignedUrl(
-  pdfStoragePath: string
+  pdfStoragePath: string,
+  options?: { download?: string }
 ): Promise<string | null> {
   if (!supabaseAdmin) {
     console.error("PDF signed URL generation failed: Supabase admin client not configured");
@@ -84,9 +89,13 @@ export async function generatePdfSignedUrl(
   }
 
   try {
-    const { data, error } = await supabaseAdmin.storage
-      .from(BUCKET)
-      .createSignedUrl(pdfStoragePath, 3600); // 1-hour expiry
+    const { data, error } = options?.download
+      ? await supabaseAdmin.storage
+          .from(BUCKET)
+          .createSignedUrl(pdfStoragePath, 3600, { download: options.download }) // Sets Content-Disposition: attachment
+      : await supabaseAdmin.storage
+          .from(BUCKET)
+          .createSignedUrl(pdfStoragePath, 3600); // Plain viewing URL
 
     if (error || !data?.signedUrl) {
       console.error("PDF signed URL generation failed:", error);

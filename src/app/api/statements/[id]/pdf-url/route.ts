@@ -34,6 +34,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       columns: {
         id: true,
         pdfStoragePath: true,
+        originalFilename: true,
       },
     });
 
@@ -51,16 +52,27 @@ export async function GET(_request: Request, { params }: RouteParams) {
       );
     }
 
-    const signedUrl = await generatePdfSignedUrl(statement.pdfStoragePath);
+    // Generate two signed URLs in parallel:
+    // - viewUrl: plain signed URL for in-browser PDF rendering
+    // - downloadUrl: signed URL with Content-Disposition: attachment for browser save dialog
+    const [viewUrl, downloadUrl] = await Promise.all([
+      generatePdfSignedUrl(statement.pdfStoragePath),
+      generatePdfSignedUrl(statement.pdfStoragePath, {
+        download: statement.originalFilename,
+      }),
+    ]);
 
-    if (!signedUrl) {
+    if (!viewUrl && !downloadUrl) {
       return NextResponse.json(
         { error: "Failed to generate PDF URL" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ url: signedUrl });
+    return NextResponse.json({
+      url: viewUrl ?? downloadUrl,
+      downloadUrl: downloadUrl ?? viewUrl,
+    });
   } catch (error) {
     console.error("PDF URL generation error:", error);
     return NextResponse.json(
