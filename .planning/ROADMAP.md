@@ -157,11 +157,11 @@ Plans:
 | 19-23 | v2.0 | 21 | Complete | 2026-02-10 |
 | 24-30 | v2.1 | 19 | Complete | 2026-02-18 |
 | 31. Storage Foundation | v2.2 | Complete    | 2026-02-19 | 2026-02-19 |
-| 32. PDF Viewer | 2/2 | Complete   | 2026-02-19 | - |
+| 32. PDF Viewer | 2/2 | Complete   | 2026-02-19 | 2026-02-19 |
 | 33. Vault UI | v2.2 | TBD | Not started | - |
 | 34. Coverage & Historical Upload | v2.2 | TBD | Not started | - |
 
-**Total:** 30 phases, 89 plans completed across 6 milestones (+ 4 phases planned for v2.2)
+**Total:** 30 phases, 91 plans completed across 6 milestones (+ 2 phases remaining for v2.2)
 
 ---
-*Last updated: 2026-02-19 after Phase 32 planning*
+*Last updated: 2026-02-19 after Phase 32 verified*

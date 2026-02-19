@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 
 ## Current Position
 
-Phase: 32 of 34 (PDF Viewer)
+Phase: 32 of 34 (PDF Viewer — verified & complete)
 Plan: 2 completed in current phase (01, 02 done)
-Status: Phase 32 complete — all 2 plans done
-Last activity: 2026-02-19 — Completed 32-02: Wire PdfViewerModal into statement list and detail views
+Status: Phase 32 verified — human UAT passed (PDF viewer, download, statement list all working)
+Last activity: 2026-02-19 — Phase 32 verified and finalized
 
-Progress: [██░░░░░░░░] 25% (v2.2 — 1/4 phases complete)
+Progress: [█████░░░░░] 50% (v2.2 — 2/4 phases complete)
 
 ## Archived Milestones
 
@@ -79,6 +79,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 32-02-PLAN.md (Wire PdfViewerModal into statement list and detail views)
-Resume file: .planning/phases/32-pdf-viewer/32-02-SUMMARY.md
+Stopped at: Phase 32 verified and finalized
+Resume file: .planning/phases/32-pdf-viewer/32-VERIFICATION.md
 Resume with: Phase 33 planning — next phase in v2.2 Financial Data Vault
