@@ -78,7 +78,7 @@
 
 </details>
 
-### 🚧 v2.2 Financial Data Vault (In Progress)
+### v2.2 Financial Data Vault (In Progress)
 
 **Milestone Goal:** Transform the app into a financial data vault where users store, organize, and browse original bank statement PDFs with all data extracted into the database.
 
@@ -113,10 +113,11 @@ Plans:
   2. User can navigate between pages of a multi-page PDF using previous/next controls
   3. User can click "Download" to save the original PDF file to their computer
   4. If the PDF fails to render, the modal shows a fallback download link rather than a blank screen
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 32-01: TBD
+- [ ] 32-01-PLAN.md — PDF viewer components, hook, and download-aware API endpoint (VIEW-01, VIEW-02)
+- [ ] 32-02-PLAN.md — Wire viewer into statement list and detail views (VIEW-01, VIEW-02)
 
 ### Phase 33: Vault UI
 **Goal**: Users can browse all their statements in a dedicated vault page with both a source-grouped file cabinet view and a chronological timeline view
@@ -156,11 +157,11 @@ Plans:
 | 19-23 | v2.0 | 21 | Complete | 2026-02-10 |
 | 24-30 | v2.1 | 19 | Complete | 2026-02-18 |
 | 31. Storage Foundation | v2.2 | Complete    | 2026-02-19 | 2026-02-19 |
-| 32. PDF Viewer | v2.2 | TBD | Not started | - |
+| 32. PDF Viewer | v2.2 | 2 | Not started | - |
 | 33. Vault UI | v2.2 | TBD | Not started | - |
 | 34. Coverage & Historical Upload | v2.2 | TBD | Not started | - |
 
 **Total:** 30 phases, 89 plans completed across 6 milestones (+ 4 phases planned for v2.2)
 
 ---
-*Last updated: 2026-02-19 after v2.2 roadmap creation*
+*Last updated: 2026-02-19 after Phase 32 planning*
