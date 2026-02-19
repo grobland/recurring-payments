@@ -14,8 +14,8 @@ Requirements for the Financial Data Vault milestone. Each maps to roadmap phases
 
 ### PDF Viewing
 
-- [ ] **VIEW-01**: User can view an uploaded PDF in-app via a modal viewer with page navigation
-- [ ] **VIEW-02**: User can download the original PDF file from the viewer
+- [x] **VIEW-01**: User can view an uploaded PDF in-app via a modal viewer with page navigation
+- [x] **VIEW-02**: User can download the original PDF file from the viewer
 
 ### Vault Browsing
 
@@ -64,8 +64,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | STOR-01 | Phase 31 | Pending |
 | STOR-02 | Phase 31 | Complete |
-| VIEW-01 | Phase 32 | Pending |
-| VIEW-02 | Phase 32 | Pending |
+| VIEW-01 | Phase 32 | Complete |
+| VIEW-02 | Phase 32 | Complete |
 | VAULT-01 | Phase 33 | Pending |
 | VAULT-02 | Phase 33 | Pending |
 | VAULT-03 | Phase 33 | Pending |

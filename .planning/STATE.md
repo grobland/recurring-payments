@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.2 Financial Data Vault — Phase 31: Storage Foundation
+**Current focus:** v2.2 Financial Data Vault — Phase 32: PDF Viewer
 
 ## Current Position
 
-Phase: 31 of 34 (Storage Foundation)
-Plan: 2 completed in current phase (01 and 02 both done)
-Status: Phase 31 complete
-Last activity: 2026-02-19 — Completed 31-01: Supabase Storage wired into batch upload pipeline
+Phase: 32 of 34 (PDF Viewer)
+Plan: 1 completed in current phase (01 done)
+Status: Phase 32 in progress — Plan 01 complete
+Last activity: 2026-02-19 — Completed 32-01: PDF viewer component stack and dual signed URL endpoint
 
-Progress: [░░░░░░░░░░] 0% (v2.2 — 0/4 phases complete)
+Progress: [██░░░░░░░░] 25% (v2.2 — 1/4 phases complete)
 
 ## Archived Milestones
 
@@ -27,7 +27,7 @@ Progress: [░░░░░░░░░░] 0% (v2.2 — 0/4 phases complete)
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 89 plans completed, 116 requirements validated across 6 milestones
+**Total:** 90 plans completed, 118 requirements validated across 6 milestones
 
 ## Performance Metrics
 
@@ -56,6 +56,9 @@ Recent decisions affecting v2.2 work:
 - [31-01]: upsert: true on storage upload to handle retries without StorageError
 - [31-01]: View PDF link uses lazy fetch to avoid pre-generating stale signed URLs
 - [v2.2 research]: Phase 34 coverage grid rendering approach not yet decided — evaluate CSS Grid vs shadcn calendar vs Recharts during planning
+- [Phase 32-pdf-viewer]: react-pdf worker config in same file as Document (pdf-viewer-inner.tsx) — mandatory to prevent fake worker blank renders
+- [Phase 32-pdf-viewer]: generatePdfSignedUrl extended with download option — uses Supabase { download: filename } to set Content-Disposition: attachment, required for cross-origin download (browser ignores download attribute for cross-origin)
+- [Phase 32-pdf-viewer]: Single API call returns both { url, downloadUrl } — avoids double-fetch on client for PDF viewing + download
 
 ### Blockers/Concerns
 
@@ -74,6 +77,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 31-01-PLAN.md (Supabase Storage wired into batch upload pipeline)
-Resume file: .planning/phases/31-storage-foundation/31-01-SUMMARY.md
-Resume with: Phase 32 PDF Viewer (31-01 and 31-02 both complete, phase 31 done)
+Stopped at: Completed 32-01-PLAN.md (PDF viewer component stack and dual signed URL endpoint)
+Resume file: .planning/phases/32-pdf-viewer/32-01-SUMMARY.md
+Resume with: Phase 32 Plan 02 — wire PdfViewerModal into PdfStatusIcon onClick handlers in statement-list.tsx and statement-detail.tsx
