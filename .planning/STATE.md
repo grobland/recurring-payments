@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 32 of 34 (PDF Viewer)
-Plan: 1 completed in current phase (01 done)
-Status: Phase 32 in progress — Plan 01 complete
-Last activity: 2026-02-19 — Completed 32-01: PDF viewer component stack and dual signed URL endpoint
+Plan: 2 completed in current phase (01, 02 done)
+Status: Phase 32 complete — all 2 plans done
+Last activity: 2026-02-19 — Completed 32-02: Wire PdfViewerModal into statement list and detail views
 
 Progress: [██░░░░░░░░] 25% (v2.2 — 1/4 phases complete)
 
@@ -59,6 +59,8 @@ Recent decisions affecting v2.2 work:
 - [Phase 32-pdf-viewer]: react-pdf worker config in same file as Document (pdf-viewer-inner.tsx) — mandatory to prevent fake worker blank renders
 - [Phase 32-pdf-viewer]: generatePdfSignedUrl extended with download option — uses Supabase { download: filename } to set Content-Disposition: attachment, required for cross-origin download (browser ignores download attribute for cross-origin)
 - [Phase 32-pdf-viewer]: Single API call returns both { url, downloadUrl } — avoids double-fetch on client for PDF viewing + download
+- [Phase 32-pdf-viewer]: Modal only rendered in DOM when hasPdf is true — no signed URL API calls for non-PDF statements
+- [Phase 32-pdf-viewer]: Fragment wrapper in StatementRow to co-locate row and modal without extra DOM node breaking list layout
 
 ### Blockers/Concerns
 
@@ -77,6 +79,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 32-01-PLAN.md (PDF viewer component stack and dual signed URL endpoint)
-Resume file: .planning/phases/32-pdf-viewer/32-01-SUMMARY.md
-Resume with: Phase 32 Plan 02 — wire PdfViewerModal into PdfStatusIcon onClick handlers in statement-list.tsx and statement-detail.tsx
+Stopped at: Completed 32-02-PLAN.md (Wire PdfViewerModal into statement list and detail views)
+Resume file: .planning/phases/32-pdf-viewer/32-02-SUMMARY.md
+Resume with: Phase 33 planning — next phase in v2.2 Financial Data Vault
