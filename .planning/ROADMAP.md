@@ -98,10 +98,11 @@
   2. The `pdfStoragePath` column on the statement row is non-null after a successful upload
   3. Statements imported before v2.2 show a "No file stored" indicator rather than a broken link or error
   4. If the storage upload fails, the import still completes successfully with `pdfStoragePath = NULL` (non-fatal degradation)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 31-01: TBD
+- [ ] 31-01-PLAN.md — Storage infrastructure + batch upload integration (STOR-01)
+- [ ] 31-02-PLAN.md — hasPdf API field + PDF status icon UI (STOR-02)
 
 ### Phase 32: PDF Viewer
 **Goal**: Users can open any stored PDF in a modal dialog and view all pages in-app, or download the original file
