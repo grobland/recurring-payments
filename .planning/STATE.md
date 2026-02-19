@@ -67,5 +67,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: v2.2 roadmap created — ready to plan Phase 31
+Stopped at: Phase 31 context gathered
+Resume file: .planning/phases/31-storage-foundation/31-CONTEXT.md
 Resume with: `/gsd:plan-phase 31`
