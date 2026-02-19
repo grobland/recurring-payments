@@ -15,6 +15,8 @@ type StatementInfo = {
     skipped: number;
     pending: number;
   };
+  /** Whether the original PDF is stored in Supabase Storage */
+  hasPdf: boolean;
 };
 
 type StatementResponse = {

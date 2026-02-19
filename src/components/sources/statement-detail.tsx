@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
 import { FileText, Upload, AlertCircle, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,6 +24,18 @@ import {
   getImportStatus,
 } from "@/components/sources/transaction-status-badge";
 import { ReimportWizard } from "@/components/sources/reimport-wizard";
+
+function PdfStatusIcon({ hasPdf }: { hasPdf: boolean }) {
+  return (
+    <FileText
+      className={cn(
+        "h-4 w-4 shrink-0",
+        hasPdf ? "text-green-500" : "text-muted-foreground/40"
+      )}
+      aria-label={hasPdf ? "PDF stored" : "No file stored"}
+    />
+  );
+}
 
 interface StatementDetailProps {
   statementId: string;
@@ -163,7 +176,10 @@ export function StatementDetail({ statementId }: StatementDetailProps) {
             <FileText className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold">{statement.originalFilename}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-semibold">{statement.originalFilename}</h2>
+              <PdfStatusIcon hasPdf={statement.hasPdf ?? false} />
+            </div>
             <p className="text-sm text-muted-foreground">
               {statement.sourceType}
               {statement.statementDate && (

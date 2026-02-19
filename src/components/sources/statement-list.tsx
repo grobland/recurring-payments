@@ -5,7 +5,20 @@ import Link from "next/link";
 import { ChevronRight, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSourceStatements } from "@/lib/hooks/use-source-statements";
+import { cn } from "@/lib/utils";
 import type { StatementSummary } from "@/types/source";
+
+function PdfStatusIcon({ hasPdf }: { hasPdf: boolean }) {
+  return (
+    <FileText
+      className={cn(
+        "h-4 w-4 shrink-0",
+        hasPdf ? "text-green-500" : "text-muted-foreground/40"
+      )}
+      aria-label={hasPdf ? "PDF stored" : "No file stored"}
+    />
+  );
+}
 
 interface StatementListProps {
   /** Source type identifier to fetch statements for */
@@ -86,7 +99,9 @@ function StatementRow({ statement }: StatementRowProps) {
   return (
     <div className="flex items-center justify-between rounded-md py-2 px-2 hover:bg-muted/50 transition-colors">
       <div className="flex items-start gap-3 min-w-0">
-        <FileText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+        <div className="mt-0.5">
+          <PdfStatusIcon hasPdf={statement.hasPdf} />
+        </div>
         <div className="min-w-0 space-y-0.5">
           {/* Filename */}
           <p className="text-sm font-medium truncate">
