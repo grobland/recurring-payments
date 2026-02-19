@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 31 of 34 (Storage Foundation)
-Plan: 2 completed in current phase
-Status: In progress
-Last activity: 2026-02-19 — Completed 31-02: PDF storage status indicators (hasPdf APIs + PdfStatusIcon)
+Plan: 2 completed in current phase (01 and 02 both done)
+Status: Phase 31 complete
+Last activity: 2026-02-19 — Completed 31-01: Supabase Storage wired into batch upload pipeline
 
 Progress: [░░░░░░░░░░] 0% (v2.2 — 0/4 phases complete)
 
@@ -51,6 +51,10 @@ Recent decisions affecting v2.2 work:
 - [31-02]: hasPdf boolean derived from pdfStoragePath IS NOT NULL at API boundary — raw storage path never exposed to client
 - [31-02]: PdfStatusIcon duplicated locally in statement-list and statement-detail (6-line component, avoids premature abstraction)
 - [31-02]: PdfStatusIcon informational only in Phase 31 — no onClick; Phase 32 adds viewer on click
+- [31-01]: supabaseAdmin is null-safe — storage fails gracefully if NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing
+- [31-01]: Storage path uses upload date not statement date (statement date unknown at upload time)
+- [31-01]: upsert: true on storage upload to handle retries without StorageError
+- [31-01]: View PDF link uses lazy fetch to avoid pre-generating stale signed URLs
 - [v2.2 research]: Phase 34 coverage grid rendering approach not yet decided — evaluate CSS Grid vs shadcn calendar vs Recharts during planning
 
 ### Blockers/Concerns
@@ -70,6 +74,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 31-02-PLAN.md (PDF storage status indicators)
-Resume file: .planning/phases/31-storage-foundation/31-02-SUMMARY.md
-Resume with: next plan in phase 31
+Stopped at: Completed 31-01-PLAN.md (Supabase Storage wired into batch upload pipeline)
+Resume file: .planning/phases/31-storage-foundation/31-01-SUMMARY.md
+Resume with: Phase 32 PDF Viewer (31-01 and 31-02 both complete, phase 31 done)

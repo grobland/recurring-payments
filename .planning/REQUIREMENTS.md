@@ -9,7 +9,7 @@ Requirements for the Financial Data Vault milestone. Each maps to roadmap phases
 
 ### PDF Storage
 
-- [ ] **STOR-01**: User's uploaded PDFs are persisted in Supabase Storage during batch import
+- [x] **STOR-01**: User's uploaded PDFs are persisted in Supabase Storage during batch import
 - [x] **STOR-02**: Pre-vault statements display a "No file stored" indicator when PDF is unavailable
 
 ### PDF Viewing

@@ -82,7 +82,7 @@
 
 **Milestone Goal:** Transform the app into a financial data vault where users store, organize, and browse original bank statement PDFs with all data extracted into the database.
 
-- [ ] **Phase 31: Storage Foundation** - Wire Supabase Storage into the batch import flow so uploaded PDFs are persisted and retrievable
+- [x] **Phase 31: Storage Foundation** - Wire Supabase Storage into the batch import flow so uploaded PDFs are persisted and retrievable
 - [ ] **Phase 32: PDF Viewer** - Deliver an in-app modal that renders stored PDFs page by page with download capability
 - [ ] **Phase 33: Vault UI** - Build the /vault page with file cabinet and timeline views for browsing all stored statements
 - [ ] **Phase 34: Coverage & Historical Upload** - Surface a coverage grid showing gaps and guide users to fill missing months via a wizard
@@ -101,8 +101,8 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 31-01-PLAN.md — Storage infrastructure + batch upload integration (STOR-01)
-- [ ] 31-02-PLAN.md — hasPdf API field + PDF status icon UI (STOR-02)
+- [x] 31-01-PLAN.md — Storage infrastructure + batch upload integration (STOR-01)
+- [x] 31-02-PLAN.md — hasPdf API field + PDF status icon UI (STOR-02)
 
 ### Phase 32: PDF Viewer
 **Goal**: Users can open any stored PDF in a modal dialog and view all pages in-app, or download the original file
@@ -155,7 +155,7 @@ Plans:
 | 13-18 | v1.3 | 21 | Complete | 2026-02-08 |
 | 19-23 | v2.0 | 21 | Complete | 2026-02-10 |
 | 24-30 | v2.1 | 19 | Complete | 2026-02-18 |
-| 31. Storage Foundation | 1/2 | In Progress|  | - |
+| 31. Storage Foundation | v2.2 | 2/2 | Complete | 2026-02-19 |
 | 32. PDF Viewer | v2.2 | TBD | Not started | - |
 | 33. Vault UI | v2.2 | TBD | Not started | - |
 | 34. Coverage & Historical Upload | v2.2 | TBD | Not started | - |
