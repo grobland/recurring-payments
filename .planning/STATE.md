@@ -5,16 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Planning next milestone
+**Current focus:** v2.2 Financial Data Vault
 
 ## Current Position
 
-Phase: 30 of 30 (all phases complete)
-Plan: N/A — milestone complete
-Status: v2.1 Billing & Monetization shipped 2026-02-18
-Last activity: 2026-02-18 — Milestone v2.1 archived
-
-Progress: [████████████████████████] v2.1 complete | Next: /gsd:new-milestone
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-19 — Milestone v2.2 started
 
 ## Archived Milestones
 
@@ -52,6 +50,6 @@ Progress: [███████████████████████
 
 ## Session Continuity
 
-Last session: 2026-02-18
-Stopped at: Milestone v2.1 archived and shipped
-Resume with: /gsd:new-milestone
+Last session: 2026-02-19
+Stopped at: Defining v2.2 requirements
+Resume with: Continue new-milestone workflow

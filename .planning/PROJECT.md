@@ -8,6 +8,18 @@ A web application for tracking and managing recurring subscriptions with Stripe-
 
 Users can see all their subscriptions in one place and never get surprised by a renewal again.
 
+## Current Milestone: v2.2 Financial Data Vault
+
+**Goal:** Transform the app into a financial data vault where users store, organize, and browse original bank statement PDFs with all data extracted into the database — subscription management comes standard.
+
+**Target features:**
+- PDF persistence in Supabase Storage (original documents viewable in-app)
+- File cabinet view (statements organized by source, then by date)
+- Timeline view (chronological feed across all sources)
+- In-app PDF viewer for original document review
+- Support for 12-24 months of historical statement uploads
+- All statement data extracted and stored in database for higher-tier analysis
+
 ## Current State
 
 **Version:** v2.1 Billing & Monetization (shipped 2026-02-18)
@@ -127,7 +139,11 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ### Active
 
-(No active requirements — define next milestone via `/gsd:new-milestone`)
+- [ ] PDF persistence in Supabase Storage
+- [ ] In-app PDF viewer for original documents
+- [ ] Vault UI with file cabinet view (by source, then date)
+- [ ] Vault UI with timeline view (chronological across sources)
+- [ ] Historical upload support (12-24 months of statements)
 
 ### Out of Scope
 
@@ -139,7 +155,7 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Real-time anomaly alerts — alert fatigue risk; weekly batching preferred
 - ML-based pattern detection — cold start problem; heuristics sufficient
 - Auto-merge duplicates — user trust critical; always require confirmation
-- Blob storage for PDF persistence — PDFs processed in-memory, no storage needed
+- ~~Blob storage for PDF persistence~~ — NOW IN SCOPE for v2.2
 - Parallel PDF processing — memory exhaustion risk; sequential is safer
 - Free tier forever — creates support burden, no conversion pressure
 - Usage-based billing — revenue unpredictability, confusing for consumer app
@@ -164,7 +180,7 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Hooks not re-exported from central index (use-duplicate-scan, useTrends, useForecast*, useAlerts, useTags, etc.)
 - Logging infrastructure (withLogging, actionLog) created but not adopted by all API routes
 - EvidenceList URL params don't pre-filter transactions (minor UX enhancement)
-- Blob storage for PDF persistence (currently processed in-memory)
+- ~~Blob storage for PDF persistence~~ — resolved in v2.2 (Supabase Storage)
 
 **Database migrations (10 total):**
 - 0001-0006: Core schema, analytics MV, patterns, alerts, statements, tags
@@ -201,4 +217,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | ESLint no-unused-vars at warn | Flags dead code without breaking CI | ✓ Good |
 
 ---
-*Last updated: 2026-02-18 after v2.1 milestone*
+*Last updated: 2026-02-19 after v2.2 milestone start*
