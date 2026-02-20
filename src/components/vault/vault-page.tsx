@@ -4,12 +4,18 @@ import { FolderOpen, CalendarDays } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSources } from "@/lib/hooks/use-sources";
+import { useVaultTimeline } from "@/lib/hooks/use-vault-timeline";
 import { FileCabinetView } from "@/components/vault/file-cabinet-view";
 import { VaultEmptyState } from "@/components/vault/vault-empty-state";
+import { VaultStatsBar } from "@/components/vault/vault-stats-bar";
+import { TimelineView } from "@/components/vault/timeline-view";
 
 export function VaultPage() {
   const { data, isLoading } = useSources();
   const sources = data?.sources ?? [];
+
+  // Timeline data for stats bar (fetched alongside sources)
+  const { data: timelineData } = useVaultTimeline();
 
   if (isLoading) {
     return (
@@ -21,30 +27,40 @@ export function VaultPage() {
     );
   }
 
+  // Empty state: no sources at all (use sources count, not timeline data)
   if (sources.length === 0) {
     return <VaultEmptyState />;
   }
 
   return (
-    <Tabs defaultValue="file-cabinet">
-      <TabsList>
-        <TabsTrigger value="file-cabinet">
-          <FolderOpen className="size-4 mr-1.5" />
-          File Cabinet
-        </TabsTrigger>
-        <TabsTrigger value="timeline">
-          <CalendarDays className="size-4 mr-1.5" />
-          Timeline
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="file-cabinet">
-        <FileCabinetView sources={sources} />
-      </TabsContent>
-      <TabsContent value="timeline">
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          Timeline view coming soon
-        </div>
-      </TabsContent>
-    </Tabs>
+    <div className="space-y-0">
+      {/* Stats bar — only shown when timeline data is loaded and user has statements */}
+      {timelineData && timelineData.totalStatements > 0 && (
+        <VaultStatsBar
+          totalSources={timelineData.totalSources}
+          totalStatements={timelineData.totalStatements}
+          totalPdfs={timelineData.totalPdfs}
+        />
+      )}
+
+      <Tabs defaultValue="file-cabinet">
+        <TabsList>
+          <TabsTrigger value="file-cabinet">
+            <FolderOpen className="size-4 mr-1.5" />
+            File Cabinet
+          </TabsTrigger>
+          <TabsTrigger value="timeline">
+            <CalendarDays className="size-4 mr-1.5" />
+            Timeline
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="file-cabinet">
+          <FileCabinetView sources={sources} />
+        </TabsContent>
+        <TabsContent value="timeline">
+          <TimelineView />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
