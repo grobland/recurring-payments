@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 33 of 34 (Vault UI — in progress)
-Plan: 1 completed in current phase (01 done)
-Status: Plan 33-01 complete — /vault page with File Cabinet view, expandable folder cards, empty state
-Last activity: 2026-02-20 — Plan 33-01 executed
+Plan: 2 completed in current phase (01 done, 02 done)
+Status: Plan 33-02 complete — Timeline view, calendar grid, stats bar, GET /api/vault/timeline
+Last activity: 2026-02-20 — Plan 33-02 executed
 
-Progress: [███████░░░] 75% (v2.2 — 3/4 phases complete)
+Progress: [███████░░░] 75% (v2.2 — 3/4 phases complete, Phase 33 complete)
 
 ## Archived Milestones
 
@@ -62,6 +62,10 @@ Recent decisions affecting v2.2 work:
 - [Phase 32-pdf-viewer]: Modal only rendered in DOM when hasPdf is true — no signed URL API calls for non-PDF statements
 - [Phase 32-pdf-viewer]: Fragment wrapper in StatementRow to co-locate row and modal without extra DOM node breaking list layout
 - [Phase 33-vault-ui]: Vault nav item added after Dashboard with Archive icon using Collapsible for multi-open folder cards, Tab defaultValue=file-cabinet with no persistence
+- [33-02]: Timeline API uses inArray for all tx stats in one query — same N+1-avoiding pattern as sources/[sourceType]/statements
+- [33-02]: Stats bar hidden when timelineData.totalStatements === 0 — guard uses statement count not sources length
+- [33-02]: Empty month cells are non-interactive divs (not buttons) to avoid keyboard tab-stop noise in calendar grid
+- [33-02]: PdfStatusIcon duplicated locally in timeline-view.tsx — same 6-line local component pattern as folder-statements.tsx
 
 ### Blockers/Concerns
 
@@ -80,6 +84,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 33-01-PLAN.md (/vault page, File Cabinet view, folder cards, empty state)
-Resume file: .planning/phases/33-vault-ui/33-01-SUMMARY.md
-Resume with: /gsd:execute-phase 33 02
+Stopped at: Completed 33-02-PLAN.md (Timeline view, calendar grid, stats bar — Phase 33 complete)
+Resume file: .planning/phases/33-vault-ui/33-02-SUMMARY.md
+Resume with: /gsd:execute-phase 34 01

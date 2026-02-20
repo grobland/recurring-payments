@@ -84,7 +84,7 @@
 
 - [x] **Phase 31: Storage Foundation** - Wire Supabase Storage into the batch import flow so uploaded PDFs are persisted and retrievable
 - [x] **Phase 32: PDF Viewer** - Deliver an in-app modal that renders stored PDFs page by page with download capability (completed 2026-02-19)
-- [ ] **Phase 33: Vault UI** - Build the /vault page with file cabinet and timeline views for browsing all stored statements
+- [x] **Phase 33: Vault UI** - Build the /vault page with file cabinet and timeline views for browsing all stored statements (completed 2026-02-20)
 - [ ] **Phase 34: Coverage & Historical Upload** - Surface a coverage grid showing gaps and guide users to fill missing months via a wizard
 
 ## Phase Details
@@ -159,7 +159,7 @@ Plans:
 | 24-30 | v2.1 | 19 | Complete | 2026-02-18 |
 | 31. Storage Foundation | v2.2 | Complete    | 2026-02-19 | 2026-02-19 |
 | 32. PDF Viewer | 2/2 | Complete   | 2026-02-19 | 2026-02-19 |
-| 33. Vault UI | 1/2 | In Progress|  | - |
+| 33. Vault UI | 2/2 | Complete   | 2026-02-20 | - |
 | 34. Coverage & Historical Upload | v2.2 | TBD | Not started | - |
 
 **Total:** 30 phases, 91 plans completed across 6 milestones (+ 2 phases remaining for v2.2)
