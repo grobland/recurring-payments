@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -61,18 +61,27 @@ export function PdfViewerInner({
     setPageNumber((p) => Math.min(numPages, p + 1));
   }, [numPages]);
 
-  // Responsive width: cap at 760px, subtract dialog padding on narrow screens
-  const pageWidth =
-    typeof window !== "undefined"
-      ? Math.min(760, window.innerWidth - 80)
-      : 760;
+  // Measure actual container width for responsive PDF rendering
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pageWidth, setPageWidth] = useState(760);
+
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) {
+        setPageWidth(containerRef.current.clientWidth);
+      }
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
   // Download URL: prefer the dedicated download URL (has Content-Disposition: attachment)
   // Fall back to view URL if download URL not available
   const effectiveDownloadUrl = downloadUrl ?? url;
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div ref={containerRef} className="flex flex-col items-center gap-4 w-full">
       {/* PDF Document */}
       <Document
         file={url}
