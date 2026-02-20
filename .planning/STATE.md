@@ -78,7 +78,7 @@ Recent decisions affecting v2.2 work:
 
 ## Session Continuity
 
-Last session: 2026-02-19
-Stopped at: Phase 32 verified and finalized
-Resume file: .planning/phases/32-pdf-viewer/32-VERIFICATION.md
-Resume with: Phase 33 planning — next phase in v2.2 Financial Data Vault
+Last session: 2026-02-20
+Stopped at: Phase 33 context gathered
+Resume file: .planning/phases/33-vault-ui/33-CONTEXT.md
+Resume with: /gsd:plan-phase 33
