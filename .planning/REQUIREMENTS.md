@@ -19,10 +19,10 @@ Requirements for the Financial Data Vault milestone. Each maps to roadmap phases
 
 ### Vault Browsing
 
-- [ ] **VAULT-01**: User can browse statements in a file cabinet view grouped by source
+- [x] **VAULT-01**: User can browse statements in a file cabinet view grouped by source
 - [ ] **VAULT-02**: User can browse statements in a timeline view sorted chronologically with month separators
-- [ ] **VAULT-03**: User can toggle between file cabinet and timeline views with preference persisted
-- [ ] **VAULT-04**: New users see an empty state with guidance and upload CTA when vault is empty
+- [x] **VAULT-03**: User can toggle between file cabinet and timeline views with preference persisted
+- [x] **VAULT-04**: New users see an empty state with guidance and upload CTA when vault is empty
 
 ### Vault Enhancements
 
@@ -66,10 +66,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STOR-02 | Phase 31 | Complete |
 | VIEW-01 | Phase 32 | Complete |
 | VIEW-02 | Phase 32 | Complete |
-| VAULT-01 | Phase 33 | Pending |
+| VAULT-01 | Phase 33 | Complete |
 | VAULT-02 | Phase 33 | Pending |
-| VAULT-03 | Phase 33 | Pending |
-| VAULT-04 | Phase 33 | Pending |
+| VAULT-03 | Phase 33 | Complete |
+| VAULT-04 | Phase 33 | Complete |
 | VENH-01 | Phase 34 | Pending |
 | VENH-02 | Phase 34 | Pending |
 

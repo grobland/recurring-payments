@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.2 Financial Data Vault — Phase 32: PDF Viewer
+**Current focus:** v2.2 Financial Data Vault — Phase 33: Vault UI
 
 ## Current Position
 
-Phase: 32 of 34 (PDF Viewer — verified & complete)
-Plan: 2 completed in current phase (01, 02 done)
-Status: Phase 32 verified — human UAT passed (PDF viewer, download, statement list all working)
-Last activity: 2026-02-19 — Phase 32 verified and finalized
+Phase: 33 of 34 (Vault UI — in progress)
+Plan: 1 completed in current phase (01 done)
+Status: Plan 33-01 complete — /vault page with File Cabinet view, expandable folder cards, empty state
+Last activity: 2026-02-20 — Plan 33-01 executed
 
-Progress: [█████░░░░░] 50% (v2.2 — 2/4 phases complete)
+Progress: [███████░░░] 75% (v2.2 — 3/4 phases complete)
 
 ## Archived Milestones
 
@@ -27,12 +27,12 @@ Progress: [█████░░░░░] 50% (v2.2 — 2/4 phases complete)
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 90 plans completed, 118 requirements validated across 6 milestones
+**Total:** 91 plans completed, 121 requirements validated across 6 milestones
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 89
+- Total plans completed: 91
 - Total phases: 30 (+ 4 planned for v2.2)
 - Total milestones: 6
 - Development span: 2026-01-26 → 2026-02-18 (24 days)
@@ -61,6 +61,7 @@ Recent decisions affecting v2.2 work:
 - [Phase 32-pdf-viewer]: Single API call returns both { url, downloadUrl } — avoids double-fetch on client for PDF viewing + download
 - [Phase 32-pdf-viewer]: Modal only rendered in DOM when hasPdf is true — no signed URL API calls for non-PDF statements
 - [Phase 32-pdf-viewer]: Fragment wrapper in StatementRow to co-locate row and modal without extra DOM node breaking list layout
+- [Phase 33-vault-ui]: Vault nav item added after Dashboard with Archive icon using Collapsible for multi-open folder cards, Tab defaultValue=file-cabinet with no persistence
 
 ### Blockers/Concerns
 
@@ -79,6 +80,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Phase 33 context gathered
-Resume file: .planning/phases/33-vault-ui/33-CONTEXT.md
-Resume with: /gsd:plan-phase 33
+Stopped at: Completed 33-01-PLAN.md (/vault page, File Cabinet view, folder cards, empty state)
+Resume file: .planning/phases/33-vault-ui/33-01-SUMMARY.md
+Resume with: /gsd:execute-phase 33 02
