@@ -128,10 +128,11 @@ Plans:
   2. User can switch to a timeline view showing statements sorted chronologically with month separators
   3. User's last chosen view (file cabinet or timeline) is remembered across sessions without requiring a login
   4. A user who has never uploaded any statements sees an empty state with guidance text and a clear upload call to action
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 33-01: TBD
+- [ ] 33-01-PLAN.md — Vault page, sidebar nav, file cabinet view with expandable folder cards, empty state (VAULT-01, VAULT-03, VAULT-04)
+- [ ] 33-02-PLAN.md — Timeline API endpoint, calendar grid view, stats bar (VAULT-02, VAULT-03)
 
 ### Phase 34: Coverage & Historical Upload
 **Goal**: Users can see which months have stored PDFs versus data-only versus missing, and use a guided wizard to upload historical statements for gap months
