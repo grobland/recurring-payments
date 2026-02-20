@@ -84,6 +84,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 33-02-PLAN.md (Timeline view, calendar grid, stats bar — Phase 33 complete)
-Resume file: .planning/phases/33-vault-ui/33-02-SUMMARY.md
-Resume with: /gsd:execute-phase 34 01
+Stopped at: Phase 34 context gathered
+Resume file: .planning/phases/34-coverage-historical-upload/34-CONTEXT.md
+Resume with: /gsd:plan-phase 34
