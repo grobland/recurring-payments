@@ -24,6 +24,7 @@ import {
   Activity,
   Shield,
   Webhook,
+  Archive,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -61,6 +62,11 @@ const mainNavItems = [
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Vault",
+    href: "/vault",
+    icon: Archive,
   },
   {
     title: "Subscriptions",
