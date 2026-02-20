@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { FolderOpen, CalendarDays } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,9 +11,20 @@ import { VaultEmptyState } from "@/components/vault/vault-empty-state";
 import { VaultStatsBar } from "@/components/vault/vault-stats-bar";
 import { TimelineView } from "@/components/vault/timeline-view";
 
+const VAULT_VIEW_KEY = "vault-view-preference";
+
 export function VaultPage() {
   const { data, isLoading } = useSources();
   const sources = data?.sources ?? [];
+
+  const [activeTab, setActiveTab] = useState("file-cabinet");
+
+  useEffect(() => {
+    const saved = localStorage.getItem(VAULT_VIEW_KEY);
+    if (saved === "file-cabinet" || saved === "timeline") {
+      setActiveTab(saved);
+    }
+  }, []);
 
   // Timeline data for stats bar (fetched alongside sources)
   const { data: timelineData } = useVaultTimeline();
@@ -43,7 +55,7 @@ export function VaultPage() {
         />
       )}
 
-      <Tabs defaultValue="file-cabinet">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); localStorage.setItem(VAULT_VIEW_KEY, v); }}>
         <TabsList>
           <TabsTrigger value="file-cabinet">
             <FolderOpen className="size-4 mr-1.5" />
