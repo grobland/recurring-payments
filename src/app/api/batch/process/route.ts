@@ -91,6 +91,7 @@ export async function POST(request: Request) {
       columns: {
         id: true,
         processingStatus: true,
+        statementDate: true,
       },
     });
 
@@ -158,18 +159,28 @@ export async function POST(request: Request) {
         (t) => t.tagStatus === "potential_subscription"
       ).length;
 
+      // Derive statementDate from earliest transaction date (if not already set)
+      let derivedStatementDate: Date | undefined;
+      if (transactionRecords.length > 0) {
+        const dates = transactionRecords.map((t) => t.transactionDate.getTime());
+        derivedStatementDate = new Date(Math.min(...dates));
+      }
+
       // Insert transactions (if any)
       if (transactionRecords.length > 0) {
         await db.insert(transactions).values(transactionRecords);
       }
 
-      // Update statement as complete
+      // Update statement as complete (include statementDate only if not already set)
       await db
         .update(statements)
         .set({
           processingStatus: "complete",
           transactionCount: transactionRecords.length,
           processedAt: new Date(),
+          ...(!statement.statementDate && derivedStatementDate
+            ? { statementDate: derivedStatementDate }
+            : {}),
         })
         .where(eq(statements.id, statementId));
 
