@@ -85,7 +85,7 @@
 - [x] **Phase 31: Storage Foundation** - Wire Supabase Storage into the batch import flow so uploaded PDFs are persisted and retrievable
 - [x] **Phase 32: PDF Viewer** - Deliver an in-app modal that renders stored PDFs page by page with download capability (completed 2026-02-19)
 - [x] **Phase 33: Vault UI** - Build the /vault page with file cabinet and timeline views for browsing all stored statements (completed 2026-02-20)
-- [x] **Phase 34: Coverage & Historical Upload** - Surface a coverage grid showing gaps and guide users to fill missing months via a wizard (completed 2026-02-21)
+- [ ] **Phase 34: Coverage & Historical Upload** - Surface a coverage grid showing gaps and guide users to fill missing months via a wizard
 
 ## Phase Details
 
@@ -142,11 +142,12 @@ Plans:
   1. User can see a grid for each source showing the last 12-24 months with distinct visual states for "PDF stored," "data only — no file," and "no data"
   2. User can click into a gap month on the coverage grid and open a wizard that guides them through uploading a statement for that specific source and month
   3. After completing the wizard upload, the coverage grid updates to reflect the newly stored PDF
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 34-01-PLAN.md — Coverage API endpoint, attach-PDF endpoint, and TanStack Query hook (VENH-01, VENH-02)
-- [ ] 34-02-PLAN.md — Coverage heat map grid, upload wizard modal, and vault tab wiring (VENH-01, VENH-02)
+- [x] 34-01-PLAN.md — Coverage API endpoint, attach-PDF endpoint, and TanStack Query hook (VENH-01, VENH-02)
+- [x] 34-02-PLAN.md — Coverage heat map grid, upload wizard modal, and vault tab wiring (VENH-01, VENH-02)
+- [ ] 34-03-PLAN.md — Gap closure: populate statementDate in upload/process pipeline (VENH-01, VENH-02)
 
 ## Progress
 
@@ -161,9 +162,9 @@ Plans:
 | 31. Storage Foundation | v2.2 | 2/2 | Complete | 2026-02-19 |
 | 32. PDF Viewer | v2.2 | 2/2 | Complete | 2026-02-19 |
 | 33. Vault UI | v2.2 | 2/2 | Complete | 2026-02-20 |
-| 34. Coverage & Historical Upload | 2/2 | Complete    | 2026-02-21 | - |
+| 34. Coverage & Historical Upload | v2.2 | 2/3 | In Progress | - |
 
-**Total:** 34 phases, 91 plans completed across 6 milestones (+ Phase 34 remaining for v2.2)
+**Total:** 34 phases, 91 plans completed across 6 milestones (+ Phase 34 gap closure remaining for v2.2)
 
 ---
-*Last updated: 2026-02-21 after Phase 34 planned*
+*Last updated: 2026-02-21 after Phase 34 gap closure plan created*
