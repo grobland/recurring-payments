@@ -131,8 +131,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 33-01-PLAN.md — Vault page, sidebar nav, file cabinet view with expandable folder cards, empty state (VAULT-01, VAULT-03, VAULT-04)
-- [ ] 33-02-PLAN.md — Timeline API endpoint, calendar grid view, stats bar (VAULT-02, VAULT-03)
+- [x] 33-01-PLAN.md — Vault page, sidebar nav, file cabinet view with expandable folder cards, empty state (VAULT-01, VAULT-03, VAULT-04)
+- [x] 33-02-PLAN.md — Timeline API endpoint, calendar grid view, stats bar (VAULT-02, VAULT-03)
 
 ### Phase 34: Coverage & Historical Upload
 **Goal**: Users can see which months have stored PDFs versus data-only versus missing, and use a guided wizard to upload historical statements for gap months
@@ -142,10 +142,11 @@ Plans:
   1. User can see a grid for each source showing the last 12-24 months with distinct visual states for "PDF stored," "data only — no file," and "no data"
   2. User can click into a gap month on the coverage grid and open a wizard that guides them through uploading a statement for that specific source and month
   3. After completing the wizard upload, the coverage grid updates to reflect the newly stored PDF
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 34-01: TBD
+- [ ] 34-01-PLAN.md — Coverage API endpoint, attach-PDF endpoint, and TanStack Query hook (VENH-01, VENH-02)
+- [ ] 34-02-PLAN.md — Coverage heat map grid, upload wizard modal, and vault tab wiring (VENH-01, VENH-02)
 
 ## Progress
 
@@ -157,12 +158,12 @@ Plans:
 | 13-18 | v1.3 | 21 | Complete | 2026-02-08 |
 | 19-23 | v2.0 | 21 | Complete | 2026-02-10 |
 | 24-30 | v2.1 | 19 | Complete | 2026-02-18 |
-| 31. Storage Foundation | v2.2 | Complete    | 2026-02-19 | 2026-02-19 |
-| 32. PDF Viewer | 2/2 | Complete   | 2026-02-19 | 2026-02-19 |
-| 33. Vault UI | 2/2 | Complete    | 2026-02-20 | - |
-| 34. Coverage & Historical Upload | v2.2 | TBD | Not started | - |
+| 31. Storage Foundation | v2.2 | 2/2 | Complete | 2026-02-19 |
+| 32. PDF Viewer | v2.2 | 2/2 | Complete | 2026-02-19 |
+| 33. Vault UI | v2.2 | 2/2 | Complete | 2026-02-20 |
+| 34. Coverage & Historical Upload | v2.2 | 0/2 | Not started | - |
 
-**Total:** 30 phases, 91 plans completed across 6 milestones (+ 2 phases remaining for v2.2)
+**Total:** 34 phases, 91 plans completed across 6 milestones (+ Phase 34 remaining for v2.2)
 
 ---
-*Last updated: 2026-02-19 after Phase 32 verified*
+*Last updated: 2026-02-21 after Phase 34 planned*
