@@ -72,19 +72,20 @@ export async function POST(request: Request) {
       statementDate = new Date(statementDateStr.trim() + "-01T00:00:00Z");
     }
 
-    // Check for duplicate (client should have checked, but double-verify)
+    // Check for duplicate within the same source (client should have checked, but double-verify)
     const existingStatement = await db.query.statements.findFirst({
       where: and(
         eq(statements.userId, session.user.id),
-        eq(statements.pdfHash, hash)
+        eq(statements.pdfHash, hash),
+        eq(statements.sourceType, sourceType.trim())
       ),
-      columns: { id: true },
+      columns: { id: true, statementDate: true },
     });
 
     if (existingStatement) {
       // If caller provided a statementDate (e.g. from coverage wizard),
       // backfill it on the existing statement so it appears in the coverage grid
-      if (statementDate) {
+      if (statementDate && !existingStatement.statementDate) {
         await db
           .update(statements)
           .set({ statementDate })
