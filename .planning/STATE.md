@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 ## Current Position
 
 Phase: 34 of 34 (Coverage & Historical Upload — in progress)
-Plan: 1 completed in current phase (01 done)
-Status: Plan 34-01 complete — Coverage grid data layer, attach-pdf endpoint, useVaultCoverage hook
-Last activity: 2026-02-21 — Plan 34-01 executed
+Plan: 2 completed in current phase (01, 02 done)
+Status: Plan 34-02 complete — Coverage grid UI, historical upload wizard, Coverage tab in vault
+Last activity: 2026-02-21 — Plan 34-02 executed
 
 Progress: [████████░░] 80% (v2.2 — 3/4 phases complete, Phase 34 in progress)
 
@@ -70,6 +70,9 @@ Recent decisions affecting v2.2 work:
 - [34-01]: selectDistinct sources query separate from window query — sources with pre-window statements still appear as grid rows
 - [34-01]: attach-pdf endpoint is storage-only — no transaction extraction (contrast with batch/upload which runs full pipeline)
 - [34-01]: CoverageCell.state three-valued (pdf/data/missing) extends Phase 31 hasPdf boolean pattern to full grid state machine
+- [34-02]: Single Radix TooltipProvider wraps entire coverage grid — shadcn Tooltip embeds its own provider, so used @radix-ui/react-tooltip primitives directly
+- [34-02]: Modal-as-null pattern in CoverageView — null state means component unmounted (no API calls), consistent with Phase 32 hasPdf pattern
+- [34-02]: Coverage tab appended as third tab in vault-page.tsx; File Cabinet remains default; localStorage guard extended to include "coverage"
 
 ### Blockers/Concerns
 
@@ -88,6 +91,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Plan 34-01 complete — coverage data layer
-Resume file: .planning/phases/34-coverage-historical-upload/34-01-SUMMARY.md
-Resume with: Execute plan 02 of phase 34
+Stopped at: Plan 34-02 complete — coverage grid UI and vault tab
+Resume file: .planning/phases/34-coverage-historical-upload/34-02-SUMMARY.md
+Resume with: Check if Phase 34 has a plan 03 or if phase is complete
