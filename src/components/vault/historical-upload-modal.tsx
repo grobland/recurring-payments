@@ -95,6 +95,7 @@ export function HistoricalUploadModal({
         }
       } else {
         formData.append("sourceType", sourceType);
+        formData.append("statementDate", targetMonth);
         const { hashFile } = await import("@/lib/utils/file-hash");
         const hash = await hashFile(file);
         formData.append("hash", hash);

@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File | null;
     const hash = formData.get("hash") as string | null;
     const sourceType = formData.get("sourceType") as string | null;
+    const statementDateStr = formData.get("statementDate") as string | null;
 
     // Validate inputs
     if (!file) {
@@ -65,6 +66,12 @@ export async function POST(request: Request) {
       );
     }
 
+    // Parse optional statementDate (yyyy-MM format → first of that month)
+    let statementDate: Date | undefined;
+    if (statementDateStr && statementDateStr.trim().length > 0) {
+      statementDate = new Date(statementDateStr.trim() + "-01T00:00:00Z");
+    }
+
     // Check for duplicate (client should have checked, but double-verify)
     const existingStatement = await db.query.statements.findFirst({
       where: and(
@@ -92,6 +99,7 @@ export async function POST(request: Request) {
         originalFilename: file.name,
         fileSizeBytes: file.size,
         processingStatus: "pending",
+        ...(statementDate ? { statementDate } : {}),
       })
       .returning({ id: statements.id });
 
