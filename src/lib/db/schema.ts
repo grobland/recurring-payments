@@ -528,7 +528,7 @@ export const statements = pgTable(
   (table) => [
     index("statements_user_id_idx").on(table.userId),
     index("statements_pdf_hash_idx").on(table.pdfHash),
-    uniqueIndex("statements_user_hash_idx").on(table.userId, table.pdfHash), // User-scoped uniqueness
+    uniqueIndex("statements_user_hash_source_idx").on(table.userId, table.pdfHash, table.sourceType), // User+source-scoped uniqueness
   ]
 );
 
