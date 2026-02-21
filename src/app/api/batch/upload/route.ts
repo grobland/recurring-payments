@@ -82,6 +82,14 @@ export async function POST(request: Request) {
     });
 
     if (existingStatement) {
+      // If caller provided a statementDate (e.g. from coverage wizard),
+      // backfill it on the existing statement so it appears in the coverage grid
+      if (statementDate) {
+        await db
+          .update(statements)
+          .set({ statementDate })
+          .where(eq(statements.id, existingStatement.id));
+      }
       return NextResponse.json({
         isDuplicate: true,
         statementId: existingStatement.id,

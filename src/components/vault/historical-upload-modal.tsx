@@ -107,6 +107,23 @@ export function HistoricalUploadModal({
           const json = await res.json().catch(() => ({}));
           throw new Error((json as { error?: string }).error ?? "Upload failed");
         }
+        const uploadResult = (await res.json()) as {
+          statementId?: string;
+          isDuplicate?: boolean;
+        };
+
+        // Trigger AI processing so transactions get extracted and the
+        // statement moves to "complete" (coverage grid needs statementDate
+        // which batch/process derives from transactions if not already set)
+        if (uploadResult.statementId && !uploadResult.isDuplicate) {
+          const processForm = new FormData();
+          processForm.append("statementId", uploadResult.statementId);
+          processForm.append("file", file);
+          await fetch("/api/batch/process", {
+            method: "POST",
+            body: processForm,
+          });
+        }
       }
 
       // Invalidate coverage + related caches so the grid updates
