@@ -26,8 +26,8 @@ Requirements for the Financial Data Vault milestone. Each maps to roadmap phases
 
 ### Vault Enhancements
 
-- [ ] **VENH-01**: User can see a coverage visualization grid showing PDF stored / data only / missing per month per source
-- [ ] **VENH-02**: User can use a guided wizard to upload historical statements for missing months
+- [x] **VENH-01**: User can see a coverage visualization grid showing PDF stored / data only / missing per month per source
+- [x] **VENH-02**: User can use a guided wizard to upload historical statements for missing months
 
 ## Future Requirements
 
@@ -70,8 +70,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VAULT-02 | Phase 33 | Complete |
 | VAULT-03 | Phase 33 | Complete |
 | VAULT-04 | Phase 33 | Complete |
-| VENH-01 | Phase 34 | Pending |
-| VENH-02 | Phase 34 | Pending |
+| VENH-01 | Phase 34 | Complete |
+| VENH-02 | Phase 34 | Complete |
 
 **Coverage:**
 - v2.2 requirements: 10 total

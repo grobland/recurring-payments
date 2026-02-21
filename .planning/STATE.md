@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v2.2 Financial Data Vault — Phase 33: Vault UI
+**Current focus:** v2.2 Financial Data Vault — Phase 34: Coverage & Historical Upload
 
 ## Current Position
 
-Phase: 33 of 34 (Vault UI — in progress)
-Plan: 2 completed in current phase (01 done, 02 done)
-Status: Plan 33-02 complete — Timeline view, calendar grid, stats bar, GET /api/vault/timeline
-Last activity: 2026-02-20 — Plan 33-02 executed
+Phase: 34 of 34 (Coverage & Historical Upload — in progress)
+Plan: 1 completed in current phase (01 done)
+Status: Plan 34-01 complete — Coverage grid data layer, attach-pdf endpoint, useVaultCoverage hook
+Last activity: 2026-02-21 — Plan 34-01 executed
 
-Progress: [███████░░░] 75% (v2.2 — 3/4 phases complete, Phase 33 complete)
+Progress: [████████░░] 80% (v2.2 — 3/4 phases complete, Phase 34 in progress)
 
 ## Archived Milestones
 
@@ -66,6 +66,10 @@ Recent decisions affecting v2.2 work:
 - [33-02]: Stats bar hidden when timelineData.totalStatements === 0 — guard uses statement count not sources length
 - [33-02]: Empty month cells are non-interactive divs (not buttons) to avoid keyboard tab-stop noise in calendar grid
 - [33-02]: PdfStatusIcon duplicated locally in timeline-view.tsx — same 6-line local component pattern as folder-statements.tsx
+- [34-01]: Coverage route defines types inline — avoids server importing from "use client" hook file; types canonical in use-vault-coverage.ts for UI
+- [34-01]: selectDistinct sources query separate from window query — sources with pre-window statements still appear as grid rows
+- [34-01]: attach-pdf endpoint is storage-only — no transaction extraction (contrast with batch/upload which runs full pipeline)
+- [34-01]: CoverageCell.state three-valued (pdf/data/missing) extends Phase 31 hasPdf boolean pattern to full grid state machine
 
 ### Blockers/Concerns
 
@@ -78,12 +82,12 @@ Recent decisions affecting v2.2 work:
 - NEXT_PUBLIC_SUPABASE_ANON_KEY (browser-side storage)
 - SUPABASE_SERVICE_ROLE_KEY (server-side uploads — no NEXT_PUBLIC_ prefix)
 
-**Phase 34 open question:**
-- Coverage grid component approach undecided — scope during Phase 34 planning (CSS Grid, shadcn calendar, or Recharts cell chart)
+**Phase 34 open question resolved:**
+- Coverage grid uses CSS Grid (decided in 34-PLAN.md) — Plan 02 builds the UI component
 
 ## Session Continuity
 
-Last session: 2026-02-20
-Stopped at: Phase 34 context gathered
-Resume file: .planning/phases/34-coverage-historical-upload/34-CONTEXT.md
-Resume with: /gsd:plan-phase 34
+Last session: 2026-02-21
+Stopped at: Plan 34-01 complete — coverage data layer
+Resume file: .planning/phases/34-coverage-historical-upload/34-01-SUMMARY.md
+Resume with: Execute plan 02 of phase 34
