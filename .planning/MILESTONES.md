@@ -2,6 +2,53 @@
 
 ## Completed Milestones
 
+### v2.2 "Financial Data Vault" (2026-02-19 → 2026-02-21)
+
+**Goal:** Transform the app into a financial data vault where users store, organize, and browse original bank statement PDFs with all data extracted into the database.
+
+**What shipped:**
+- Supabase Storage integration with non-fatal degradation (PDFs persisted during batch import, graceful fallback if storage unavailable)
+- In-app PDF viewer with react-pdf v10, page navigation, and dual signed URLs (inline view + download with Content-Disposition)
+- Vault UI at /vault with expandable file cabinet view (source-grouped folders) and interactive timeline calendar grid
+- Coverage heat map showing PDF stored / data only / missing per source per month
+- Historical upload wizard for filling coverage gaps with statementDate pipeline fix
+- hasPdf boolean pattern at API boundary (raw storage paths never exposed to client)
+
+**Phases completed:** 4 (Phases 31-34)
+- Phase 31: Storage Foundation (2 plans)
+- Phase 32: PDF Viewer (2 plans)
+- Phase 33: Vault UI (2 plans)
+- Phase 34: Coverage & Historical Upload (3 plans)
+
+**Stats:**
+- 9 plans, 50 commits
+- 65 files changed (+8,490 / -106 lines)
+- 3 days development
+
+**Requirements:** 10/10 complete
+- STOR-01, STOR-02 (PDF Storage)
+- VIEW-01, VIEW-02 (PDF Viewing)
+- VAULT-01, VAULT-02, VAULT-03, VAULT-04 (Vault Browsing)
+- VENH-01, VENH-02 (Vault Enhancements)
+
+**Key decisions:**
+- Non-fatal storage pattern (uploadStatementPdf returns null on failure, import always completes)
+- react-pdf two-file split (inner with worker config + outer with dynamic SSR-disabled wrapper)
+- Signed URLs generated on-demand (55-min staleTime, 1-hour expiry)
+- Collapsible (not Accordion) for multi-open vault folder cards
+- Coverage cell three-valued state machine (pdf/data/missing) extending hasPdf boolean
+- Single Radix TooltipProvider wrapping entire coverage grid for performance
+- statementDate parsed as first-of-month UTC to avoid timezone ambiguity
+
+**Tech debt:**
+- Existing statements with NULL statementDate remain gray in coverage grid until re-import or backfill
+- PdfStatusIcon duplicated locally in 4 files (6-line component, intentional to avoid premature abstraction)
+- Blob storage for PDF persistence resolved (was v2.0 tech debt)
+
+**What's next:** `/gsd:new-milestone` for next milestone planning
+
+---
+
 ### v2.1 "Billing & Monetization" (2026-02-10 → 2026-02-18)
 
 **Goal:** Enable paid subscriptions with three-tier feature access, Stripe integration, and promotional capabilities.
@@ -212,4 +259,5 @@
 **Requirements:** 9/9 complete
 
 ---
-*Last updated: 2026-02-18*
+*Last updated: 2026-02-21*
+

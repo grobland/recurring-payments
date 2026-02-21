@@ -2,32 +2,25 @@
 
 ## What This Is
 
-A web application for tracking and managing recurring subscriptions with Stripe-powered billing. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include batch PDF import with full statement data retention, a virtualized transaction browser, manual tagging and one-click conversion, AI-powered pattern detection, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, category management, three-tier paid subscriptions (Primary/Enhanced/Advanced), feature gating with upgrade prompts, customer portal for subscription management, and admin tools for trial extensions and webhook monitoring.
+A web application for tracking and managing recurring subscriptions with Stripe-powered billing and a financial data vault. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include batch PDF import with full statement data retention, PDF storage and in-app viewing, a vault for browsing and organizing original bank statements, coverage visualization with historical upload support, a virtualized transaction browser, manual tagging and one-click conversion, AI-powered pattern detection, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, category management, three-tier paid subscriptions (Primary/Enhanced/Advanced), feature gating with upgrade prompts, customer portal for subscription management, and admin tools for trial extensions and webhook monitoring.
 
 ## Core Value
 
 Users can see all their subscriptions in one place and never get surprised by a renewal again.
 
-## Current Milestone: v2.2 Financial Data Vault
-
-**Goal:** Transform the app into a financial data vault where users store, organize, and browse original bank statement PDFs with all data extracted into the database — subscription management comes standard.
-
-**Target features:**
-- PDF persistence in Supabase Storage (original documents viewable in-app)
-- File cabinet view (statements organized by source, then by date)
-- Timeline view (chronological feed across all sources)
-- In-app PDF viewer for original document review
-- Support for 12-24 months of historical statement uploads
-- All statement data extracted and stored in database for higher-tier analysis
-
 ## Current State
 
-**Version:** v2.1 Billing & Monetization (shipped 2026-02-18)
-**Codebase:** ~40,000+ lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
+**Version:** v2.2 Financial Data Vault (shipped 2026-02-21)
+**Codebase:** ~48,000+ lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
 **Production URL:** https://recurring-payments.vercel.app
 
 **Current capabilities:**
 - Batch PDF import with drag-and-drop and duplicate detection
+- PDF storage in Supabase Storage with non-fatal degradation
+- In-app PDF viewer with page navigation and download
+- Vault UI with file cabinet view (source-grouped) and timeline calendar grid
+- Coverage heat map showing PDF/data/missing per source per month
+- Historical upload wizard for filling coverage gaps
 - Full statement data retention (all line items, not just subscriptions)
 - Virtualized transaction browser with keyset pagination (10k+ items at 60fps)
 - Manual tagging with inline combobox and bulk operations
@@ -137,25 +130,30 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - ✓ Admin webhook monitoring dashboard — v2.1
 - ✓ Stripe Checkout with monthly and annual billing — v2.1
 
+**v2.2 Financial Data Vault:**
+- ✓ PDF persistence in Supabase Storage — v2.2
+- ✓ In-app PDF viewer for original documents — v2.2
+- ✓ Vault UI with file cabinet view (by source, then date) — v2.2
+- ✓ Vault UI with timeline view (chronological across sources) — v2.2
+- ✓ Coverage visualization grid (PDF stored / data only / missing) — v2.2
+- ✓ Historical upload wizard for filling coverage gaps — v2.2
+- ✓ View preference persistence (file cabinet / timeline / coverage) — v2.2
+- ✓ Empty state with upload CTA for new users — v2.2
+- ✓ Non-fatal storage degradation (imports succeed without storage) — v2.2
+- ✓ hasPdf boolean API pattern (storage paths never exposed to client) — v2.2
+
 ### Active
 
-- [ ] PDF persistence in Supabase Storage
-- [ ] In-app PDF viewer for original documents
-- [ ] Vault UI with file cabinet view (by source, then date)
-- [ ] Vault UI with timeline view (chronological across sources)
-- [ ] Historical upload support (12-24 months of statements)
+(No active requirements — next milestone not yet planned)
 
 ### Out of Scope
 
 - Production domain setup — planned for future milestone
 - Mobile app — web-first approach (web responsiveness is in scope)
-- Banking features — planned for v2.2 (Enhanced tier)
-- Investing features — planned for v2.3 (Advanced tier)
 - AI confidence calibration dashboard — complexity; defer until usage data collected
 - Real-time anomaly alerts — alert fatigue risk; weekly batching preferred
 - ML-based pattern detection — cold start problem; heuristics sufficient
 - Auto-merge duplicates — user trust critical; always require confirmation
-- ~~Blob storage for PDF persistence~~ — NOW IN SCOPE for v2.2
 - Parallel PDF processing — memory exhaustion risk; sequential is safer
 - Free tier forever — creates support burden, no conversion pressure
 - Usage-based billing — revenue unpredictability, confusing for consumer app
@@ -164,23 +162,35 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Lifetime deals — destroys LTV math, attracts wrong customers
 - Complex cancellation flows — FTC enforcement risk
 - Team/family plans — defer until product-market fit established
-- Referral program — requires tracking infrastructure, defer to v2.2+
+- Referral program — requires tracking infrastructure, defer
+- PDF annotation — PSPDFKit costs $400-1200/month; notes field covers use case
+- Custom folder organization — conflicts with source-type mental model; file cabinet view IS the folder metaphor
+- Full-text search across PDFs — extracted transactions are already searchable
+- Bank API integration (Plaid/MX) — compliance burden and cost prohibitive
+- Mobile camera upload — breaks PDF-only processing pipeline
+- OCR re-extraction — AI cost and complexity not justified
 
 ## Context
 
-**Codebase state:** v2.1 complete. Full subscription management platform with billing, monetization, and admin tools. All 116 requirements across 6 milestones validated.
+**Codebase state:** v2.2 complete. Full subscription management platform with financial data vault, billing, monetization, and admin tools. All 131 requirements across 7 milestones validated.
 
 **Known issues:**
 - Email delivery requires verified Resend domain (RESEND_FROM_EMAIL)
 - Sentry requires DSN configuration for error tracking (NEXT_PUBLIC_SENTRY_DSN)
 - auth() called twice in import route (minor inefficiency)
 - Analytics FeatureGate wraps BASIC_ANALYTICS (primary tier) — never visibly locks for current users
+- Existing statements with NULL statementDate remain gray in coverage grid until re-import or backfill
 
 **Tech debt:**
 - Hooks not re-exported from central index (use-duplicate-scan, useTrends, useForecast*, useAlerts, useTags, etc.)
 - Logging infrastructure (withLogging, actionLog) created but not adopted by all API routes
 - EvidenceList URL params don't pre-filter transactions (minor UX enhancement)
-- ~~Blob storage for PDF persistence~~ — resolved in v2.2 (Supabase Storage)
+- PdfStatusIcon duplicated locally in 4 files (6-line component, intentional)
+
+**Env vars needed for v2.2 features:**
+- NEXT_PUBLIC_SUPABASE_URL (browser-side storage)
+- NEXT_PUBLIC_SUPABASE_ANON_KEY (browser-side storage)
+- SUPABASE_SERVICE_ROLE_KEY (server-side uploads — no NEXT_PUBLIC_ prefix)
 
 **Database migrations (10 total):**
 - 0001-0006: Core schema, analytics MV, patterns, alerts, statements, tags
@@ -194,6 +204,7 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 - **Platform**: Vercel for hosting (cron jobs configured in vercel.json)
 - **Database**: Supabase PostgreSQL (already configured)
+- **Storage**: Supabase Storage (private bucket, service-role key for uploads)
 - **Budget**: Using free tiers where possible (Stripe test mode, Resend free tier, OpenAI pay-as-you-go)
 
 ## Key Decisions
@@ -215,6 +226,13 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | Admin routes redirect silently | Don't leak admin route existence to unauthorized users | ✓ Good |
 | Role bootstrapped via seed script | Minimal attack surface, auditable admin promotion | ✓ Good |
 | ESLint no-unused-vars at warn | Flags dead code without breaking CI | ✓ Good |
+| Non-fatal storage pattern | Import always completes even if storage fails | ✓ Good |
+| react-pdf two-file split | Worker config must be in same file as Document to prevent fake worker | ✓ Good |
+| Signed URLs on-demand | 55-min staleTime, never pre-fetched, avoids stale URL problem | ✓ Good |
+| hasPdf boolean at API boundary | Raw storage paths never exposed to client (security + simplicity) | ✓ Good |
+| Collapsible not Accordion for vault | Multiple folder cards can be open simultaneously | ✓ Good |
+| Coverage cell three-valued state | pdf/data/missing extends hasPdf boolean pattern | ✓ Good |
+| statementDate as first-of-month UTC | Avoids timezone ambiguity in coverage grid month mapping | ✓ Good |
 
 ---
-*Last updated: 2026-02-19 after v2.2 milestone start*
+*Last updated: 2026-02-21 after v2.2 milestone*
