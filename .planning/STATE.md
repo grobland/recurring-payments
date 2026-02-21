@@ -9,17 +9,18 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 
 ## Current Position
 
-Phase: 34 of 34 (Coverage & Historical Upload — in progress)
-Plan: 2 completed in current phase (01, 02 done)
-Status: Plan 34-02 complete — Coverage grid UI, historical upload wizard, Coverage tab in vault
-Last activity: 2026-02-21 — Plan 34-02 executed
+Phase: 34 of 34 (Coverage & Historical Upload — complete)
+Plan: 3 completed in current phase (01, 02, 03 done)
+Status: Plan 34-03 complete — statementDate pipeline fix; coverage grid cells now populate correctly
+Last activity: 2026-02-21 — Plan 34-03 executed
 
-Progress: [████████░░] 80% (v2.2 — 3/4 phases complete, Phase 34 in progress)
+Progress: [██████████] 100% (v2.2 — Phase 34 complete, all 3 plans done)
 
 ## Archived Milestones
 
 | Version | Name | Shipped | Phases | Plans | Requirements |
 |---------|------|---------|--------|-------|--------------|
+| v2.2 | Financial Data Vault | 2026-02-21 | 31-34 | 12 | 6/6 |
 | v2.1 | Billing & Monetization | 2026-02-18 | 24-30 | 19 | 14/14 |
 | v2.0 | Statement Hub | 2026-02-10 | 19-23 | 21 | 27/27 |
 | v1.3 | Data & Intelligence | 2026-02-08 | 13-18 | 21 | 23/23 |
@@ -73,6 +74,9 @@ Recent decisions affecting v2.2 work:
 - [34-02]: Single Radix TooltipProvider wraps entire coverage grid — shadcn Tooltip embeds its own provider, so used @radix-ui/react-tooltip primitives directly
 - [34-02]: Modal-as-null pattern in CoverageView — null state means component unmounted (no API calls), consistent with Phase 32 hasPdf pattern
 - [34-02]: Coverage tab appended as third tab in vault-page.tsx; File Cabinet remains default; localStorage guard extended to include "coverage"
+- [34-03]: statementDate parsed as yyyy-MM + "-01T00:00:00Z" UTC to avoid timezone ambiguity in coverage grid month mapping
+- [34-03]: batch/process guards against overwriting historical upload's statementDate with !statement.statementDate check before applying derivedStatementDate
+- [34-03]: Existing NULL-statementDate statements remain gray until re-import or backfill migration — acceptable for coverage grid purpose
 
 ### Blockers/Concerns
 
@@ -91,6 +95,6 @@ Recent decisions affecting v2.2 work:
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Plan 34-02 complete — coverage grid UI and vault tab
-Resume file: .planning/phases/34-coverage-historical-upload/34-02-SUMMARY.md
-Resume with: Check if Phase 34 has a plan 03 or if phase is complete
+Stopped at: Plan 34-03 complete — statementDate pipeline fix for coverage grid
+Resume file: .planning/phases/34-coverage-historical-upload/34-03-SUMMARY.md
+Resume with: Phase 34 fully complete — v2.2 Financial Data Vault shipped

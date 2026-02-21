@@ -8,7 +8,7 @@
 - ✅ **v1.3 Data & Intelligence** — Phases 13-18 (shipped 2026-02-08)
 - ✅ **v2.0 Statement Hub** — Phases 19-23 (shipped 2026-02-10)
 - ✅ **v2.1 Billing & Monetization** — Phases 24-30 (shipped 2026-02-18)
-- 🚧 **v2.2 Financial Data Vault** — Phases 31-34 (in progress)
+- ✅ **v2.2 Financial Data Vault** — Phases 31-34 (shipped 2026-02-21)
 
 ## Phases
 
@@ -85,7 +85,7 @@
 - [x] **Phase 31: Storage Foundation** - Wire Supabase Storage into the batch import flow so uploaded PDFs are persisted and retrievable
 - [x] **Phase 32: PDF Viewer** - Deliver an in-app modal that renders stored PDFs page by page with download capability (completed 2026-02-19)
 - [x] **Phase 33: Vault UI** - Build the /vault page with file cabinet and timeline views for browsing all stored statements (completed 2026-02-20)
-- [ ] **Phase 34: Coverage & Historical Upload** - Surface a coverage grid showing gaps and guide users to fill missing months via a wizard
+- [x] **Phase 34: Coverage & Historical Upload** - Surface a coverage grid showing gaps and guide users to fill missing months via a wizard (completed 2026-02-21)
 
 ## Phase Details
 
@@ -147,7 +147,7 @@ Plans:
 Plans:
 - [x] 34-01-PLAN.md — Coverage API endpoint, attach-PDF endpoint, and TanStack Query hook (VENH-01, VENH-02)
 - [x] 34-02-PLAN.md — Coverage heat map grid, upload wizard modal, and vault tab wiring (VENH-01, VENH-02)
-- [ ] 34-03-PLAN.md — Gap closure: populate statementDate in upload/process pipeline (VENH-01, VENH-02)
+- [x] 34-03-PLAN.md — Gap closure: populate statementDate in upload/process pipeline (VENH-01, VENH-02)
 
 ## Progress
 
@@ -162,9 +162,9 @@ Plans:
 | 31. Storage Foundation | v2.2 | 2/2 | Complete | 2026-02-19 |
 | 32. PDF Viewer | v2.2 | 2/2 | Complete | 2026-02-19 |
 | 33. Vault UI | v2.2 | 2/2 | Complete | 2026-02-20 |
-| 34. Coverage & Historical Upload | v2.2 | 2/3 | In Progress | - |
+| 34. Coverage & Historical Upload | v2.2 | 3/3 | Complete | 2026-02-21 |
 
-**Total:** 34 phases, 91 plans completed across 6 milestones (+ Phase 34 gap closure remaining for v2.2)
+**Total:** 34 phases, 94 plans completed across 7 milestones (v2.2 Financial Data Vault complete)
 
 ---
-*Last updated: 2026-02-21 after Phase 34 gap closure plan created*
+*Last updated: 2026-02-21 after Phase 34 Plan 03 executed — v2.2 complete*
