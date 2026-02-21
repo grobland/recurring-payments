@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FolderOpen, CalendarDays } from "lucide-react";
+import { FolderOpen, CalendarDays, BarChart3 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSources } from "@/lib/hooks/use-sources";
@@ -10,6 +10,7 @@ import { FileCabinetView } from "@/components/vault/file-cabinet-view";
 import { VaultEmptyState } from "@/components/vault/vault-empty-state";
 import { VaultStatsBar } from "@/components/vault/vault-stats-bar";
 import { TimelineView } from "@/components/vault/timeline-view";
+import { CoverageView } from "@/components/vault/coverage-view";
 
 const VAULT_VIEW_KEY = "vault-view-preference";
 
@@ -21,7 +22,7 @@ export function VaultPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem(VAULT_VIEW_KEY);
-    if (saved === "file-cabinet" || saved === "timeline") {
+    if (saved === "file-cabinet" || saved === "timeline" || saved === "coverage") {
       setActiveTab(saved);
     }
   }, []);
@@ -65,12 +66,19 @@ export function VaultPage() {
             <CalendarDays className="size-4 mr-1.5" />
             Timeline
           </TabsTrigger>
+          <TabsTrigger value="coverage">
+            <BarChart3 className="size-4 mr-1.5" />
+            Coverage
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="file-cabinet">
           <FileCabinetView sources={sources} />
         </TabsContent>
         <TabsContent value="timeline">
           <TimelineView />
+        </TabsContent>
+        <TabsContent value="coverage">
+          <CoverageView />
         </TabsContent>
       </Tabs>
     </div>
