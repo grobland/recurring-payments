@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Navigation & Account Vault — Phase 35 Plan 01 complete
+**Current focus:** v3.0 Navigation & Account Vault — Phase 35 complete (both plans done)
 
 ## Current Position
 
-Phase: 35 of 40 (Database Foundation)
-Plan: 1 of 2 complete
-Status: In progress
-Last activity: 2026-02-22 — Phase 35 Plan 01 complete (schema.ts + backfill rename)
+Phase: 35 of 40 (Database Foundation) — COMPLETE
+Plan: 2 of 2 complete
+Status: Phase complete, ready for Phase 36
+Last activity: 2026-02-22 — Phase 35 Plan 02 complete (migration applied, financial_accounts table live)
 
-Progress: [█░░░░░░░░░] 5% (v3.0 Phase 35 Plan 01 done)
+Progress: [██░░░░░░░░] 10% (v3.0 Phase 35 complete — 2/2 plans)
 
 ## Archived Milestones
 
@@ -28,13 +28,13 @@ Progress: [█░░░░░░░░░] 5% (v3.0 Phase 35 Plan 01 done)
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 99 plans completed, 131 requirements validated across 7 milestones (+ 6 ACCT requirements in progress)
+**Total:** 101 plans completed, 139 requirements validated across 7 milestones (+ 8 ACCT requirements complete in Phase 35)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 99
-- Total phases: 34 complete, 6 planned (v3.0, Phase 35 in progress)
+- Total plans completed: 101
+- Total phases: 35 complete, 5 planned (v3.0, Phase 36 next)
 - Total milestones: 7 complete, 1 in progress
 
 ## Accumulated Context
@@ -47,12 +47,10 @@ Recent decisions affecting v3.0 work:
 - User-driven source-to-account migration — no automatic backfill; user creates accounts and links sources via UI
 - Read generated SQL before db:migrate — Drizzle bug #4147: FK + column in same migration can generate incorrect SQL
 - nuqs@^2.8.8 — only new npm package for entire v3.0 milestone; needed for URL-persisted filter state without scroll reset
+- DROP INDEX IF EXISTS / CREATE INDEX IF NOT EXISTS guards in migrations — protects against index drift between local migration files and actual DB state (prior db:push usage)
+- Manual drizzle.__drizzle_migrations seeding strategy — when journal is empty but DB has tables, compute SHA256(sql_content) per migration and INSERT with journal.when as created_at
 
 ### Blockers/Concerns
-
-**Phase 35 (Database Foundation):**
-- Always read generated .sql file before running db:migrate (Drizzle FK bug #4147)
-- Decide CHECK constraint approach before generating migration: nullable-only (simpler) vs nullable + PostgreSQL CHECK (safer)
 
 **Phase 37 (Account CRUD):**
 - Run grep -r sourceType src/ and audit all 37 consumers before writing migration logic
@@ -66,5 +64,5 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 35-01-PLAN.md (schema.ts edits + backfill rename)
-Resume with: `/gsd:execute-phase 35` (Plan 02 — db:generate + db:migrate)
+Stopped at: Completed 35-02-PLAN.md (migration 0011 applied — financial_accounts table, account_type enum, statements.account_id FK live in Supabase)
+Resume with: `/gsd:execute-phase 36` (Phase 36 — Navigation)

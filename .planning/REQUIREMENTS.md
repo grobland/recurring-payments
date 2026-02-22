@@ -22,8 +22,8 @@ Requirements for v3.0 Navigation & Account Vault milestone.
 - [x] **ACCT-04**: User can edit a financial account's details
 - [x] **ACCT-05**: User can delete a financial account
 - [x] **ACCT-06**: User can see all accounts on the data Vault page grouped by type (Bank/Debit, Credit Cards, Loans)
-- [ ] **ACCT-07**: User can link an existing statement source (sourceType string) to a financial account
-- [ ] **ACCT-08**: Future PDF imports from a linked source are automatically assigned to the associated account
+- [x] **ACCT-07**: User can link an existing statement source (sourceType string) to a financial account
+- [x] **ACCT-08**: Future PDF imports from a linked source are automatically assigned to the associated account
 
 ### Account Detail Pages
 
@@ -85,8 +85,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACCT-04 | Phase 37 | Complete |
 | ACCT-05 | Phase 37 | Complete |
 | ACCT-06 | Phase 37 | Complete |
-| ACCT-07 | Phase 37 | Pending |
-| ACCT-08 | Phase 37 | Pending |
+| ACCT-07 | Phase 37 | Complete |
+| ACCT-08 | Phase 37 | Complete |
 | DETAIL-01 | Phase 38 | Pending |
 | DETAIL-02 | Phase 38 | Pending |
 | DETAIL-03 | Phase 38 | Pending |

@@ -93,7 +93,7 @@
 
 **Milestone Goal:** Restructure the entire navigation into a structured financial hub and introduce account-level management where sources become named accounts with dedicated pages showing coverage, transactions, and spending.
 
-- [ ] **Phase 35: Database Foundation** - financial_accounts table + nullable accountId FK on statements (migration 0011)
+- [x] **Phase 35: Database Foundation** - financial_accounts table + nullable accountId FK on statements (migration 0011) — completed 2026-02-22
 - [ ] **Phase 36: Navigation Restructure** - New sidebar section hierarchy, 308 redirects, active-state fix
 - [ ] **Phase 37: Account CRUD + List Page** - API routes, hooks, AccountForm, account list grouped by type, source linking
 - [ ] **Phase 38: Account Detail Pages** - Per-account page with coverage, transactions, and spending tabs
@@ -114,8 +114,8 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 35-01-PLAN.md — Rename backfill file + edit schema.ts with accountTypeEnum, financialAccounts table, accountId FK, relations, type exports
-- [ ] 35-02-PLAN.md — Generate migration 0011, human SQL review (FK bug #4147 guard), apply migration, verify database state
+- [x] 35-01-PLAN.md — Rename backfill file + edit schema.ts with accountTypeEnum, financialAccounts table, accountId FK, relations, type exports
+- [x] 35-02-PLAN.md — Generate migration 0011, human SQL review (FK bug #4147 guard), apply migration, verify database state
 
 ### Phase 36: Navigation Restructure
 **Goal**: Users can navigate the app through a reorganized sidebar with three named sections (fin Vault, payments Portal, Support), correct active state highlighting, and all existing bookmarked URLs still work via 308 redirects
@@ -196,14 +196,14 @@ Plans:
 | 19-23 | v2.0 | 21/21 | Complete | 2026-02-10 |
 | 24-30 | v2.1 | 19/19 | Complete | 2026-02-18 |
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
-| 35. Database Foundation | 1/2 | In Progress|  | - |
+| 35. Database Foundation | v3.0 | 2/2 | Complete | 2026-02-22 |
 | 36. Navigation Restructure | v3.0 | 0/TBD | Not started | - |
 | 37. Account CRUD + List Page | v3.0 | 0/TBD | Not started | - |
 | 38. Account Detail Pages | v3.0 | 0/TBD | Not started | - |
 | 39. Payment Type Selector | v3.0 | 0/TBD | Not started | - |
 | 40. Static Pages | v3.0 | 0/TBD | Not started | - |
 
-**Total:** 34 phases (1-34) complete, 6 phases (35-40) planned for v3.0
+**Total:** 35 phases (1-35) complete, 5 phases (36-40) planned for v3.0
 
 ---
-*Last updated: 2026-02-22 — Phase 35 planned (2 plans)*
+*Last updated: 2026-02-22 — Phase 35 complete (2/2 plans)*
