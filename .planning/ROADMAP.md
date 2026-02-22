@@ -111,10 +111,11 @@
   2. statements table has a nullable accountId UUID column with FK referencing financial_accounts.id
   3. Drizzle schema exports financial_accounts table and accountTypeEnum so TypeScript types are available to all subsequent phases
   4. Generated SQL reviewed manually before execution and confirmed correct (no Drizzle FK bug #4147 corruption)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 35-01: TBD
+- [ ] 35-01-PLAN.md — Rename backfill file + edit schema.ts with accountTypeEnum, financialAccounts table, accountId FK, relations, type exports
+- [ ] 35-02-PLAN.md — Generate migration 0011, human SQL review (FK bug #4147 guard), apply migration, verify database state
 
 ### Phase 36: Navigation Restructure
 **Goal**: Users can navigate the app through a reorganized sidebar with three named sections (fin Vault, payments Portal, Support), correct active state highlighting, and all existing bookmarked URLs still work via 308 redirects
@@ -195,7 +196,7 @@ Plans:
 | 19-23 | v2.0 | 21/21 | Complete | 2026-02-10 |
 | 24-30 | v2.1 | 19/19 | Complete | 2026-02-18 |
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
-| 35. Database Foundation | v3.0 | 0/TBD | Not started | - |
+| 35. Database Foundation | v3.0 | 0/2 | Planned | - |
 | 36. Navigation Restructure | v3.0 | 0/TBD | Not started | - |
 | 37. Account CRUD + List Page | v3.0 | 0/TBD | Not started | - |
 | 38. Account Detail Pages | v3.0 | 0/TBD | Not started | - |
@@ -205,4 +206,4 @@ Plans:
 **Total:** 34 phases (1-34) complete, 6 phases (35-40) planned for v3.0
 
 ---
-*Last updated: 2026-02-22 — v3.0 Navigation & Account Vault roadmap created*
+*Last updated: 2026-02-22 — Phase 35 planned (2 plans)*
