@@ -1,253 +1,185 @@
 # Project Research Summary
 
-**Project:** Subscription Manager — v2.2 Financial Data Vault
-**Domain:** PDF blob storage, in-app viewing, dual-view vault UI layered on existing statement infrastructure
-**Researched:** 2026-02-19
+**Project:** Subscription Manager — v3.0 Navigation & Account Vault
+**Domain:** Financial account management, multi-level navigation restructure, payment type filtering, data schema viewer
+**Researched:** 2026-02-22
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The v2.2 milestone transforms the existing statement tracking system into a true financial data vault by adding three capabilities: persistent PDF storage in Supabase Storage, in-app viewing via react-pdf, and a dedicated vault UI with dual-view browsing (file cabinet + timeline). The foundation is already present — the `statements` table has a `pdfStoragePath` column (currently NULL), a SHA-256 hash for deduplication, and a `// TODO: upload to Supabase Storage` comment in the upload route. This milestone fills that gap and builds the browsing UI on top. Only two new packages are required: `@supabase/supabase-js` (for Storage access) and `react-pdf` (for in-browser rendering).
+v3.0 adds structured financial account management, navigation reorganization, and payment type filtering to a mature ~48,000-line Next.js 16 + Supabase subscription manager. The core architectural change is replacing the denormalized `statements.sourceType` string (used as an implicit account identity across 37 files) with a proper `financial_accounts` table and FK relationship. This migration is the single biggest risk in the milestone — it must be done carefully and in stages, with a full audit of existing consumers before any new code is written on top of it. The naming collision between NextAuth's existing `accounts` table (at `schema.ts` line 120) and the new financial accounts concept is a hard constraint: the new table must be named `financial_accounts` with no exceptions.
 
-The recommended approach is a server-side upload pattern: the `/api/batch/upload` route already has the PDF bytes in memory, so it uploads directly to Supabase Storage using the service role key (bypassing RLS at the app layer, where auth is already verified). PDF access for the viewer is served via short-lived signed URLs generated on-demand, never as permanent public URLs. The vault UI at `/vault` presents two views of the same data — grouped by source (file cabinet) and chronological (timeline) — backed by a single TanStack Query call. All UI components reuse existing patterns: shadcn Tabs for view toggle, existing accordion structure for file cabinet, date-fns for month grouping in timeline.
+The recommended approach is purely additive and composed of existing primitives. Only one new npm package is needed: `nuqs@^2.8.8` for URL-persisted filter state on the transaction browser payment type toggle. All sidebar navigation primitives (`SidebarMenuSub`, `Collapsible`), schema tooling (Drizzle ORM, pgEnum), form libraries (React Hook Form + Zod discriminated unions), and query infrastructure (TanStack Query) are already installed and in use. The account management, schema viewer, help page, and payment type filter are all buildable without additional dependencies. Build order is tightly constrained by dependencies: database schema must come first, then account CRUD APIs and hooks, then account detail pages, then navigation restructure, then payment type filter, and finally static pages.
 
-The single most critical risk is the Vercel serverless function 4.5 MB body limit. Bank statements routinely exceed this, and routing PDF bytes through a Next.js API route body will silently fail for real-world files while appearing to work with small test PDFs. The architecture research resolves this conclusively: upload happens server-side from in-memory bytes in the existing `/api/batch/upload` route — the file is never re-transmitted through the function body from storage. The second critical risk is react-pdf's incompatibility with Next.js SSR — the component must be wrapped in `dynamic(() => import(...), { ssr: false })` with the pdfjs worker configured in the same dynamically-imported file. Both risks have clear, well-documented solutions.
-
----
+The top risks beyond the naming collision are: stale TanStack Query caches after account renames spreading across five separate query keys (vault coverage, vault timeline, sources, transactions, and accounts), multi-level sidebar active-state collisions when using naive `startsWith` matching across a three-section hierarchy, and old routes returning 404s for existing users after the navigation restructure deploys. Each risk has a concrete, implementation-ready prevention strategy. The `sourceType`-to-FK migration in particular should be treated as a first-class audit task rather than a side effect of adding the new table.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The project requires only two new packages. `@supabase/supabase-js@^2.97.0` is required because Supabase Storage has no postgres-compatible alternative — the existing Drizzle/postgres client handles the database, but storage operations require the Supabase JS SDK. `react-pdf@^10.3.0` (wojtekmaj, 2M weekly downloads) wraps Mozilla's PDF.js and supports React 19 and Next.js 16 with confirmed App Router compatibility. Everything else needed for the vault UI is already installed: `@radix-ui/react-tabs` (view toggle), `@tanstack/react-virtual` (virtualized file list), `react-dropzone` (upload), `date-fns` (month grouping).
+The existing stack requires no significant additions for v3.0. All five feature areas — multi-level sidebar navigation, account management, source-to-account migration, data schema viewer, and payment type filtering — are buildable with already-installed packages. The single new dependency is `nuqs@^2.8.8`, a 6 kB URL search-param state manager, needed because Next.js App Router's `useSearchParams` is read-only in client components and writing requires `router.push()` which resets the virtualized transaction list's scroll position. The `NuqsAdapter` wrapper must be added to `src/app/providers.tsx`.
 
-Three new environment variables are needed: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for browser-side storage operations, and `SUPABASE_SERVICE_ROLE_KEY` (no `NEXT_PUBLIC_` prefix) for server-side operations. The existing `DATABASE_URL` continues to serve Drizzle unchanged.
+The `financial_accounts` table uses a single-table pattern with nullable type-specific columns and a Zod discriminated union schema for validation at the API boundary. The schema viewer is a React Server Component rendering a static metadata object — no diagramming library, no live DB introspection round-trip. The payment type filter maps `paymentType` URL param values to groupings of the existing `tagStatus` enum at the API layer — no new schema column is required.
 
 **Core technologies:**
-- `@supabase/supabase-js@2.97.0`: Supabase Storage SDK — the only supported way to interact with storage buckets; manages signed URL generation, upload, and delete operations
-- `react-pdf@10.3.0`: Canvas-based PDF renderer — wraps PDF.js with a React API; avoids iframe CORS issues and browser chrome; compatible with React 19 and Next.js 16
-- `pdfjs-dist@5.4.624`: Installed automatically as a react-pdf dependency — do not install separately; version is pinned by react-pdf for compatibility
-
-**What NOT to add:**
-- `@supabase/storage-js` separately (already bundled in supabase-js)
-- `pdfjs-dist` separately (react-pdf pins a compatible version; separate install risks version mismatch)
-- `@supabase/auth-helpers-nextjs` (deprecated; project uses NextAuth, not Supabase Auth)
-- `file-saver` (native `URL.createObjectURL + <a download>` is sufficient on React 19 / Next.js 16)
+- `nuqs@^2.8.8` — URL-persisted filter state for payment type toggles — replaces `useState + router.push` boilerplate; prevents scroll reset on filter change in the virtualized transaction browser
+- `radix-ui` Collapsible (already installed at ^1.4.3) — collapsible sidebar sections — zero new install; import from existing `collapsible.tsx`
+- `SidebarMenuSub` + `SidebarMenuSubButton` (already installed, generated component) — nested nav items — all exported from `sidebar.tsx` lines 640-720
+- Drizzle ORM `pgEnum` + `pgTable` (already installed at ^0.45.1) — `financial_accounts` table + `accountTypeEnum` — follows identical pattern to 8 existing enums in schema.ts
+- Zod `z.discriminatedUnion` (already installed at ^4.3.5) — type-safe account form validation — same resolver integration as existing subscription form schemas
+- TanStack Query (already installed at ^5.90.19) — account CRUD hooks and filtered transaction queries — same `useQuery/useMutation` pattern as `use-sources.ts`
 
 ### Expected Features
 
-PDF storage is the keystone feature — every vault capability depends on it. The existing `pdfStoragePath` nullable column in the `statements` table is the integration point. Once storage is wired in, the remaining features are UI layers on top of existing infrastructure.
+**Must have (table stakes):**
+- `financial_accounts` table + `accountTypeEnum` DB migration — the entire milestone depends on this schema change; everything else is blocked until the migration runs
+- Account CRUD UI (list page, detail page with four tabs, create/edit form with type-discriminated conditional fields, account type badge)
+- Source migration banner — prompts users to link existing `sourceType` strings to new typed account records; the user-driven migration approach is recommended over automatic backfill
+- Navigation restructure into three named sections (fin Vault, Payments Portal, Support) with new Accounts, Schema, and Help items registered in the new structure
+- Payment type filter (All / Recurring / Subscriptions toggle group) on the transaction browser, URL-persisted via nuqs
 
-**Must have (table stakes for vault launch):**
-- PDF storage in Supabase Storage private bucket — without this, "vault" is meaningless
-- In-app PDF viewer via react-pdf modal — users need to verify AI extraction against source documents
-- Download PDF — baseline expectation for any document storage product
-- File cabinet view — source-grouped accordion extending existing `source-list.tsx`
-- Timeline view — chronological list of all statements with month separators
-- View toggle — shadcn Tabs switching between the two views; persist preference in localStorage
-- "No file stored" badge — statements imported before the vault was built have `pdfStoragePath = NULL`; must be indicated clearly
-- Empty state with upload CTA — required for new users who navigate to vault before uploading
-
-**Should have (add after core vault is live):**
-- Coverage visualization — 12-month grid per source showing "PDF stored" / "data only" / "missing" states; extends existing `coverage-gap-warning` component
-- Historical upload wizard — guided backfill flow using existing batch uploader infrastructure; select source, view coverage calendar, upload missing months
-- Delete PDF — remove stored file while preserving extracted transaction data; requires confirmation dialog with clear messaging
-- Statement notes — plain text annotation field on `statements` row; far simpler than PDF annotation and covers 95% of the use case
+**Should have (differentiators):**
+- Account detail coverage tab reusing existing `CoverageGrid` component without modification
+- Account detail spending summary (SUM aggregation scoped to account via new `/api/accounts/[id]/spending` route)
+- Source-to-account auto-link — when creating an account, optionally link an existing `sourceType` string and backfill `statements.accountId` in the same API call
+- `ROUTES` constants file in `src/lib/constants/routes.ts` to prevent path string duplication across sidebar, breadcrumbs, and `router.push()` calls
 
 **Defer (v2+):**
-- Statement-to-subscription deep linkage — provenance tracking already exists via `importAuditId`; useful but not blocking vault launch
-- Batch date auto-detection — AI cost and complexity not justified for v1; manual date assignment is acceptable
-- Full-text search across PDF contents — extracted transactions are already searchable; vault is a browser, not a search engine at this stage
-- Bank API integration (Plaid/MX) — compliance burden and cost prohibitive for this stage
-
-**Anti-features (do not build for this milestone):**
-- PDF annotation — PSPDFKit costs $400-1200/month; notes field covers the use case at a fraction of complexity
-- Custom folder organization — conflicts with source-type mental model; the file cabinet view IS the folder metaphor
-- Automatic bank statement download — requires financial institution partnerships, OAuth flows, compliance
-- Mobile camera upload — breaks the PDF-only processing pipeline; tell users to use their phone's scanner app
+- Interactive ER diagram (React Flow) for the schema viewer — static RSC is sufficient for the current read-only documentation requirement
+- CMS-driven help page — static JSX in `help/page.tsx` is correct for infrequently-changing FAQ content; upgrade only if content change frequency justifies the infrastructure
+- `NOT NULL` constraint on `statements.accountId` — leave nullable; add only after a complete backfill migration is verified
+- Full-text search across vault PDF contents — extracted transactions are already searchable in the existing UI
 
 ### Architecture Approach
 
-The vault extends the existing system at two primary integration points: the `/api/batch/upload` route is modified to upload file bytes to Supabase Storage immediately after creating the statement row, and a new `/api/statements/[id]/pdf` route generates short-lived signed URLs on demand. The vault UI lives at `/app/(dashboard)/vault/page.tsx` within the existing dashboard route group, inheriting the auth guard and sidebar layout automatically. No new database tables are required.
+The architecture is a layered extension of the existing Next.js 16 App Router application. New routes (`/accounts`, `/accounts/[id]`, `/schema`, `/help`) are added to the `(dashboard)` route group. New API routes (`/api/accounts`, `/api/accounts/[id]` and four sub-routes) follow the established pattern from existing source and statement APIs. Three existing components require surgical modification: `app-sidebar.tsx` (flat 13-item nav array split into three named section groups), `transaction-filters.tsx` (payment type toggle group added), and `transaction-browser.tsx` (`accountId?: string` prop added). All other components — including `CoverageGrid`, vault page components, subscription components, billing, auth, and analytics — are entirely untouched.
 
-The dual-view architecture uses a single `useVault` TanStack Query hook fetching from a new `/api/vault` endpoint. Both views (`VaultGrid` for file cabinet, `VaultTimeline` for timeline) consume the same data — tab switching is pure UI state with no additional data fetching. The `PdfViewerModal` is a shadcn Dialog wrapping a dynamically-imported `PDFDocumentInner` component; the dynamic import boundary is mandatory for SSR bypass. The pdfjs worker configuration must live in the same file as the `<Document>` component — setting it in a shared utility file is unreliable.
+The account detail page uses a tab pattern with lazy independent data loading: each tab fetches its own data via its own hook only when first visited. TanStack Query caches all tab data after first visit so tab switching is instant thereafter. The `CoverageGrid` component is reused verbatim in the account coverage tab; the account-scoped coverage API returns data in the same `{ sources: CoverageSource[], months: string[] }` shape as the existing vault coverage hook.
 
 **Major components:**
-1. `src/lib/supabase/admin.ts` (new) — service role Supabase client for all server-side storage operations
-2. `src/app/api/batch/upload/route.ts` (modified) — adds storage upload after statement row creation; non-fatal on storage failure
-3. `src/app/api/statements/[id]/pdf/route.ts` (new) — auth + ownership check, generates 5-minute signed URL
-4. `src/app/api/vault/route.ts` (new) — filtered statement list with `hasPdf` boolean, supports source/date filters
-5. `src/app/(dashboard)/vault/page.tsx` (new) — dual-view page with Tabs, filters, and PDF viewer modal
-6. `src/components/vault/pdf-document-inner.tsx` (new) — react-pdf Document/Page with worker config (dynamic import target)
-7. `src/components/vault/pdf-viewer-modal.tsx` (new) — Dialog wrapper with page navigation and zoom controls
-8. `src/components/vault/vault-grid.tsx` + `vault-timeline.tsx` (new) — two layout components consuming shared data
-9. `src/lib/hooks/use-vault.ts` + `use-pdf-url.ts` (new) — TanStack Query hooks for vault list and on-demand signed URL
-
-**Build order (each step independently deployable and verifiable):**
-1. Supabase Storage infrastructure — create bucket, configure RLS policies, add env vars, create admin client
-2. Modify upload route — wire storage upload into existing flow; verify `pdfStoragePath` is set in DB with a real PDF
-3. Signed URL API route — new endpoint; test with curl before building UI
-4. PDF viewer components — install react-pdf, build modal in isolation; run `next build` to catch webpack issues early
-5. Vault list API — new `/api/vault` endpoint with filters and `hasPdf` field
-6. Vault UI — page, grid, timeline, filters, sidebar link; wire `PdfViewerModal` into page
+1. `financial_accounts` DB table + `accountTypeEnum` + nullable `accountId` FK on `statements` — data layer foundation; migration 0011
+2. Account CRUD layer (`/api/accounts` routes + `use-accounts.ts` hooks + Zod discriminated union schema) — standard Drizzle + TanStack Query pattern; no new patterns
+3. `AccountDetailTabs` — assembles existing `CoverageGrid` and `TransactionBrowser` with account-scoped data; neither child component changes
+4. Modified `AppSidebar` — splits flat nav into three named section groups using already-installed shadcn `SidebarGroup` + `Collapsible` primitives
+5. Payment type filter — maps `paymentType` URL param to `tagStatus` conditions at the API layer; `nuqs` manages URL state; no schema column needed
+6. `SchemaViewerPage` (RSC) — static metadata object rendered with shadcn Table; zero DB queries, zero client JS, zero new packages
 
 ### Critical Pitfalls
 
-1. **Vercel 4.5 MB body limit on PDF uploads** — routing PDF bytes through a Next.js API route body will return HTTP 413 for any bank statement over ~3.3 MB (base64 encoding adds 33% overhead). Invisible in development with small test files. Resolution: upload happens from the file buffer already in memory in `/api/batch/upload` — the bytes go directly from the serverless function's memory to Supabase Storage, never re-entering an API route body. The function already has the bytes via FormData.
+1. **`sourceType` string embedded in 37 files — not just the schema.** Migration feels complete once the `financial_accounts` table exists and the FK column is added to `statements`, but the vault coverage API, source dashboard, vault timeline, and transaction browser all still query by `sourceType` string. Prevention: run `grep -r sourceType src/` before writing any migration logic; audit all 37 consumers; repoint APIs to JOIN through `financial_accounts` rather than retiring them outright. Treat this as the top-priority dependency graph item.
 
-2. **react-pdf / pdfjs-dist SSR crash** — importing react-pdf in any component that Next.js attempts to server-render throws `TypeError: Promise.withResolvers is not a function` at build time, or silently renders a blank canvas at runtime. Resolution: mandatory two-file split: `PDFDocumentInner` (actual react-pdf code + worker config in same file) loaded exclusively via `dynamic(() => import('./pdf-document-inner'), { ssr: false })`. Also add `config.resolve.alias.canvas = false` to webpack config and `pdfjs-dist` to `serverExternalPackages` in `next.config.ts`.
+2. **`accounts` naming collision with NextAuth DrizzleAdapter.** The existing `schema.ts` exports an `accounts` table at line 120 for NextAuth OAuth provider accounts. Naming the new financial accounts table `accounts` would silently corrupt OAuth login flows. Prevention: name it `financial_accounts` from the start. No exceptions.
 
-3. **Supabase Storage RLS misconfiguration** — two opposite failure modes with the same root cause (policies not configured correctly): no policies leaves financial documents accessible to any authenticated user by path; RLS enabled but no policies blocks all access with 403 errors. Resolution: configure three explicit RLS policies (INSERT, SELECT, DELETE) using `(storage.foldername(name))[1] = auth.uid()::text` before writing any upload code. Test with two separate authenticated Supabase clients — not the Supabase dashboard, which bypasses RLS.
+3. **TanStack Query cache not invalidated after account rename — stale data in five places.** The `PATCH /api/accounts/[id]` mutation must invalidate not just `["accounts"]` but also `["vault", "coverage"]`, `["vault", "timeline"]`, `["sources"]`, and `["transactions"]`. Prevention: document the full fan-out invalidation list in the mutation's `onSuccess` handler before writing the account edit form. This is a trust failure if discovered post-deployment.
 
-4. **Storage-database split-brain** — if the storage upload succeeds but the `pdfStoragePath` DB update fails, an orphaned file exists in Supabase Storage with no database reference. Resolution: non-fatal design — log the storage error, continue processing (text extraction still works from in-memory bytes), set `pdfStoragePath = NULL`. The statement remains fully functional without a stored PDF. Add a periodic orphan cleanup cron for safety.
+4. **Multi-level sidebar active-state collisions.** `pathname.startsWith(href)` matches all ancestor segments simultaneously — `/vault/accounts/[id]/transactions` would highlight the vault section, the accounts item, and any transaction sub-item at once. Prevention: implement an explicit `isItemActive(pathname, href, children?)` function using either exact equality or parent-of-deep-routes logic, not naive prefix matching.
 
-5. **Signed URL expiry breaking the viewer** — signed URLs expire (5-minute design). Pre-fetching URLs for the entire vault list means they will be stale when users click. Resolution: generate signed URLs on-demand only when the modal opens; the vault list stores only `hasPdf: boolean`. TanStack Query caches the URL for 4 minutes (`staleTime: 4 * 60 * 1000`) and garbage-collects at 5 minutes, which aligns with the URL lifetime.
-
----
+5. **Old routes returning 404 for existing users after navigation restructure.** Any route that moves must have a 308 redirect added in `next.config.ts` in the same commit. Email templates for renewal reminders, trial-end, and payment-failed notifications may contain hardcoded deep links — audit these before any route rename deploys. Prevention: add redirects as part of the navigation restructure commit, not as a cleanup step after.
 
 ## Implications for Roadmap
 
-Research reveals a clear dependency chain: storage must exist before the viewer can function, the viewer must be proven before vault UI delivers value, and the core vault must be stable before enhancement features (coverage visualization, historical upload wizard) are layered on top. This drives a 4-phase structure.
+The build order is tightly constrained by dependencies. The schema must exist before any account API; the account API must exist before the detail page; the detail page should exist before the nav restructure is finalized so new routes are registered correctly in the new section structure from the start. Payment type filter and static pages are fully independent and can run in parallel or be deferred without blocking anything else.
 
-### Phase 1: Storage Foundation
+### Phase 1: Database Foundation
+**Rationale:** Every account feature in v3.0 depends on the `financial_accounts` table and `accountTypeEnum` existing in the database. This must be the first phase — nothing else can be built until the schema is in place. The migration also introduces the nullable `accountId` FK on `statements`, which is the linchpin of the entire `sourceType` migration strategy.
+**Delivers:** `financial_accounts` table with `accountTypeEnum`, nullable `accountId` FK on `statements`, Drizzle relations, migration 0011. No UI is built in this phase. The migration is the only deliverable, and it must be reviewed manually before running.
+**Addresses:** Account management data model; establishes the entity FK that replaces the denormalized string
+**Avoids:** NOT NULL migration failure on existing statement rows (Pitfall 2 — column must be nullable because all existing statements predate the account concept); `accounts` naming collision with NextAuth (name the table `financial_accounts`); Drizzle FK + column in same migration SQL generation bug — always read the generated `.sql` file before running `db:migrate`
 
-**Rationale:** PDF storage is the keystone dependency — every other vault feature requires `pdfStoragePath` to be non-null on at least some statements. This phase also contains the two highest-risk architectural decisions (upload flow design, RLS configuration) that cannot be changed without significant rework later. Must be built and verified in isolation before any UI work begins.
+### Phase 2: Account CRUD (API + Hooks + List Page)
+**Rationale:** The account detail page depends on account CRUD existing. The source migration banner depends on accounts being queryable. This phase establishes the complete account data lifecycle before any display-heavy work begins.
+**Delivers:** `GET/POST /api/accounts` (create with optional source linking), `GET/PATCH/DELETE /api/accounts/[id]`, `use-accounts.ts` hooks (`useAccounts`, `useAccount`, `useCreateAccount`, `useUpdateAccount`, `useDeleteAccount`), `AccountForm` with type-discriminated conditional fields, `AccountList` page with empty state, `AccountCard`, `AccountTypeBadge`, `SourceMigrationBanner`.
+**Uses:** Zod `z.discriminatedUnion`, React Hook Form, TanStack Query — all existing patterns
+**Avoids:** Type-inconsistent data in DB (Pitfall 5 — nullable columns with Zod validation at API boundary; optionally add PostgreSQL CHECK constraint in this phase); missing `isUserActive` billing guard on new API routes (apply the same guard used in subscription routes); missing query invalidation fan-out on PATCH mutation (document all five query keys before writing the mutation)
 
-**Delivers:** PDFs uploaded through the existing batch import flow are now persisted in Supabase Storage. The `pdfStoragePath` column is populated on new uploads. Historical statements retain `pdfStoragePath = NULL` (expected — those files are gone and unrecoverable).
+### Phase 3: Account Detail Page
+**Rationale:** Depends on account CRUD (Phase 2) and reuses the existing `CoverageGrid` and `TransactionBrowser` components. Building this before the nav restructure ensures the route `/accounts/[id]` is correctly placed in the new section structure from the start, avoiding double-touch of breadcrumb and nav code.
+**Delivers:** `AccountDetailTabs` (details, coverage, transactions, spending tabs), four account-scoped API routes (`/coverage`, `/transactions`, `/spending`, inherited from base), `useAccountCoverage` and `useAccountSpending` hooks, account detail page at `/accounts/[id]`.
+**Implements:** Lazy tab data loading pattern; `CoverageGrid` reuse with account-scoped coverage API returning the same `{ sources, months }` shape; `TransactionBrowser` reuse by passing `accountId` prop
+**Avoids:** Duplicate TransactionBrowser anti-pattern (pass `accountId` prop; never rebuild the virtualized browser); coverage API mismatch during transition (pass `account.name` to existing sourceType-keyed hooks while the API migration completes; do not attempt both simultaneously)
 
-**Addresses features:** PDF storage in Supabase private bucket (P1 table stakes)
+### Phase 4: Navigation Restructure
+**Rationale:** Should come after new pages exist so the routes being added to the sidebar are known and testable before the restructure deploys. The restructure itself is a mechanical split of the flat nav array into three named section groups — low code complexity but high breakage risk if redirects and active-state logic are not implemented correctly.
+**Delivers:** Modified `AppSidebar` with fin Vault / Payments Portal / Support sections; Accounts, Schema, and Help nav items; `ROUTES` constants file at `src/lib/constants/routes.ts`; 308 redirects in `next.config.ts` for any moved routes; explicit `isItemActive` function for multi-level active state detection.
+**Avoids:** Active-state collisions at multiple depth levels (Pitfall 7 — explicit isActive function, not naive startsWith); old route 404s for existing users (Pitfall 4 — redirects added in same commit as route moves); breadcrumbs pointing to 404 URLs (use ROUTES constants throughout)
 
-**Avoids pitfalls:**
-- Vercel 4.5 MB body limit (resolved by uploading from in-memory bytes, not a second request body)
-- RLS misconfiguration (configure before writing upload code; test with two user accounts)
-- Storage-database split-brain (non-fatal design from day one)
-- Account deletion leaving orphaned files (design the deletion cascade in this phase)
+### Phase 5: Payment Type Filter
+**Rationale:** Fully independent of account work. Can be built in parallel with Phases 2-4 or deferred to here. The filter maps a new URL param to groupings of the existing `tagStatus` enum at the API layer — no schema change required.
+**Delivers:** `paymentType` toggle group (All / Recurring / Subscriptions) in `TransactionFilters`, `useQueryState` from nuqs managing the filter URL state, `/api/transactions/route.ts` updated to translate `paymentType` to `tagStatus IN (...)` conditions, `NuqsAdapter` added to `src/app/providers.tsx`.
+**Uses:** `nuqs@^2.8.8` — the only new npm package for the entire v3.0 milestone
+**Avoids:** Scroll reset on filter toggle (nuqs shallow updates preserve the virtualized list scroll position); conflating `tagStatus` with `paymentType` at the schema level (map at API query layer only; `tagStatus` enum stays unchanged); multiple simultaneous API calls per toggle (debounce filter changes 300ms before sending)
 
-**Needs research-phase:** No — Supabase Storage upload from a Node.js buffer is standard, well-tested, and fully documented. RLS policy SQL is provided verbatim in ARCHITECTURE.md.
-
----
-
-### Phase 2: PDF Viewer
-
-**Rationale:** The viewer is the feature that makes "vault" meaningful over "import history." It must be built and verified in isolation before being integrated into the vault page — the react-pdf + Next.js webpack configuration is the most technically complex part of this milestone and deserves its own phase to contain the risk. A broken viewer would block all vault UI work.
-
-**Delivers:** Users can click "View PDF" on any statement with `pdfStoragePath` set and see it rendered in a modal dialog. Page navigation (prev/next) and zoom controls work. Signed URL is fetched on modal open (not pre-fetched for the list). PDF fails gracefully with a "Download original file" fallback link.
-
-**Addresses features:** In-app PDF viewer (P1), download PDF (P1 — signed URL pattern reused for download button)
-
-**Avoids pitfalls:**
-- react-pdf SSR crash (mandatory dynamic import + worker config in same dynamically-imported file)
-- pdfjs-dist inflating server bundle (add to `serverExternalPackages` in `next.config.ts`)
-- Signed URL expiry in open viewer (generate on-demand; TanStack Query cache timed to URL lifetime)
-- Multi-page browser freeze (render one page at a time; prev/next controls)
-
-**Needs research-phase:** No — the two-file dynamic import pattern is documented in ARCHITECTURE.md with working TypeScript code. Verify with `next build` after installing react-pdf before proceeding.
-
----
-
-### Phase 3: Vault UI
-
-**Rationale:** With storage working and the PDF viewer proven, building the vault page is a UI composition task with no novel technical risk. The dual-view interface reuses existing patterns throughout: shadcn Tabs for view toggle, the existing source-list accordion structure extended for file cabinet, date-fns month grouping for timeline. The `StatementCard` component is built once and shared across both views — no duplicate implementations.
-
-**Delivers:** A new `/vault` page accessible from the sidebar. File cabinet view: statements grouped by source in an accordion, each with a StatementCard showing filename, date, file size, "View PDF" button, "Download" button, and "No file stored" badge where applicable. Timeline view: same cards sorted chronologically with month-group separators. Empty state with upload CTA for new users. View preference saved to localStorage.
-
-**Addresses features:** File cabinet view (P1), timeline view (P1), view toggle (P1), empty state (P1), "No file stored" indicator (P1)
-
-**Avoids pitfalls:**
-- Pre-fetching signed URLs for vault list (vault list returns `hasPdf: boolean` only; signed URLs fetched on click)
-- Slow vault page load (skeleton loading while metadata fetches; URL generation only on user action)
-- No pagination on vault query (limit/offset on `/api/vault`; default 100 per load)
-
-**Needs research-phase:** No — standard TanStack Query + shadcn Tabs + existing component extension. No novel patterns.
-
----
-
-### Phase 4: Coverage Visualization and Historical Upload Wizard
-
-**Rationale:** These two differentiator features are tightly coupled — the wizard's value proposition is "fill the gaps shown in coverage view." Both reuse existing infrastructure (`coverage-gap-warning` component, `batch-uploader.tsx`). They are deferred until core vault is live so implementation is validated against real uploaded statements rather than assumed data shapes and real usage patterns.
-
-**Delivers:** A 12-month coverage grid per source showing "PDF stored" (green), "data only — no file" (yellow), and "no data" (gray) per month. A multi-step guided wizard: select source → view coverage calendar → drag-and-drop batch upload for missing months using existing `batch-uploader.tsx` → confirm updated coverage.
-
-**Addresses features:** Coverage visualization (P2 differentiator), historical upload wizard (P2 differentiator)
-
-**Avoids pitfalls:**
-- Duplicate re-uploads during bulk backfill (hash check already wired in batch uploader; surface "Already uploaded" message clearly)
-- Bulk upload partial failure being invisible (per-file status in upload queue for all 5+ file batches)
-- Rebuilding the upload engine (wizard is UX scaffolding only; `batch-uploader.tsx` is the engine)
-
-**Needs research-phase:** Yes, lightly — the month-grid visualization has no established component in this codebase. The data model is clear (`statementDate` + `pdfStoragePath IS NOT NULL` per month per source), but the grid rendering approach (CSS Grid, Recharts cell chart, or shadcn-compatible calendar component) should be scoped during planning before committing to implementation.
-
----
+### Phase 6: Static Pages (Schema Viewer + Help)
+**Rationale:** Zero dependencies on any other phase. Can be done any time or de-prioritized if earlier phases run long. Both pages are zero-JS React Server Components with static content.
+**Delivers:** `SchemaViewerPage` at `/schema` (RSC + static metadata object describing all tables + shadcn Table rendering), `HelpPage` at `/help` (static FAQ content); both linked from the Support section of the restructured sidebar from Phase 4.
+**Avoids:** Live DB introspection on schema viewer (static metadata only — `information_schema` queries add latency, require extra permissions, and return raw Postgres type names rather than application-level descriptions); CMS over-engineering for help page content
 
 ### Phase Ordering Rationale
 
-- Storage before viewer: react-pdf needs a real signed URL pointing to a real stored file — cannot meaningfully test or prove the viewer without Phase 1 complete
-- Viewer before vault UI: `PdfViewerModal` is a core component of the vault page; isolating it in Phase 2 lets webpack and worker issues surface before vault UI development begins, avoiding rework
-- Vault UI before enhancements: Coverage visualization is meaningless without a population of real statements with mixed `pdfStoragePath` states; the wizard's UX cannot be validated without seeing the vault with real data
-- Phase 4 grouped as one: Coverage visualization and historical wizard are tightly coupled — the wizard fills the gaps shown in the coverage grid; building them separately would require connecting them afterward
+- Schema before CRUD before UI is a hard dependency chain — the DB table must exist before API routes reference it, and API routes must exist before React components can call them.
+- Navigation restructure deferred to Phase 4 because existing pages work fine with the old nav during development; restructuring earlier would require updating page breadcrumbs twice (once for new routes, once for structural changes).
+- Payment type filter (Phase 5) is isolated — it touches exactly three existing files (`transaction-filters.tsx`, `use-transactions.ts`, `api/transactions/route.ts`) plus `providers.tsx` for the NuqsAdapter, and can be parallelized or deferred without blocking anything else.
+- Static pages (Phase 6) have zero runtime dependencies and zero risk — they are last only because they have the lowest priority if time runs short.
 
 ### Research Flags
 
-Needs deeper research during planning:
-- **Phase 4:** Coverage grid rendering approach — evaluate CSS Grid (lightweight, manual), shadcn calendar-like component (consistent with existing UI), or Recharts cell/calendar chart before planning this phase. Data model is clear; rendering approach is not.
+Phases needing closer attention during execution:
 
-Standard patterns (skip research-phase):
-- **Phase 1:** Supabase Storage upload from Node.js buffer is standard. RLS policy SQL is provided verbatim in ARCHITECTURE.md. Bucket creation is a one-time dashboard action.
-- **Phase 2:** react-pdf + Next.js dynamic import pattern is fully documented in ARCHITECTURE.md with working code. Worker configuration is established. Verify with `next build` immediately after installing the package.
-- **Phase 3:** TanStack Query + shadcn Tabs + extension of existing components. No novel patterns; well-established across the existing codebase.
+- **Phase 1 (Database Foundation):** Always read the generated `.sql` migration file before running `db:migrate`. Drizzle has a documented bug (GitHub issue #4147) where adding a FK and a new column in the same migration can generate incorrect SQL. Verify manually before applying.
+- **Phase 2 (Account CRUD):** The `sourceType`-to-account migration strategy requires a final decision: user-driven only (create accounts manually, link sources via the UI) vs. optional one-click backfill (auto-create accounts from distinct `sourceType` strings). Architecture research recommends user-driven; confirm with product intent before building the source migration banner. Also run `grep -r sourceType src/` and audit all 37 consumers before writing any migration logic.
+- **Phase 3 (Account Detail):** Decide the coverage API transition strategy before writing the account detail page: pass `account.name` to existing sourceType-keyed hooks as a bridge (recommended — lower risk, two-step), or migrate the coverage API to accept `accountId` simultaneously (higher risk, one-step). The two-step approach is recommended.
+- **Phase 4 (Nav Restructure):** Audit all email templates for hardcoded paths before deploying any route renames. Renewal reminder, trial-end, and payment-failed emails may contain deep links to routes that will move.
 
----
+Phases with standard patterns (skip additional research):
+
+- **Phase 5 (Payment Type Filter):** nuqs is well-documented with official Next.js App Router adapter. The `tagStatus`-to-`paymentType` mapping is explicit and verified against the existing transactions API.
+- **Phase 6 (Static Pages):** Standard RSC pattern; shadcn Table and Accordion components are well-understood in this codebase.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Both packages verified via npm on 2026-02-19. Version compatibility with React 19 and Next.js 16 confirmed. Existing package inventory verified against `package.json`. |
-| Features | HIGH | Feature list derived primarily from codebase analysis (existing components, schema fields, TODO comment in upload route). Anti-features validated against cost and complexity data from official sources. |
-| Architecture | HIGH | Integration points verified against actual codebase files: `src/app/api/batch/upload/route.ts` (TODO at line 97), `src/lib/db/schema.ts` (`pdfStoragePath` nullable text column). Data flow patterns are fully specified with working TypeScript code examples. |
-| Pitfalls | HIGH | Vercel 4.5 MB limit confirmed via official Vercel docs. react-pdf SSR failure modes confirmed via tracked GitHub issues with multiple corroborating reports. RLS misconfiguration patterns confirmed via Supabase official docs and a 2025 security study. Signed URL expiry behavior confirmed via Supabase community discussion. |
+| Stack | HIGH | All findings verified against `package.json`, official docs, and direct codebase inspection. `nuqs@^2.8.8` version confirmed via `npm view nuqs version` on 2026-02-22. Only one new package needed for the entire milestone. |
+| Features | HIGH | v3.0 account management features are well-defined from direct codebase analysis. Vault features context from prior v2.2 milestone research is established infrastructure being extended, not redesigned. |
+| Architecture | HIGH | All patterns derived from direct codebase analysis of existing files. Component reuse paths (CoverageGrid at `src/components/vault/coverage-grid.tsx`, TransactionBrowser at `src/components/transactions/transaction-browser.tsx`) verified against actual component prop interfaces. |
+| Pitfalls | HIGH | Critical pitfalls are evidence-based: `sourceType` in 37 files confirmed by direct grep; `accounts` naming collision confirmed by `schema.ts` line 120; Drizzle FK bug is a documented GitHub issue (#4147); TanStack Query invalidation fan-out confirmed by tracing all consumers of account name data. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Coverage grid component approach (Phase 4):** The month-grid visualization has a clear data model but no established rendering approach in this codebase. Scope this during Phase 4 planning — evaluate CSS Grid, a shadcn-compatible calendar, or Recharts before committing to implementation.
-
-- **Supabase free tier storage quota:** The 1 GB free tier fits roughly 100-200 statements at 5-10 MB each across all users. At scale, this becomes a billing consideration. Design a per-user storage usage query from Phase 1 so the monitoring data is available before the quota becomes urgent.
-
-- **Worker path: legacy vs. standard:** ARCHITECTURE.md uses `pdfjs-dist/legacy/build/pdf.worker.min.mjs` while STACK.md uses `pdfjs-dist/build/pdf.worker.min.mjs`. After installing `react-pdf@10.3.0`, validate which path resolves correctly in the Next.js 16 bundler — the non-legacy path is preferred for modern targets.
-
-- **Vercel function timeout for large uploads:** The 4.5 MB body limit is the primary concern, but Vercel also has a 10-second default function timeout. A 10-15 MB PDF upload on a slow connection could time out during the storage upload step. Monitor after Phase 1 launch; if failures occur, evaluate Supabase resumable uploads (TUS protocol via `tus-js-client`).
-
----
+- **Transaction amount sign convention (Phase 5 prerequisite):** STACK.md identifies two possible implementations for payment type filtering. Option A (signed amounts — positive=debit, negative=credit) requires no schema change. Option B (always-positive amounts with direction lost at import) requires adding a `transactionType` enum column to `transactions` as migration 0012. Verify the actual data in the `transactions` table before starting Phase 5 — check whether amounts in imported statements are signed or always positive. Run: `SELECT amount FROM transactions LIMIT 50` and inspect.
+- **`sourceType` migration scope and strategy:** The architecture research recommends user-driven account creation (no automatic backfill). Confirm this is acceptable: existing users who already have years of imported statements will need to manually create account records and link their sources. If this friction is unacceptable, design a one-click "Import accounts from sources" feature that auto-creates `financial_accounts` rows from distinct `sourceType` strings with `type = NULL` requiring user completion.
+- **CHECK constraint decision (Phase 1):** Two approaches for enforcing type-discriminated fields are viable: nullable columns with a PostgreSQL CHECK constraint enforcing cross-column consistency (safer, more complex migration), or nullable columns only relying on Zod validation at the API boundary (simpler, relies on application-layer enforcement). Decide before Phase 1 migration is generated — changing the approach after data exists requires a second migration.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `src/lib/db/schema.ts` — `statements` table schema, `pdfStoragePath` nullable text column confirmed
-- `src/app/api/batch/upload/route.ts` — upload flow, TODO comment at line 97, `MAX_FILE_SIZE = 50MB` constant
-- `npm view react-pdf version` → `10.3.0` — verified 2026-02-19
-- `npm view @supabase/supabase-js version` → `2.97.0` — verified 2026-02-19
-- `npm view pdfjs-dist version` → `5.4.624` — verified 2026-02-19
-- [Vercel Functions Limits](https://vercel.com/docs/functions/limitations) — 4.5 MB body limit confirmed
-- [Supabase Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control) — RLS policy SQL with `storage.foldername()`
-- [Supabase createSignedUrl API](https://supabase.com/docs/reference/javascript/storage-from-createsigneduploadurl) — signed URL generation and expiry
-- [Supabase Storage File Limits](https://supabase.com/docs/guides/storage/uploads/file-limits) — 50 MB per file max, 1 GB free tier total storage
-- [Supabase Delete Objects](https://supabase.com/docs/guides/storage/management/delete-objects) — must use Storage API, not SQL DELETE
+- `src/components/layout/app-sidebar.tsx` — current nav structure, SidebarGroup composition, `pathname.startsWith` active link patterns
+- `src/lib/db/schema.ts` — complete database schema (13 tables), `accounts` table naming collision at line 120, existing enum patterns confirmed
+- `src/app/api/transactions/route.ts` lines 19-25 — keyset pagination, `tagStatus` filter translation, existing URL param handling verified
+- `src/components/vault/coverage-grid.tsx` — `CoverageGridProps` interface verified for reuse without modification
+- `src/lib/hooks/use-sources.ts` — canonical TanStack Query hook pattern (`entityKeys`, `staleTime: 2 * 60 * 1000`) for all new hooks to follow
+- `src/components/ui/sidebar.tsx` lines 640-720 — `SidebarMenuSub`, `SidebarMenuSubItem`, `SidebarMenuSubButton` exports confirmed present
+- `src/components/ui/collapsible.tsx` — `Collapsible` from `"radix-ui"` already in use in `folder-card.tsx`
+- shadcn/ui sidebar docs (https://ui.shadcn.com/docs/components/sidebar) — `SidebarMenuSub`, Collapsible pattern, `SidebarGroupLabel asChild` limitation
+- nuqs official site (https://nuqs.dev/) — type-safe URL params, `NuqsAdapter` requirement for Next.js App Router, 6 kB gzipped size
+- Next.js `useSearchParams` docs — read-only limitation in client components confirmed (official docs)
+- Next.js App Router redirects reference (https://nextjs.org/docs/app/api-reference/config/next-config-js/redirects) — 308 vs 307 behavior, `next.config.ts` syntax
+- PostgreSQL CHECK constraints (https://www.postgresql.org/docs/current/ddl-constraints.html) — cross-column constraint syntax for discriminated union enforcement
+- Drizzle ORM GitHub issue #4147 — FK + column in same migration SQL generation bug confirmed
 
 ### Secondary (MEDIUM confidence)
-- [react-pdf GitHub (wojtekmaj/react-pdf)](https://github.com/wojtekmaj/react-pdf) — Next.js App Router compatibility, worker config requirement, React 19 peer dep
-- [vercel/next.js #70239](https://github.com/vercel/next.js/issues/70239) — `Promise.withResolvers` build failure with pdfjs-dist in Next.js
-- [wojtekmaj/react-pdf #1855](https://github.com/wojtekmaj/react-pdf/issues/1855) — worker path resolution issues in App Router
-- [Supabase Discussion #34254](https://github.com/orgs/supabase/discussions/34254) — orphaned files when deleting via SQL (S3 object persists)
-- [Supabase Discussion #7626](https://github.com/orgs/supabase/discussions/7626) — signed URL generates different signature each call (no HTTP-level caching)
-- [Supabase RLS security research 2025](https://designrevision.com/blog/supabase-row-level-security) — 83% of exposed Supabase databases involve RLS misconfigurations
-- [Bypass Vercel 4.5 MB limit with Supabase direct upload](https://medium.com/@jpnreddy25/how-to-bypass-vercels-4-5mb-body-size-limit-for-serverless-functions-using-supabase-09610d8ca387)
+- `.planning/codebase/ARCHITECTURE.md` (2026-01-24) — prior architecture analysis confirming layered pattern
+- `.planning/phases/06-statement-source-tracking/06-RESEARCH.md` — sourceType history and prior decisions
+- Competitor vault analysis (Dext, FutureVault, SmartVault) — coverage visualization and historical upload wizard confirmed as differentiators with no competitor equivalents
+- TanStack Query invalidateQueries reference (https://tanstack.com/query/latest/docs/framework/react/guides/query-invalidation) — fan-out invalidation pattern
+- shadcn Nested Sidebar Items pattern (https://www.shadcn.io/patterns/collapsible-sidebar-1) — collapsible multi-level sidebar
 
 ### Tertiary (LOW confidence)
-- Competitor analysis: Dext Vault, FutureVault, SmartVault — feature comparison used to validate table stakes and identify differentiators; not directly applicable to implementation decisions. Key insight: all competitors default to custom folder hierarchies; source-type grouping is simpler and more appropriate for bank statements.
+- [Fintech UX in 2026 — what users expect](https://www.stan.vision/journal/fintech-ux-in-2026-what-users-expect-from-modern-financial-products) — general UX pattern reference for account management UI expectations
+- [Modelling discriminated unions in Postgres](https://weiyen.net/articles/modelling-discriminated-unions-in-postgres/) — single table + CHECK constraint pattern (community article, verified against official PostgreSQL docs)
 
 ---
-
-*Research completed: 2026-02-19*
+*Research completed: 2026-02-22*
 *Ready for roadmap: yes*

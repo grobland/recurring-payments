@@ -1,1145 +1,887 @@
-# Architecture Patterns: PDF Vault Integration
+# Architecture Research
 
-**Domain:** PDF Persistence + In-App Viewer + Dual-View Vault UI
-**Researched:** 2026-02-19
-**Confidence:** HIGH
+**Domain:** v3.0 Navigation & Account Vault — integrating account management, nav restructure, payment type filtering, schema viewer, and help page into the existing subscription manager
+**Researched:** 2026-02-22
+**Confidence:** HIGH (all findings from direct codebase analysis)
 
-## Executive Summary
-
-This document maps how PDF storage (Supabase Storage), an in-app PDF viewer (react-pdf), and a dual-view vault UI (file cabinet + timeline) integrate into the existing subscription manager architecture.
-
-The existing codebase already has `statements.pdfStoragePath` in the schema (migration 0005, currently NULL for all records) and a `// TODO: In future, upload PDF to Supabase Storage here` comment in `/api/batch/upload/route.ts`. This milestone fills that gap and builds the vault UI on top.
-
-**Key architectural decisions:**
-- Upload to Supabase Storage happens server-side in the existing `/api/batch/upload` route — file bytes are in memory at that point, avoiding a second upload round-trip
-- Storage path pattern: `{userId}/{statementId}.pdf` — user-scoped, no collision possible
-- Signed URLs served via a dedicated `/api/statements/[id]/pdf` route — PDFs never served as public URLs
-- react-pdf loaded client-side via `dynamic(() => import(...), { ssr: false })` — mandatory because pdf.js requires browser canvas APIs
-- Vault UI lives at `/vault` as a new dashboard page with two sub-views: file cabinet (grid) and timeline (chronological list)
-- No new database tables needed — `statements.pdfStoragePath` is the only schema change, and it's already in the schema as nullable
-
----
-
-## Current Architecture Baseline
-
-### Existing Import Flow (Batch)
-
-```
-Client hashes PDF file
-    |
-    v
-POST /api/batch/check-hash    <- duplicate check
-    |
-    v  (if not duplicate)
-POST /api/batch/upload        <- creates statements row, pdfStoragePath = NULL
-    |
-    v
-POST /api/batch/process       <- extracts text in-memory, inserts transactions, updates status
-    |
-    v
-statements.processingStatus = "complete", pdfStoragePath still NULL
-```
-
-The PDF bytes exist only in Vercel's serverless memory during the `/api/batch/process` call. After the request completes, they are gone. That is the integration point.
-
-### Relevant Existing Tables
-
-**statements** (already exists, migration 0005):
-```
-id                 uuid PRIMARY KEY
-userId             uuid NOT NULL -> users.id
-sourceType         varchar(100) NOT NULL       -- "Chase Sapphire"
-pdfHash            varchar(64) NOT NULL        -- SHA-256
-pdfStoragePath     text                        -- NULL currently, this milestone fills it
-originalFilename   varchar(255) NOT NULL
-fileSizeBytes      integer NOT NULL
-statementDate      timestamp
-processingStatus   enum (pending/processing/complete/failed)
-processingError    text
-transactionCount   integer
-createdAt          timestamp
-processedAt        timestamp
-```
-
-**transactions** (already exists):
-```
-id               uuid PRIMARY KEY
-statementId      uuid NOT NULL -> statements.id
-userId           uuid NOT NULL -> users.id
-transactionDate  timestamp NOT NULL
-merchantName     varchar(255) NOT NULL
-amount           decimal
-currency         varchar(3)
-...
-```
-
-### Existing API Routes
-
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/batch/upload` | POST | Creates `statements` row (TODO: upload to storage here) |
-| `/api/batch/process` | POST | Parses PDF, inserts transactions, marks complete |
-| `/api/batch/check-hash` | POST | Checks `statements.pdfHash` for duplicates |
-| `/api/sources` | GET | Returns all source types with coverage stats |
-| `/api/sources/[sourceType]/statements` | GET | Lists statements for a source |
-| `/api/statements/[id]` | GET | Returns single statement with transaction stats |
-| `/api/statements/[id]/transactions` | GET | Returns transactions for a statement |
-
-### Existing UI Pages
-
-| Route | Component | Current State |
-|-------|-----------|---------------|
-| `/import/batch` | BatchUploader | Upload + process pipeline |
-| `/sources` | SourceDashboard | Source coverage grid |
-| `/statements/[id]` | StatementDetail | Transaction table + re-import |
-
----
-
-## Recommended Architecture: PDF Vault Extension
+## Standard Architecture
 
 ### System Overview
 
+The existing architecture is a layered Next.js 16 App Router application with a clear separation between
+presentation, API, business logic, and data layers. All new features integrate into this existing skeleton
+without changing the fundamental approach.
+
 ```
-┌───────────────────────────────────────────────────────────────┐
-│                         CLIENT                                 │
-│  ┌─────────────┐   ┌──────────────┐   ┌────────────────────┐  │
-│  │  Vault Page │   │  PDF Viewer  │   │  BatchUploader     │  │
-│  │  /vault     │   │  (react-pdf) │   │  (modified)        │  │
-│  └──────┬──────┘   └──────┬───────┘   └──────────┬─────────┘  │
-│         │                  │                       │            │
-└─────────┼──────────────────┼───────────────────────┼────────────┘
-          │                  │                       │
-┌─────────┼──────────────────┼───────────────────────┼────────────┐
-│         │           API LAYER                       │            │
-│  ┌──────▼──────┐   ┌───────▼──────┐   ┌────────────▼─────────┐  │
-│  │/api/vault   │   │/api/statements│   │/api/batch/upload     │  │
-│  │(list+filter)│   │/[id]/pdf     │   │(MODIFIED: uploads    │  │
-│  └──────┬──────┘   └───────┬───────┘   │to Supabase Storage)  │  │
-│         │                  │            └──────────┬────────────┘  │
-│         │                  │                       │            │
-└─────────┼──────────────────┼───────────────────────┼────────────┘
-          │                  │                       │
-┌─────────┼──────────────────┼───────────────────────┼────────────┐
-│         │        DATA LAYER │                       │            │
-│  ┌──────▼──────┐   ┌───────▼──────┐   ┌────────────▼─────────┐  │
-│  │  statements │   │ Supabase     │   │  statements          │  │
-│  │  table      │   │ Storage      │   │  table               │  │
-│  │ (Drizzle)   │   │ (PDFs)       │   │ (pdfStoragePath set) │  │
-│  └─────────────┘   └──────────────┘   └──────────────────────┘  │
-└───────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                       PRESENTATION LAYER (Client)                       │
+│                                                                          │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐  │
+│  │ AppSidebar  │  │ AccountPages │  │ Transaction  │  │SchemaViewer │  │
+│  │(3 sections) │  │(list+detail) │  │Browser+Filter│  │ (static)    │  │
+│  └──────┬──────┘  └──────┬───────┘  └──────┬───────┘  └──────┬──────┘  │
+│         │                │                  │                  │         │
+├─────────┴────────────────┴──────────────────┴──────────────────┴─────────┤
+│                         API LAYER (Server Routes)                         │
+│                                                                           │
+│  ┌────────────────┐  ┌─────────────────────┐  ┌────────────────────────┐ │
+│  │ /api/accounts  │  │  /api/transactions   │  │ existing: sources,     │ │
+│  │  CRUD (NEW)    │  │  + paymentType filter│  │ statements, vault, etc.│ │
+│  └────────┬───────┘  │  (MODIFIED)         │  └──────────────┬─────────┘ │
+│            │          └──────────┬──────────┘                 │          │
+├────────────┴─────────────────────┴─────────────────────────────┴─────────┤
+│                     BUSINESS LOGIC LAYER (src/lib/)                       │
+│                                                                           │
+│  ┌────────────────┐  ┌───────────────┐  ┌──────────────┐  ┌───────────┐ │
+│  │ db/schema.ts   │  │  lib/hooks/   │  │  features/   │  │ utils/    │ │
+│  │ (+ accounts    │  │  use-accounts │  │  config.ts   │  │ normalize │ │
+│  │  table + FK)   │  │  use-trans    │  │  (unchanged) │  │           │ │
+│  └──────┬─────────┘  └───────┬───────┘  └──────┬───────┘  └─────┬────┘ │
+│          │                    │                   │                │      │
+├──────────┴────────────────────┴───────────────────┴────────────────┴─────┤
+│                        DATA LAYER (Supabase PostgreSQL)                   │
+│                                                                           │
+│  ┌────────────┐  ┌────────────┐  ┌──────────────┐  ┌─────────────────┐  │
+│  │  financial │  │ statements │  │ transactions │  │  (13 existing   │  │
+│  │  _accounts │  │ (+acctId)  │  │ (unchanged)  │  │   tables)       │  │
+│  │   (NEW)    │  │  (MODIFY)  │  │              │  │                 │  │
+│  └────────────┘  └────────────┘  └──────────────┘  └─────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Responsibilities
 
 | Component | Responsibility | Status |
-|-----------|---------------|--------|
-| `/api/batch/upload` | Creates statement row + uploads PDF to Supabase Storage | MODIFY |
-| `/api/statements/[id]/pdf` | Generates signed URL, returns to client | NEW |
-| `/api/vault` | Lists statements for vault view with filters | NEW |
-| `VaultPage` (`/vault`) | Dual-view UI (file cabinet + timeline tabs) | NEW |
-| `VaultGrid` | File cabinet view — cards sorted by upload date | NEW |
-| `VaultTimeline` | Timeline view — chronological scroll with month headers | NEW |
-| `StatementCard` | Single card in file cabinet (filename, source, date, status) | NEW |
-| `PDFViewerModal` | Dialog wrapping react-pdf Document+Page components | NEW |
-| `usePdfUrl` | TanStack Query hook fetching signed URL | NEW |
-| `useVault` | TanStack Query hook for vault list | NEW |
+|-----------|----------------|--------|
+| `AppSidebar` | Multi-level nav with three named section groups | MODIFY |
+| `AccountListPage` | Grid of user accounts with type badges | NEW |
+| `AccountDetailPage` | Tabs: details, coverage grid, transactions, spending | NEW |
+| `AccountForm` | Create/edit form with type-discriminated conditional fields | NEW |
+| `TransactionBrowser` | Virtualized transaction list with keyset pagination | MODIFY |
+| `TransactionFilters` | Filter bar with payment type toggle group | MODIFY |
+| `SchemaViewerPage` | Read-only display of system data model | NEW |
+| `HelpPage` | Static FAQ content | NEW |
 
----
+## Existing Architecture: What Already Works
 
-## Integration Point 1: PDF Upload to Supabase Storage
+Understanding what NOT to change is as important as what to add.
 
-### Where to Integrate
-
-**File:** `src/app/api/batch/upload/route.ts`
-
-The `/api/batch/upload` handler receives the PDF as a `File` (FormData), hashes it, checks for duplicates, and creates the `statements` row. The PDF bytes are available in memory at line 84 (`const uploadFormData = new FormData()`). The `// TODO` comment is at line 97.
-
-### Storage Path Convention
+### Routing Skeleton (App Router)
 
 ```
-bucket: "statements"
-path:   "{userId}/{statementId}.pdf"
+src/app/(dashboard)/
+├── layout.tsx                  -- auth guard + SidebarProvider (NO CHANGE)
+├── dashboard/page.tsx          -- stays in fin Vault section
+├── vault/page.tsx              -- stays in fin Vault section
+├── sources/page.tsx            -- stays, links to account management
+├── statements/[id]/page.tsx    -- stays
+├── subscriptions/...           -- stays in payments Portal section
+├── transactions/page.tsx       -- stays in payments Portal section
+├── analytics/page.tsx          -- stays in payments Portal section
+├── import/...                  -- stays in payments Portal section
+├── suggestions/page.tsx        -- stays in payments Portal section
+├── reminders/page.tsx          -- stays in payments Portal section
+├── settings/...                -- stays in Support section
+└── [NEW ROUTES ADDED]
+    ├── accounts/
+    │   ├── page.tsx            -- Account list page (NEW)
+    │   └── [id]/
+    │       └── page.tsx        -- Account detail page (NEW)
+    ├── schema/
+    │   └── page.tsx            -- Data Schema Viewer (NEW)
+    └── help/
+        └── page.tsx            -- Help FAQ page (NEW)
 ```
 
-**Rationale:**
-- User-scoped folder enables simple RLS policy (`path LIKE '{userId}/%'`)
-- `statementId` (UUID) as filename prevents collisions across users and uploads
-- No sub-folders needed at current scale
+### Database Schema: Current Relevant Tables
 
-### Supabase Storage Client Setup
+```
+statements
+  id                uuid PK
+  userId            uuid FK -> users
+  sourceType        varchar(100)     -- "Chase Sapphire" (the old account identity)
+  pdfStoragePath    text (nullable)  -- Supabase Storage path
+  statementDate     timestamp
+  processingStatus  enum
 
-The project currently has no Supabase client (`@supabase/supabase-js` not in package.json). The `src/lib/db/index.ts` connects directly via `postgres` driver to the database connection string.
-
-Two new environment variables are required:
-```bash
-SUPABASE_URL="https://[PROJECT_REF].supabase.co"
-SUPABASE_SERVICE_ROLE_KEY="eyJ..."   # No NEXT_PUBLIC_ prefix - server only
+transactions
+  id                uuid PK
+  statementId       uuid FK -> statements
+  userId            uuid FK -> users
+  tagStatus         enum (unreviewed | potential_subscription | not_subscription | converted)
+  -- tagStatus is the data that powers the new "payment type" filter
 ```
 
-**Client instantiation (server-side only):**
-```typescript
-// src/lib/supabase/admin.ts
-import { createClient } from "@supabase/supabase-js";
+### Existing TanStack Query Hook Pattern
 
-export function createAdminClient() {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    }
-  );
-}
-```
-
-The service role key bypasses RLS entirely — appropriate for server-side uploads where the route handler has already verified auth via `await auth()`. Never expose this key to the client.
-
-### Modified Upload Route Pattern
+All new hooks must follow this exact pattern (from `use-sources.ts`):
 
 ```typescript
-// src/app/api/batch/upload/route.ts — ADD after statement row created
-
-// Upload PDF to Supabase Storage
-const arrayBuffer = await file.arrayBuffer();
-const fileBuffer = Buffer.from(arrayBuffer);
-const storagePath = `${session.user.id}/${newStatement.id}.pdf`;
-
-const supabase = createAdminClient();
-const { error: uploadError } = await supabase.storage
-  .from("statements")
-  .upload(storagePath, fileBuffer, {
-    contentType: "application/pdf",
-    upsert: false,       // Statement IDs are UUIDs, no collision possible
-    cacheControl: "3600",
-  });
-
-if (uploadError) {
-  // Non-fatal: Statement row exists but PDF not stored
-  // Log error but proceed — processing can still happen from memory
-  console.error("Storage upload error:", uploadError);
-} else {
-  // Update statement with storage path
-  await db
-    .update(statements)
-    .set({ pdfStoragePath: storagePath })
-    .where(eq(statements.id, newStatement.id));
-}
-```
-
-**Why non-fatal:** The existing processing flow works without the PDF in storage (text is extracted in-memory during `/api/batch/process`). A storage failure should not block the user from processing. Log it, continue.
-
-### Supabase Storage Bucket Setup
-
-One-time setup in Supabase dashboard or via SQL:
-
-```sql
--- Create private bucket (no public access)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('statements', 'statements', false);
-
--- RLS policy: authenticated users can upload to their own folder
-CREATE POLICY "Users can upload own statements"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (
-  bucket_id = 'statements'
-  AND (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- RLS policy: authenticated users can read own files
-CREATE POLICY "Users can read own statements"
-ON storage.objects FOR SELECT
-TO authenticated
-USING (
-  bucket_id = 'statements'
-  AND (storage.foldername(name))[1] = auth.uid()::text
-);
-```
-
-**Note:** Since the upload route uses the service role key, these RLS policies apply to direct Supabase access only. The API route handles its own auth check before calling storage.
-
-### Historical Uploads (Backfill)
-
-Existing statements with `pdfStoragePath = NULL` have no stored PDF — those files are gone. The vault must handle this gracefully:
-
-- Show the statement card (metadata is in DB)
-- Disable "View PDF" button when `pdfStoragePath` is null
-- Show tooltip: "PDF not available — uploaded before vault feature"
-
-No backfill migration possible (bytes are gone). Only new uploads after vault deployment will have PDFs stored.
-
----
-
-## Integration Point 2: Serving PDFs via Signed URLs
-
-### New API Route: `/api/statements/[id]/pdf`
-
-PDFs must never be served as permanent public URLs (sensitive financial documents). Use short-lived signed URLs generated server-side.
-
-**File:** `src/app/api/statements/[id]/pdf/route.ts` (NEW)
-
-```typescript
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
-
-  // Verify ownership and get storage path
-  const [statement] = await db
-    .select({ pdfStoragePath: statements.pdfStoragePath })
-    .from(statements)
-    .where(
-      and(
-        eq(statements.id, id),
-        eq(statements.userId, session.user.id)
-      )
-    );
-
-  if (!statement) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  if (!statement.pdfStoragePath) {
-    return NextResponse.json(
-      { error: "PDF not available for this statement" },
-      { status: 404 }
-    );
-  }
-
-  // Generate signed URL (5 minute expiry — enough to view, short enough to be safe)
-  const supabase = createAdminClient();
-  const { data, error } = await supabase.storage
-    .from("statements")
-    .createSignedUrl(statement.pdfStoragePath, 300); // 300 seconds = 5 minutes
-
-  if (error || !data?.signedUrl) {
-    return NextResponse.json(
-      { error: "Failed to generate PDF URL" },
-      { status: 500 }
-    );
-  }
-
-  return NextResponse.json({ url: data.signedUrl });
-}
-```
-
-**Security rationale:**
-- Ownership verified before URL generation (can't access other users' PDFs)
-- Signed URL expires in 5 minutes (minimal window for misuse)
-- No permanent public URL stored or returned
-
-### TanStack Query Hook
-
-```typescript
-// src/lib/hooks/use-pdf-url.ts
-import { useQuery } from "@tanstack/react-query";
-
-export function usePdfUrl(statementId: string, enabled: boolean) {
-  return useQuery({
-    queryKey: ["pdf-url", statementId],
-    queryFn: async () => {
-      const res = await fetch(`/api/statements/${statementId}/pdf`);
-      if (!res.ok) throw new Error("Failed to fetch PDF URL");
-      const data = await res.json();
-      return data.url as string;
-    },
-    enabled,                        // Only fetch when modal opens
-    staleTime: 4 * 60 * 1000,      // 4 minutes (URL expires at 5)
-    gcTime: 5 * 60 * 1000,         // Garbage collect after 5 minutes
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
-}
-```
-
----
-
-## Integration Point 3: In-App PDF Viewer
-
-### Library Choice: react-pdf
-
-**Why react-pdf over alternatives:**
-- Uses Mozilla's PDF.js under the hood — battle-tested, same engine Firefox uses
-- React component API (`<Document>`, `<Page>`) matches existing codebase style
-- Actively maintained (current major version v9)
-- Lighter than Nutrient/PSPDFKit (no license cost, no iframe isolation needed)
-- ~1.5MB bundle (pdf.js worker loaded separately, doesn't block main bundle)
-
-**Installation:**
-```bash
-npm install react-pdf
-```
-
-**Critical Next.js App Router requirement:** react-pdf uses browser Canvas APIs and cannot run server-side. The viewer component must be wrapped in `dynamic()` with `ssr: false`.
-
-### PDF Viewer Component
-
-```typescript
-// src/components/vault/pdf-viewer-modal.tsx
-"use client";
-
-import dynamic from "next/dynamic";
-import { useState, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2 } from "lucide-react";
-import { usePdfUrl } from "@/lib/hooks/use-pdf-url";
-
-// Must be dynamically imported — pdf.js requires browser Canvas
-const PDFDocument = dynamic(
-  () => import("./pdf-document-inner").then((m) => m.PDFDocumentInner),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    ),
-  }
-);
-
-interface PdfViewerModalProps {
-  statementId: string;
-  filename: string;
-  open: boolean;
-  onClose: () => void;
-}
-
-export function PdfViewerModal({
-  statementId,
-  filename,
-  open,
-  onClose,
-}: PdfViewerModalProps) {
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [scale, setScale] = useState(1.0);
-
-  // Only fetch URL when modal is open
-  const { data: pdfUrl, isLoading, error } = usePdfUrl(statementId, open);
-
-  const handleDocumentLoad = useCallback(({ numPages }: { numPages: number }) => {
-    setTotalPages(numPages);
-    setPage(1);
-  }, []);
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="truncate pr-8">{filename}</DialogTitle>
-        </DialogHeader>
-
-        {/* Controls */}
-        <div className="flex items-center justify-between border-b pb-2">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm">
-              {page} / {totalPages || "—"}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setScale((s) => Math.max(0.5, s - 0.25))}
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <span className="text-sm w-12 text-center">
-              {Math.round(scale * 100)}%
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setScale((s) => Math.min(2.5, s + 0.25))}
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* PDF Content */}
-        <div className="flex-1 overflow-auto flex justify-center">
-          {isLoading && (
-            <div className="flex h-96 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          )}
-          {error && (
-            <div className="flex h-96 items-center justify-center text-destructive text-sm">
-              Failed to load PDF
-            </div>
-          )}
-          {pdfUrl && (
-            <PDFDocument
-              url={pdfUrl}
-              pageNumber={page}
-              scale={scale}
-              onDocumentLoad={handleDocumentLoad}
-            />
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-```
-
-```typescript
-// src/components/vault/pdf-document-inner.tsx
-// This file is imported ONLY via dynamic() — never directly
-"use client";
-
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
-
-// Worker must be configured in same file as Document usage
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
-
-interface PDFDocumentInnerProps {
-  url: string;
-  pageNumber: number;
-  scale: number;
-  onDocumentLoad: (data: { numPages: number }) => void;
-}
-
-export function PDFDocumentInner({
-  url,
-  pageNumber,
-  scale,
-  onDocumentLoad,
-}: PDFDocumentInnerProps) {
-  return (
-    <Document file={url} onLoadSuccess={onDocumentLoad}>
-      <Page
-        pageNumber={pageNumber}
-        scale={scale}
-        renderTextLayer={true}
-        renderAnnotationLayer={false}
-      />
-    </Document>
-  );
-}
-```
-
-**Why split into two files:** react-pdf's `pdfjs.GlobalWorkerOptions.workerSrc` must be set in the same module where `<Document>` is rendered. Dynamic imports create module boundaries, so the worker config and Document must co-locate in `pdf-document-inner.tsx`.
-
----
-
-## Integration Point 4: Vault API
-
-### New Route: `/api/vault`
-
-The vault needs a filtered list of statements with metadata for the dual-view UI.
-
-**File:** `src/app/api/vault/route.ts` (NEW)
-
-```typescript
-// GET /api/vault?source=X&hasFile=true&from=date&to=date
-export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const url = new URL(request.url);
-  const source = url.searchParams.get("source");
-  const hasFile = url.searchParams.get("hasFile") === "true";
-  const from = url.searchParams.get("from");
-  const to = url.searchParams.get("to");
-
-  const conditions = [eq(statements.userId, session.user.id)];
-
-  if (source) {
-    conditions.push(eq(statements.sourceType, source));
-  }
-  if (hasFile) {
-    conditions.push(isNotNull(statements.pdfStoragePath));
-  }
-  if (from) {
-    conditions.push(gte(statements.createdAt, new Date(from)));
-  }
-  if (to) {
-    conditions.push(lte(statements.createdAt, new Date(to)));
-  }
-
-  const results = await db
-    .select({
-      id: statements.id,
-      originalFilename: statements.originalFilename,
-      sourceType: statements.sourceType,
-      statementDate: statements.statementDate,
-      uploadedAt: statements.createdAt,
-      fileSizeBytes: statements.fileSizeBytes,
-      processingStatus: statements.processingStatus,
-      transactionCount: statements.transactionCount,
-      hasPdf: sql<boolean>`${statements.pdfStoragePath} IS NOT NULL`.as("has_pdf"),
-    })
-    .from(statements)
-    .where(and(...conditions))
-    .orderBy(desc(statements.createdAt))
-    .limit(100); // Vault shows up to 100 statements per load
-
-  return NextResponse.json({ statements: results });
-}
-```
-
----
-
-## Integration Point 5: Vault UI
-
-### Page Route
-
-**File:** `src/app/(dashboard)/vault/page.tsx` (NEW)
-
-Sits in the existing `(dashboard)` route group — auth guard and sidebar layout inherited automatically.
-
-Add vault link to sidebar in `src/components/layout/app-sidebar.tsx`.
-
-### Dual-View Architecture
-
-```
-VaultPage
-├── VaultHeader (title, filter bar, view toggle)
-├── [tabs]
-│   ├── "Cabinet" tab → VaultGrid
-│   │   └── StatementCard × N
-│   │       ├── FileText icon (large)
-│   │       ├── filename (truncated)
-│   │       ├── sourceType badge
-│   │       ├── date
-│   │       ├── transaction count
-│   │       └── "View PDF" button (disabled if no PDF)
-│   └── "Timeline" tab → VaultTimeline
-│       └── [grouped by month]
-│           ├── MonthHeader ("January 2026")
-│           └── StatementRow × N
-│               ├── FileText icon (small)
-│               ├── filename
-│               ├── sourceType
-│               ├── date
-│               └── "View PDF" icon button
-└── PdfViewerModal (renders when selectedStatementId set)
-```
-
-### Vault Page Component
-
-```typescript
-// src/app/(dashboard)/vault/page.tsx
-"use client";
-
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DashboardHeader } from "@/components/layout";
-import { VaultGrid } from "@/components/vault/vault-grid";
-import { VaultTimeline } from "@/components/vault/vault-timeline";
-import { VaultFilters } from "@/components/vault/vault-filters";
-import { PdfViewerModal } from "@/components/vault/pdf-viewer-modal";
-import { useVault } from "@/lib/hooks/use-vault";
-
-export default function VaultPage() {
-  const [selectedStatement, setSelectedStatement] = useState<{
-    id: string;
-    filename: string;
-  } | null>(null);
-
-  const [filters, setFilters] = useState({
-    source: "",
-    hasFile: false,
-  });
-
-  const { data, isLoading } = useVault(filters);
-  const statements = data?.statements ?? [];
-
-  return (
-    <>
-      <DashboardHeader
-        title="Document Vault"
-        breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Document Vault" },
-        ]}
-      />
-      <main className="flex-1 p-4 md:p-6">
-        <div className="mx-auto max-w-6xl space-y-4">
-          <VaultFilters filters={filters} onChange={setFilters} />
-
-          <Tabs defaultValue="cabinet">
-            <TabsList>
-              <TabsTrigger value="cabinet">File Cabinet</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            </TabsList>
-            <TabsContent value="cabinet">
-              <VaultGrid
-                statements={statements}
-                isLoading={isLoading}
-                onViewPdf={setSelectedStatement}
-              />
-            </TabsContent>
-            <TabsContent value="timeline">
-              <VaultTimeline
-                statements={statements}
-                isLoading={isLoading}
-                onViewPdf={setSelectedStatement}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
-
-      {selectedStatement && (
-        <PdfViewerModal
-          statementId={selectedStatement.id}
-          filename={selectedStatement.filename}
-          open={true}
-          onClose={() => setSelectedStatement(null)}
-        />
-      )}
-    </>
-  );
-}
-```
-
-### Timeline View — Grouping by Month
-
-```typescript
-// src/components/vault/vault-timeline.tsx
-"use client";
-
-import { useMemo } from "react";
-import { format, startOfMonth } from "date-fns";
-
-type Statement = {
-  id: string;
-  originalFilename: string;
-  sourceType: string;
-  uploadedAt: string;
-  hasPdf: boolean;
-  transactionCount: number;
+export const entityKeys = {
+  all: ["entity-name"] as const,
+  list: () => [...entityKeys.all, "list"] as const,
+  detail: (id: string) => [...entityKeys.all, "detail", id] as const,
 };
 
-// Group statements by calendar month of upload date
-function groupByMonth(statements: Statement[]) {
-  const groups = new Map<string, Statement[]>();
-  for (const stmt of statements) {
-    const key = format(startOfMonth(new Date(stmt.uploadedAt)), "MMMM yyyy");
-    const existing = groups.get(key) ?? [];
-    existing.push(stmt);
-    groups.set(key, existing);
-  }
-  return groups;
+export function useEntities(options?) {
+  return useQuery({
+    queryKey: entityKeys.list(),
+    queryFn: fetchEntities,
+    staleTime: 2 * 60 * 1000,
+    ...options,
+  });
 }
 ```
 
----
+## New Database Table: `financial_accounts`
 
-## New Files to Create
+This is the only new table for v3.0. The `statements.sourceType` string is the existing "account identity" — the migration strategy links existing strings to new typed account records.
 
-| File | Type | Purpose |
-|------|------|---------|
-| `src/lib/supabase/admin.ts` | Library | Service role Supabase client for server-side ops |
-| `src/app/api/vault/route.ts` | API Route | Filtered list of statements for vault |
-| `src/app/api/statements/[id]/pdf/route.ts` | API Route | Generate signed URL for PDF access |
-| `src/app/(dashboard)/vault/page.tsx` | Page | Vault entry point with dual-view tabs |
-| `src/components/vault/vault-grid.tsx` | Component | File cabinet view (card grid) |
-| `src/components/vault/vault-timeline.tsx` | Component | Timeline view (grouped by month) |
-| `src/components/vault/statement-card.tsx` | Component | Card used in grid view |
-| `src/components/vault/vault-filters.tsx` | Component | Source filter + "has PDF" toggle |
-| `src/components/vault/pdf-viewer-modal.tsx` | Component | Dialog with controls + react-pdf |
-| `src/components/vault/pdf-document-inner.tsx` | Component | Inner react-pdf Document (dynamic import target) |
-| `src/lib/hooks/use-vault.ts` | Hook | TanStack Query hook for vault list |
-| `src/lib/hooks/use-pdf-url.ts` | Hook | TanStack Query hook for signed URL |
+### Table Design
 
-## Modified Files
+```typescript
+// NEW enum for schema.ts
+export const accountTypeEnum = pgEnum("account_type", [
+  "bank_debit",
+  "credit_card",
+  "loan",
+]);
 
-| File | Change |
-|------|--------|
-| `src/app/api/batch/upload/route.ts` | Add Supabase Storage upload after row creation |
-| `src/components/layout/app-sidebar.tsx` | Add "Document Vault" navigation link |
-| `.env.example` | Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` |
-| `package.json` | Add `react-pdf` and `@supabase/supabase-js` |
+// NEW table for schema.ts
+export const financialAccounts = pgTable(
+  "financial_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
 
----
+    // Identity
+    name: varchar("name", { length: 100 }).notNull(),
+    type: accountTypeEnum("type").notNull(),
 
-## Data Flow Diagrams
+    // Display metadata
+    institution: varchar("institution", { length: 100 }),  // "Chase", "Wells Fargo"
+    lastFourDigits: varchar("last_four_digits", { length: 4 }),
+    color: varchar("color", { length: 7 }),    // Optional hex for card display
+    notes: text("notes"),
 
-### Upload Flow (Modified)
+    // Migration bridge: sourceType string this account absorbs
+    legacySourceType: varchar("legacy_source_type", { length: 100 }),
 
-```
-User selects PDF file
-    |
-    v
-Client hashes file (SHA-256)
-    |
-    v
-POST /api/batch/check-hash   (unchanged)
-    |
-    v
-POST /api/batch/upload       (MODIFIED)
-    |-- creates statements row
-    |-- uploads file buffer to Supabase Storage: {userId}/{statementId}.pdf
-    |-- updates statements.pdfStoragePath on success
-    |-- logs error but continues if storage upload fails
-    |
-    v
-POST /api/batch/process      (unchanged — works from in-memory bytes)
-    |
-    v
-statements.processingStatus = "complete"
-statements.pdfStoragePath    = "{userId}/{statementId}.pdf"  (if upload succeeded)
-```
+    // Type-discriminated fields (nullable; validation enforced at API layer)
+    // bank_debit only
+    bankRoutingNumber: varchar("bank_routing_number", { length: 9 }),
+    // credit_card only
+    creditLimit: decimal("credit_limit", { precision: 10, scale: 2 }),
+    statementClosingDay: integer("statement_closing_day"),  // 1-31
+    // loan only
+    principalAmount: decimal("principal_amount", { precision: 10, scale: 2 }),
+    interestRate: decimal("interest_rate", { precision: 5, scale: 2 }),
+    loanTermMonths: integer("loan_term_months"),
 
-### View PDF Flow
-
-```
-User clicks "View PDF" on statement card
-    |
-    v
-PdfViewerModal opens (selectedStatement set in state)
-    |
-    v
-usePdfUrl hook fires (enabled=true now that modal is open)
-    |
-    v
-GET /api/statements/[id]/pdf
-    |-- auth check
-    |-- verify statements.userId = session.user.id
-    |-- check pdfStoragePath not null
-    |-- supabase.storage.createSignedUrl(path, 300)
-    |-- return { url: signedUrl }
-    |
-    v
-usePdfUrl returns url
-    |
-    v
-dynamic(() => import('./pdf-document-inner')) loads
-(pdfjs worker initializes in browser)
-    |
-    v
-<Document file={signedUrl}> renders PDF
-    |
-    v
-User navigates pages / zooms
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("financial_accounts_user_id_idx").on(table.userId),
+    index("financial_accounts_type_idx").on(table.type),
+  ]
+);
 ```
 
-### Vault List Flow
+### `statements` Table Modification
 
-```
-User navigates to /vault
-    |
-    v
-VaultPage renders
-    |
-    v
-useVault hook fires
-    |
-    v
-GET /api/vault?[filters]
-    |-- auth check
-    |-- query statements table with filters
-    |-- returns {id, filename, sourceType, uploadedAt, hasPdf, ...}
-    |
-    v
-Statements list returned
-    |
-    v
-Tab "cabinet" → VaultGrid renders StatementCard × N
-Tab "timeline" → VaultTimeline renders grouped rows
-    |
-    v
-User clicks "View PDF" → opens PdfViewerModal
+Add a nullable FK to link statements to accounts after user-driven migration:
+
+```typescript
+// ADD to existing statements table definition
+accountId: uuid("account_id").references(() => financialAccounts.id, {
+  onDelete: "set null",
+}),
 ```
 
----
+Nullable because:
+1. Existing statements retain their `sourceType` string as identity — no account record exists yet
+2. User creates accounts on demand and selects which `sourceType` to absorb
+3. New statements can be linked to an account at import time (future enhancement)
+
+### Migration Approach: User-Driven, Not Automatic
+
+Source-to-account migration is NOT automated by the DB migration. Only the schema changes run automatically.
+
+The flow:
+1. Migration adds `financial_accounts` table and nullable `statements.accountId` column
+2. Existing statements retain `sourceType` and have `accountId = NULL`
+3. User visits `/accounts`, sees "Convert Sources" prompt if unlinked `sourceType` values exist
+4. User creates an account, optionally mapping a `legacySourceType` string
+5. API links: `UPDATE statements SET accountId = [id] WHERE sourceType = [legacySourceType]`
+
+This preserves user control over what gets labeled as what type of account.
+
+## Recommended Project Structure: New Files Only
+
+```
+src/
+├── app/(dashboard)/
+│   ├── accounts/
+│   │   ├── page.tsx                       -- Account list (grid view)
+│   │   └── [id]/
+│   │       └── page.tsx                   -- Account detail (tabs)
+│   ├── schema/
+│   │   └── page.tsx                       -- Data Schema Viewer (Server Component)
+│   └── help/
+│       └── page.tsx                       -- Help/FAQ page (static content)
+├── components/
+│   ├── accounts/                          -- NEW folder
+│   │   ├── account-card.tsx               -- Card for account grid
+│   │   ├── account-list.tsx               -- Grid container with empty state
+│   │   ├── account-form.tsx               -- Create/edit with type switcher
+│   │   ├── account-type-badge.tsx         -- Bank/Card/Loan badge
+│   │   ├── account-detail-tabs.tsx        -- Tabs: details, coverage, transactions, spending
+│   │   ├── account-spending-summary.tsx   -- Spending aggregation from linked statements
+│   │   ├── source-migration-banner.tsx    -- Prompts linking unlinked sourceTypes
+│   │   └── index.ts
+│   ├── schema/                            -- NEW folder
+│   │   ├── schema-viewer.tsx              -- Main schema display component
+│   │   ├── table-card.tsx                 -- Per-table column accordion card
+│   │   └── index.ts
+│   ├── layout/
+│   │   └── app-sidebar.tsx                -- MODIFY: add three section groups
+│   └── transactions/
+│       ├── transaction-filters.tsx        -- MODIFY: add paymentType toggle
+│       └── transaction-browser.tsx        -- MODIFY: accept accountId prop; wire paymentType
+├── lib/
+│   ├── db/
+│   │   └── schema.ts                      -- MODIFY: add financialAccounts + accountId FK
+│   ├── hooks/
+│   │   ├── use-accounts.ts                -- NEW: list, detail, CRUD mutations
+│   │   ├── use-account-coverage.ts        -- NEW: coverage data for account detail tab
+│   │   ├── use-account-spending.ts        -- NEW: spending summary for account detail tab
+│   │   └── use-transactions.ts            -- MODIFY: accept paymentType + accountId params
+│   ├── validations/
+│   │   └── account.ts                     -- NEW: Zod schemas for account create/edit
+│   └── features/
+│       └── config.ts                      -- NO CHANGE needed for v3.0
+└── app/api/
+    ├── accounts/
+    │   ├── route.ts                       -- GET (list), POST (create + optional source link)
+    │   └── [id]/
+    │       ├── route.ts                   -- GET, PATCH, DELETE
+    │       ├── coverage/
+    │       │   └── route.ts               -- Coverage data scoped to account
+    │       ├── transactions/
+    │       │   └── route.ts               -- Transactions scoped to account
+    │       └── spending/
+    │           └── route.ts               -- Spending summary for account
+    └── transactions/
+        └── route.ts                       -- MODIFY: add paymentType query param handling
+```
 
 ## Architectural Patterns
 
-### Pattern 1: Server-Side Upload with Service Role Key
+### Pattern 1: Sidebar Section Groups
 
-**What:** Upload file bytes in API route using Supabase admin client; never expose service key to client.
+**What:** Replace the single flat `mainNavItems` array in `app-sidebar.tsx` with three explicit named section arrays, each rendered in its own `SidebarGroup` with a `SidebarGroupLabel`.
 
-**When to use:** Any server-side file operation that needs to bypass RLS (because auth is handled at the API layer, not at Supabase auth level).
+**Current state:** One `SidebarGroup` labeled "Menu" with 11 items rendered from a flat array, plus a separate "Support" group with 2 items.
 
-**Example:**
+**Target state:**
+
 ```typescript
-// In API route — auth already verified via await auth()
-const supabase = createAdminClient(); // service role key
-await supabase.storage.from("statements").upload(path, buffer);
+// components/layout/app-sidebar.tsx — target structure
+const finVaultItems = [
+  { title: "Dashboard",     href: "/dashboard",          icon: LayoutDashboard },
+  { title: "Accounts",      href: "/accounts",           icon: Wallet },         // NEW
+  { title: "Vault",         href: "/vault",              icon: Archive },
+  { title: "Sources",       href: "/sources",            icon: FileStack },
+];
+
+const paymentsPortalItems = [
+  { title: "Subscriptions", href: "/subscriptions",      icon: CreditCard },
+  { title: "Transactions",  href: "/transactions",       icon: Receipt },
+  { title: "Analytics",     href: "/analytics",          icon: BarChart3 },
+  { title: "Forecast",      href: "/dashboard/forecasting", icon: TrendingUp },
+  { title: "Import",        href: "/import",             icon: FileUp },
+  { title: "Batch Import",  href: "/import/batch",       icon: FolderUp },
+  { title: "Suggestions",   href: "/suggestions",        icon: Sparkles },
+  { title: "Reminders",     href: "/reminders",          icon: Bell },
+];
+
+const supportItems = [
+  { title: "Settings",      href: "/settings",           icon: Settings },
+  { title: "Help",          href: "/help",               icon: HelpCircle },     // NEW route
+  { title: "Schema",        href: "/schema",             icon: Database },       // NEW
+];
+```
+
+The `SidebarGroup`, `SidebarGroupLabel`, and `SidebarGroupContent` composition is already used in this file for the "Support" and "Admin" sections — extending to three named groups is a mechanical change, no new primitives needed.
+
+**Trade-offs:**
+- More verbose than a flat array, but intent is explicit
+- Items moving between sections does not require route changes
+- Collapsible behavior via `SidebarGroup` `collapsible` prop is available but optional
+
+### Pattern 2: Type-Discriminated Form with Conditional Fields
+
+**What:** Account creation/edit form where the selected `type` value controls which additional fields render. Zod validation enforces type-specific field requirements server-side.
+
+**When to use:** When an entity has a fixed discriminant that determines which optional fields are meaningful.
+
+```typescript
+// components/accounts/account-form.tsx
+function AccountForm({ account, onSubmit }: AccountFormProps) {
+  const form = useForm<AccountFormData>({ ... });
+  const selectedType = form.watch("type");
+
+  return (
+    <Form {...form}>
+      {/* Always shown — applies to all account types */}
+      <FormField name="type" .../>
+      <FormField name="name" .../>
+      <FormField name="institution" .../>
+      <FormField name="lastFourDigits" .../>
+
+      {/* bank_debit only */}
+      {selectedType === "bank_debit" && (
+        <FormField name="bankRoutingNumber" .../>
+      )}
+
+      {/* credit_card only */}
+      {selectedType === "credit_card" && (
+        <>
+          <FormField name="creditLimit" .../>
+          <FormField name="statementClosingDay" .../>
+        </>
+      )}
+
+      {/* loan only */}
+      {selectedType === "loan" && (
+        <>
+          <FormField name="principalAmount" .../>
+          <FormField name="interestRate" .../>
+          <FormField name="loanTermMonths" .../>
+        </>
+      )}
+    </Form>
+  );
+}
+```
+
+**Zod schema for server validation:**
+
+```typescript
+// lib/validations/account.ts
+const baseSchema = z.object({
+  name: z.string().min(1).max(100),
+  institution: z.string().max(100).optional(),
+  lastFourDigits: z.string().length(4).regex(/^\d{4}$/).optional(),
+  legacySourceType: z.string().max(100).optional(),
+});
+
+export const createAccountSchema = z.discriminatedUnion("type", [
+  baseSchema.extend({ type: z.literal("bank_debit"), bankRoutingNumber: z.string().length(9).optional() }),
+  baseSchema.extend({ type: z.literal("credit_card"), creditLimit: z.number().positive().optional(), statementClosingDay: z.number().int().min(1).max(31).optional() }),
+  baseSchema.extend({ type: z.literal("loan"), principalAmount: z.number().positive().optional(), interestRate: z.number().positive().optional(), loanTermMonths: z.number().int().positive().optional() }),
+]);
 ```
 
 **Trade-offs:**
-- Service role bypasses all RLS — no per-user access check at storage level
-- Compensated by: ownership check in API route before any storage operation
-- Alternative (signed upload URLs) adds a round-trip and complicates mobile support
+- Discriminated union gives full type safety at the API boundary
+- Nullable DB columns are fine — validation enforces correctness, not the schema
+- `form.watch("type")` re-renders conditional fields immediately on type change
 
-### Pattern 2: Short-Lived Signed URLs for Sensitive Files
+### Pattern 3: Account Detail Tabs with Lazy Independent Data Loading
 
-**What:** Never store permanent public URLs for financial documents. Generate signed URLs on demand, short expiry.
+**What:** The account detail page uses tabs where each tab fetches its own data independently via its own hook. Data for tabs not yet visited is not fetched.
 
-**When to use:** Any file access involving sensitive user data (statements, tax docs, etc.).
+**When to use:** When a detail page aggregates from multiple endpoints and not all tabs are always visited.
 
-**Example:**
 ```typescript
-const { data } = await supabase.storage
-  .from("statements")
-  .createSignedUrl(storagePath, 300); // 5 minute expiry
+// app/(dashboard)/accounts/[id]/page.tsx
+export default function AccountDetailPage({ params }: { params: { id: string } }) {
+  const [activeTab, setActiveTab] = useState("details");
+
+  return (
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <TabsList>
+        <TabsTrigger value="details">Details</TabsTrigger>
+        <TabsTrigger value="coverage">Coverage</TabsTrigger>
+        <TabsTrigger value="transactions">Transactions</TabsTrigger>
+        <TabsTrigger value="spending">Spending</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="details">
+        {/* useAccount(id) — fetches once, lightweight */}
+        <AccountDetailCard accountId={params.id} />
+      </TabsContent>
+
+      <TabsContent value="coverage">
+        {/* useAccountCoverage(id) — reuses CoverageGrid component unchanged */}
+        <AccountCoverageTab accountId={params.id} />
+      </TabsContent>
+
+      <TabsContent value="transactions">
+        {/* Reuse TransactionBrowser with accountId prop — NOT a new browser */}
+        <TransactionBrowser accountId={params.id} />
+      </TabsContent>
+
+      <TabsContent value="spending">
+        {/* useAccountSpending(id) — simple SUM aggregation */}
+        <AccountSpendingSummary accountId={params.id} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+```
+
+The Coverage tab reuses the existing `CoverageGrid` component from `src/components/vault/coverage-grid.tsx` directly. The account-scoped coverage API returns data in the same `{ sources: CoverageSource[], months: string[] }` shape as the vault coverage hook. Zero changes to `CoverageGrid`.
+
+**Trade-offs:**
+- Each tab fetches independently — slightly more requests than one big query
+- TanStack Query caches all tab data after first visit — tab switching is instant after first load
+- Much simpler than trying to build one mega-query that returns all tab data
+
+### Pattern 4: Payment Type Filter as tagStatus Alias
+
+**What:** "Payment type" is a new filter concept in the transaction browser that maps to groupings of the existing `tagStatus` enum. No new DB column needed.
+
+**When to use:** When a new filter concept can be expressed as a logical grouping of existing enum values.
+
+**Mapping:**
+
+| paymentType value | Equivalent tagStatus filter |
+|-------------------|-----------------------------|
+| `"all"` | No filter (existing default) |
+| `"recurring"` | `tagStatus IN ('potential_subscription', 'converted')` |
+| `"subscriptions"` | `tagStatus = 'converted'` |
+
+**Type extension:**
+
+```typescript
+// types/transaction.ts — ADD to TransactionFilters
+export interface TransactionFilters {
+  sourceType?: string;
+  tagStatus?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  paymentType?: "all" | "recurring" | "subscriptions";  // NEW
+}
+```
+
+**API translation:**
+
+```typescript
+// app/api/transactions/route.ts — ADD before building conditions
+const paymentType = searchParams.get("paymentType");
+if (paymentType === "recurring") {
+  conditions.push(
+    inArray(transactions.tagStatus, ["potential_subscription", "converted"])
+  );
+} else if (paymentType === "subscriptions") {
+  conditions.push(eq(transactions.tagStatus, "converted"));
+}
+// "all" or null = no additional condition
+```
+
+**UI component:** A `ToggleGroup` (3 options, compact) rather than a dropdown, since there are only 3 values and quick toggling is the intended UX. The `paymentType` toggle replaces the `tagStatus` dropdown when active — they're mutually exclusive filters to avoid conflicting state.
+
+**Trade-offs:**
+- No schema change — pure query-layer mapping
+- "Recurring" includes both `potential_subscription` and `converted` — a reasonable approximation
+- Cannot combine paymentType and tagStatus filters simultaneously — simplify UI by hiding tagStatus dropdown when paymentType is not "all"
+
+### Pattern 5: Schema Viewer as Server Component with Static Metadata
+
+**What:** The Data Schema Viewer displays the system data model. It does NOT query the live database — it renders a static description of the schema structure.
+
+**Why NOT query `information_schema`:** The TypeScript schema (`schema.ts`) is the source of truth, not the DB catalog. Querying `information_schema` adds a round-trip, requires extra permissions, and returns raw Postgres type names rather than application-level labels and descriptions.
+
+**Implementation:** A Server Component that renders a pre-authored static metadata object describing each table, its columns, types, and relationships.
+
+```typescript
+// app/(dashboard)/schema/page.tsx (Server Component — no "use client")
+// No data fetching needed — schema IS the data
+
+const SCHEMA_METADATA = [
+  {
+    tableName: "users",
+    description: "User accounts with authentication and billing status",
+    columns: [
+      { name: "id", type: "uuid", notes: "Primary key" },
+      { name: "email", type: "varchar(255)", notes: "Unique, used for login" },
+      { name: "billingStatus", type: "enum", notes: "trial | active | cancelled | past_due" },
+      // ...
+    ],
+  },
+  {
+    tableName: "financial_accounts",
+    description: "User financial accounts (bank accounts, credit cards, loans)",
+    columns: [
+      { name: "id", type: "uuid", notes: "Primary key" },
+      { name: "type", type: "enum", notes: "bank_debit | credit_card | loan" },
+      // ...
+    ],
+  },
+  // ... one entry per table
+];
+
+export default function SchemaViewerPage() {
+  return <SchemaViewer tables={SCHEMA_METADATA} />;
+}
 ```
 
 **Trade-offs:**
-- URL fetched on every modal open (fast, <100ms for signed URL generation)
-- TanStack Query caches URL for 4 minutes (refetches before expiry)
-- Cannot be bookmarked or shared (intentional for financial privacy)
+- Manual metadata: extra work when schema changes, but full control over descriptions and grouping
+- Drizzle introspection (inspecting table column objects): stays in sync automatically, but output requires transformation and loses human-readable descriptions
+- Recommendation: Manual for v3.0. When schema has stabilized and table count exceeds ~20, switch to introspection if maintenance burden justifies it.
 
-### Pattern 3: Dynamic Import SSR Bypass for Browser APIs
+### Pattern 6: Account-Scoped Coverage Reusing Existing CoverageGrid
 
-**What:** Wrap react-pdf components in `dynamic(() => import(...), { ssr: false })` to prevent hydration errors.
+**What:** The coverage tab on account detail reuses the existing `CoverageGrid` component verbatim. The account-scoped coverage API returns data in the same shape the vault coverage hook already produces.
 
-**When to use:** Any library that uses Canvas, WebGL, or other browser-only APIs.
+**Existing `CoverageGrid` props interface (from `src/components/vault/coverage-grid.tsx`):**
 
-**Example:**
 ```typescript
-const PDFDocument = dynamic(
-  () => import("./pdf-document-inner").then((m) => m.PDFDocumentInner),
-  { ssr: false, loading: () => <Spinner /> }
-);
+interface CoverageGridProps {
+  sources: CoverageSource[];       // from types/source.ts (existing)
+  months: string[];                // "YYYY-MM" strings
+  onCellClick: (info: CoverageCellClickInfo) => void;
+}
 ```
 
-**Trade-offs:**
-- Component not included in SSR HTML (no SEO impact for modal content — acceptable)
-- Loading state shown while JS bundle downloads (~1.5MB for pdf.js)
-- Must configure `pdfjs.GlobalWorkerOptions.workerSrc` in the dynamically-imported file
+**Account coverage API returns the same shape:**
 
-### Pattern 4: Dual-View with Shared State
-
-**What:** Two views (grid + timeline) backed by same data query. View toggle is UI-only state.
-
-**When to use:** When same data benefits from different visual arrangements but data fetching is identical.
-
-**Example:**
 ```typescript
-// One hook call, two views
-const { data } = useVault(filters);   // fetches once
-
-// Tab switch → view re-renders from same data, no refetch
-<TabsContent value="cabinet">
-  <VaultGrid statements={data?.statements} />
-</TabsContent>
-<TabsContent value="timeline">
-  <VaultTimeline statements={data?.statements} />
-</TabsContent>
+// GET /api/accounts/[id]/coverage
+// Response: { sources: CoverageSource[], months: string[] }
+// Queries: statements WHERE accountId = [id]
+// Same aggregation logic as /api/sources but scoped to one account
 ```
 
-**Trade-offs:**
-- Both views always get fresh data together
-- No stale cabinet data when switching to timeline
-- Simple invalidation: invalidate `["vault"]` query key, both views update
+This means the account coverage tab component is:
 
----
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1: Storing PDFs in the Database
-
-**What people do:** Store PDF bytes as BYTEA column or base64 in JSONB.
-
-**Why it's wrong:** 10MB PDFs in Postgres bloats the database, slows backups, and causes out-of-memory in Vercel serverless. Supabase Storage is purpose-built for binary objects.
-
-**Do this instead:** Store only the storage path (`pdfStoragePath`) in the database; bytes live in Supabase Storage.
-
-### Anti-Pattern 2: Serving PDFs via API Proxy
-
-**What people do:** API route fetches the PDF from storage, streams it to the client.
-
-**Why it's wrong:** Proxying a 5MB PDF through a Vercel serverless function (10MB response limit, 10s timeout) will fail on large statements. Also doubles bandwidth cost.
-
-**Do this instead:** Use signed URLs. Client fetches directly from Supabase CDN. API route only generates and returns the signed URL (tiny JSON response).
-
-### Anti-Pattern 3: Long-Lived or Public Signed URLs
-
-**What people do:** Generate signed URL with 24-hour or longer expiry to avoid frequent refreshes.
-
-**Why it's wrong:** Financial documents shared via long-lived URLs expose sensitive data if the URL is captured in logs, browser history, or referrer headers.
-
-**Do this instead:** 5-minute expiry. TanStack Query handles refresh transparently.
-
-### Anti-Pattern 4: Importing react-pdf Without SSR Bypass
-
-**What people do:** Import `{ Document, Page }` directly in a component with `"use client"`.
-
-**Why it's wrong:** Next.js still attempts to render client components on the server for initial HTML. pdf.js calls `document.createElement('canvas')` which throws in Node.js.
-
-**Do this instead:** Dynamic import with `ssr: false`. Worker config in the dynamically-imported module.
-
-### Anti-Pattern 5: Blocking Upload on Storage Failure
-
-**What people do:** Return 500 if Supabase Storage upload fails, preventing the statement row from being created.
-
-**Why it's wrong:** Storage is a value-added feature (view original PDF). The core value (transaction extraction) still works from in-memory bytes. Blocking on storage failure degrades reliability for a non-critical feature.
-
-**Do this instead:** Log the storage error, continue with processing. Set `pdfStoragePath` to NULL. Vault shows the statement with "PDF not available" state.
-
----
-
-## Integration with Existing Import Flow
-
-### /api/batch/upload Sequence (After Modification)
-
-```
-1. auth()                              [existing]
-2. isUserActive()                      [existing]
-3. validate formData (file, hash, sourceType) [existing]
-4. check for duplicate hash            [existing]
-5. INSERT INTO statements (pending)    [existing]
-6. createAdminClient()                 [NEW]
-7. upload file buffer to Supabase Storage [NEW]
-8. UPDATE statements SET pdfStoragePath  [NEW, only if step 7 succeeded]
-9. return { statementId, status }      [existing]
+```typescript
+// components/accounts/account-detail-tabs.tsx (coverage tab)
+function AccountCoverageTab({ accountId }: { accountId: string }) {
+  const { data } = useAccountCoverage(accountId);
+  return (
+    <CoverageGrid
+      sources={data?.sources ?? []}
+      months={data?.months ?? []}
+      onCellClick={handleCellClick}
+    />
+  );
+}
 ```
 
-Steps 6-8 add ~200-500ms to the upload response time (network call to Supabase CDN). This is acceptable given files are typically 1-10MB and are already being transferred from the browser.
+Zero changes to `CoverageGrid`. Complete reuse.
 
-### StatementDetail Page Integration
+## Data Flow
 
-The existing `/statements/[id]` page and `StatementDetail` component can gain a "View PDF" button using the same `PdfViewerModal`. It just needs to pass the `statementId` and check if `hasPdf` is true.
+### Request Flow: Account List Page
 
-This is a minor enhancement — not a blocking dependency for the vault.
+```
+User navigates to /accounts
+    |
+    v
+AccountListPage renders (Server Component shell)
+    |
+    v
+AccountList (Client Component) calls useAccounts()
+    |
+    v
+GET /api/accounts
+    |
+SELECT * FROM financial_accounts WHERE userId = [session.userId]
+ORDER BY createdAt DESC
+    |
+    v
+Returns: Account[] with type, name, institution, lastFourDigits
+    |
+    v
+AccountCard x N rendered in grid
+```
 
----
+### Request Flow: Account Creation with Source Linking
 
-## Scalability Considerations
+```
+User submits AccountForm with legacySourceType = "Chase Sapphire"
+    |
+    v
+useCreateAccount.mutate({ name: "Chase Sapphire Visa", type: "credit_card",
+                          legacySourceType: "Chase Sapphire" })
+    |
+    v
+POST /api/accounts { ...fields, legacySourceType: "Chase Sapphire" }
+    |
+    v
+INSERT INTO financial_accounts ... RETURNING id
+    |
+    v (if legacySourceType provided)
+UPDATE statements SET accountId = [new_id]
+  WHERE userId = [userId] AND sourceType = "Chase Sapphire"
+    |
+    v
+Invalidate: ["accounts"], ["sources"]
+    |
+    v
+AccountList and SourceDashboard both refetch
+```
 
-| Concern | At 100 users | At 10K users | At 100K users |
-|---------|--------------|--------------|---------------|
-| Storage size | ~50MB (500 statements avg) | ~5GB | ~50GB |
-| Supabase Storage cost | Negligible (5GB free) | ~$25/mo (Pro plan) | ~$250/mo |
-| Signed URL latency | <100ms | <100ms | <100ms (CDN) |
-| Vault list query | <10ms | <50ms (with index) | Needs index tuning |
-| react-pdf bundle | 1.5MB, cached | 1.5MB, cached | Same (static asset) |
+### Request Flow: Transaction Browser with Payment Type Filter
 
-**First bottleneck:** Storage costs at 10K+ users. Mitigation: gate PDF storage behind a paid plan tier (enhanced/advanced). Free users get metadata only, no stored PDF.
+```
+User clicks "Recurring" in TransactionFilters ToggleGroup
+    |
+    v
+setFilters({ ...filters, paymentType: "recurring" })
+    |
+    v
+useTransactions({ paymentType: "recurring" }) — new query key, TanStack Query refetches
+    |
+    v
+GET /api/transactions?paymentType=recurring
+    |
+    v
+API translates: paymentType=recurring -> tagStatus IN ('potential_subscription', 'converted')
+    |
+    v
+SELECT ... FROM transactions WHERE tagStatus IN (...) AND userId = [id] ...
+    |
+    v
+Returns filtered, paginated TransactionPage
+    |
+    v
+TransactionTable re-renders with filtered results
+```
 
-**Index already exists:** `statements_user_id_idx` on `userId` covers vault list queries.
+### State Management: New Query Keys
 
----
+Follows existing TanStack Query pattern. New keys added:
 
-## Build Order Recommendation
+```
+["accounts"]                      -> list all accounts for current user
+["accounts", "list"]              -> same (following sourceKeys pattern)
+["accounts", "detail", id]        -> single account
+["accounts", "detail", id, "coverage"]  -> coverage data for account
+["accounts", "detail", id, "spending"]  -> spending summary for account
+["transactions", filters]         -> unchanged, extended with paymentType and accountId params
+```
 
-Build in this order — each step is independently deployable:
+Mutations invalidate:
+- Account create/update → `["accounts"]`
+- Account create with legacySourceType → also `["sources"]` (SourceDashboard shows link status)
+- Account delete → `["accounts"]`, and statements with that accountId get `accountId = NULL` (DB cascade)
 
-**Step 1: Supabase Storage setup (infrastructure)**
-- Create "statements" bucket in Supabase dashboard
-- Add RLS policies
-- Add env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
-- Install `@supabase/supabase-js`
-- Create `src/lib/supabase/admin.ts`
+## Integration Points: New vs. Modified
 
-No code changes yet. Verify bucket works with manual upload test.
+### New Components (add without touching existing files)
 
-**Step 2: Modify upload route to persist PDFs**
-- Modify `src/app/api/batch/upload/route.ts`
-- Test with a real PDF upload — verify `pdfStoragePath` is set in DB
-- Verify historical statements show `pdfStoragePath = NULL` (expected)
+| New Item | Location | Key Dependencies |
+|----------|----------|-----------------|
+| `AccountCard` | `components/accounts/account-card.tsx` | `AccountTypeBadge`, shadcn Card |
+| `AccountList` | `components/accounts/account-list.tsx` | `AccountCard`, `useAccounts` |
+| `AccountForm` | `components/accounts/account-form.tsx` | React Hook Form, `account.ts` Zod schema |
+| `AccountTypeBadge` | `components/accounts/account-type-badge.tsx` | shadcn Badge |
+| `AccountDetailTabs` | `components/accounts/account-detail-tabs.tsx` | `CoverageGrid` (reused), `TransactionBrowser` (reused) |
+| `AccountSpendingSummary` | `components/accounts/account-spending-summary.tsx` | `useAccountSpending` |
+| `SourceMigrationBanner` | `components/accounts/source-migration-banner.tsx` | `useSources`, detects NULL accountId sources |
+| `SchemaViewer` | `components/schema/schema-viewer.tsx` | Static metadata object |
+| `TableCard` | `components/schema/table-card.tsx` | shadcn Accordion |
+| `/accounts/page.tsx` | `app/(dashboard)/accounts/page.tsx` | `AccountList`, `AccountForm` |
+| `/accounts/[id]/page.tsx` | `app/(dashboard)/accounts/[id]/page.tsx` | `AccountDetailTabs` |
+| `/schema/page.tsx` | `app/(dashboard)/schema/page.tsx` | `SchemaViewer` (Server Component) |
+| `/help/page.tsx` | `app/(dashboard)/help/page.tsx` | Static JSX content |
+| `/api/accounts route.ts` | `app/api/accounts/route.ts` | Drizzle, auth, `createAccountSchema` |
+| `/api/accounts/[id] route.ts` | `app/api/accounts/[id]/route.ts` | Drizzle, auth |
+| `/api/accounts/[id]/coverage` | `app/api/accounts/[id]/coverage/route.ts` | Coverage query logic from `/api/sources` |
+| `/api/accounts/[id]/transactions` | `app/api/accounts/[id]/transactions/route.ts` | Transaction query + accountId WHERE |
+| `/api/accounts/[id]/spending` | `app/api/accounts/[id]/spending/route.ts` | SUM aggregation |
+| `useAccounts` | `lib/hooks/use-accounts.ts` | TanStack Query |
+| `useAccount(id)` | `lib/hooks/use-accounts.ts` | TanStack Query |
+| `useCreateAccount` | `lib/hooks/use-accounts.ts` | TanStack Query mutation |
+| `useUpdateAccount` | `lib/hooks/use-accounts.ts` | TanStack Query mutation |
+| `useDeleteAccount` | `lib/hooks/use-accounts.ts` | TanStack Query mutation |
+| `useAccountCoverage(id)` | `lib/hooks/use-account-coverage.ts` | TanStack Query |
+| `useAccountSpending(id)` | `lib/hooks/use-account-spending.ts` | TanStack Query |
+| `account.ts` Zod schema | `lib/validations/account.ts` | zod discriminatedUnion |
 
-**Step 3: Signed URL API route**
-- Create `src/app/api/statements/[id]/pdf/route.ts`
-- Create `src/lib/hooks/use-pdf-url.ts`
-- Test manually: curl the endpoint, paste signed URL in browser — PDF should open
+### Modified Components (surgical changes, no rewrites)
 
-**Step 4: PDF viewer component**
-- Install `react-pdf`
-- Create `src/components/vault/pdf-document-inner.tsx`
-- Create `src/components/vault/pdf-viewer-modal.tsx`
-- Test in isolation: render modal with a known statement ID
+| Component | File | Specific Change |
+|-----------|------|----------------|
+| `AppSidebar` | `components/layout/app-sidebar.tsx` | Split flat nav array into 3 named section arrays; add Accounts, Schema, Help items; change SidebarGroup structure |
+| `TransactionFilters` | `components/transactions/transaction-filters.tsx` | Add `paymentType` ToggleGroup UI; hide `tagStatus` dropdown when paymentType is not "all" |
+| `TransactionBrowser` | `components/transactions/transaction-browser.tsx` | Accept `accountId?: string` prop; pass both `paymentType` and `accountId` through to `useTransactions` |
+| `useTransactions` | `lib/hooks/use-transactions.ts` | Accept `paymentType?: string` and `accountId?: string` in filter params object |
+| `TransactionFilters type` | `types/transaction.ts` | Add `paymentType?: 'all' \| 'recurring' \| 'subscriptions'` field |
+| `/api/transactions route.ts` | `app/api/transactions/route.ts` | Read `paymentType` param; translate to tagStatus conditions; read optional `accountId` param; join statements to filter |
+| `schema.ts` | `lib/db/schema.ts` | Add `accountTypeEnum`; add `financialAccounts` table; add `accountId` FK to `statements`; add relations |
 
-**Step 5: Vault list API**
-- Create `src/app/api/vault/route.ts`
-- Create `src/lib/hooks/use-vault.ts`
-- Test: hit endpoint, verify returns statements with `hasPdf` field
+### Untouched Components (zero changes needed)
 
-**Step 6: Vault UI**
-- Create vault components (grid, timeline, filters, statement card)
-- Create `src/app/(dashboard)/vault/page.tsx`
-- Add sidebar link
-- Wire `PdfViewerModal` into page
+| Component | Why Untouched |
+|-----------|---------------|
+| `CoverageGrid` | Accepts `sources[]` + `months[]` props; account coverage API returns same shape |
+| `VaultPage`, `FileCabinetView`, `TimelineView`, `CoverageView` | Vault remains unchanged; sourceType-based display still valid |
+| `SourceDashboard`, `SourceList` | Sources page stays as-is; accounts page is a separate new page |
+| All subscription components | Subscriptions unaffected by account structure |
+| All billing and Stripe components | Billing untouched |
+| All auth components | Auth untouched |
+| All analytics and forecast components | Analytics untouched |
+| All admin components | Admin untouched |
+| All cron and email components | Background jobs untouched |
+| `DashboardHeader` | Used by new pages but requires no changes |
+| `SidebarProvider`, `SidebarInset` | Dashboard layout unchanged |
 
----
+## Scaling Considerations
 
-## Open Questions
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| 0-1k users | Monolith fine; all queries userId-scoped; no changes needed |
+| 1k-10k users | Indexes on `financial_accounts(userId)` already planned; account-scoped queries are efficient with FK + index |
+| 100k+ users | Account coverage aggregation (JOIN statements WHERE accountId = X + GROUP BY) may need a materialized view; use the existing analytics MV pattern |
 
-**1. Should PDF upload happen in `/api/batch/upload` or `/api/batch/process`?**
+### Scaling Priorities
 
-Current recommendation: in `/api/batch/upload`. The file bytes are available there, and it separates the "store the file" concern from the "process the file" concern. If upload is in `/api/batch/process`, failure during processing could lose the upload window.
+**First bottleneck:** Account coverage query aggregates statement counts per sourceType, filtered to an account. With hundreds of statements per account this is a GROUP BY on a filtered set — fast at current scale, may need MV if latency exceeds 500ms. Do not pre-optimize.
 
-Counterargument: If `process` is called without the file (e.g., retry from persisted queue), storage upload can't happen. Would need a separate re-upload mechanism.
+**Second bottleneck:** The source-to-account migration banner needs to know which `sourceType` values have no linked account. This is a `SELECT DISTINCT sourceType FROM statements WHERE accountId IS NULL` — stays fast even at 10k+ users with an index on `accountId`.
 
-**2. File size limit for stored PDFs?**
+## Anti-Patterns
 
-Current limit is 50MB per file (set in `/api/batch/upload`). Supabase Storage has a 5GB single-file limit on Pro plan. 50MB is fine. No change needed.
+### Anti-Pattern 1: Rebuilding the Transaction Browser for Account Detail
 
-**3. Should "View PDF" open a new tab or a modal?**
+**What people do:** Create `AccountTransactionBrowser` that duplicates the virtualized table, keyset pagination, debounced search, and mobile/desktop layout from `TransactionBrowser`.
 
-Recommendation: Modal (keeps user in context). The signed URL can also be opened in new tab as an escape hatch (provide a "Open in new tab" link inside the modal).
+**Why it's wrong:** `TransactionBrowser` is ~275 lines with careful performance tuning (keyset cursor, `useVirtualizer`-style rendering, debounced search, `useRef` for selection state). Duplicating it means two sets of bugs and two places to maintain.
 
-**4. Historical uploads with no PDF — show or hide in vault?**
+**Do this instead:** Accept `accountId?: string` on the existing `TransactionBrowser`. Pass it to `useTransactions`, which appends `&accountId=[id]` to the API call. The API adds `AND statements.accountId = [id]` to the WHERE clause. Zero duplication.
 
-Recommendation: Show them. The vault is the authoritative list of all statements. Mark cards with "PDF not available" state visually. Users can see their full history even if they can't view the original file.
+### Anti-Pattern 2: Storing Account Type Fields in JSONB
 
----
+**What people do:** Use `metadata jsonb` column to store type-specific fields.
+
+**Why it's wrong:** Loses type safety, no column-level indexing, Drizzle loses its value with opaque JSON blobs, and querying becomes error-prone (e.g., `metadata->>'creditLimit'` vs typed column access).
+
+**Do this instead:** Nullable typed columns for each type-specific field. Most accounts have 0-3 extra fields. The schema overhead is minimal; the queryability and type safety gains are significant.
+
+### Anti-Pattern 3: Auto-Migrating sourceType Strings to Accounts in DB Migration
+
+**What people do:** Write a migration script that automatically creates a `financial_account` row for each distinct `sourceType` in `statements`.
+
+**Why it's wrong:** Account `type` (bank vs credit card vs loan), `institution`, and other metadata are unknown at migration time. Auto-created accounts would have `type = NULL` and empty metadata, requiring user correction anyway. This wastes a migration on incomplete data.
+
+**Do this instead:** Migration only adds schema (the new table + nullable FK column). Source migration is user-driven via the UI. Users create accounts with the correct type and optionally link their existing sources.
+
+### Anti-Pattern 4: Making the Schema Viewer Query the Live Database
+
+**What people do:** Query `information_schema.columns` to display the schema dynamically.
+
+**Why it's wrong:** The TypeScript schema definition (`schema.ts`) is the source of truth, not the Postgres catalog. `information_schema` adds latency, requires explicit permissions, returns raw Postgres type names, and cannot include application-level descriptions or intent.
+
+**Do this instead:** A Server Component rendering a static metadata object. No DB query needed.
+
+### Anti-Pattern 5: Adding a New DB Column for Payment Type
+
+**What people do:** Add `paymentType enum` column to `transactions` table to enable the filter.
+
+**Why it's wrong:** The existing `tagStatus` enum already encodes the necessary signal. `potential_subscription` and `converted` are the "recurring" transactions. Adding a parallel column creates redundancy and a synchronization requirement whenever tagStatus changes.
+
+**Do this instead:** Map `paymentType` filter values to `tagStatus` conditions at the API layer. The `transactions` table stays unchanged.
+
+### Anti-Pattern 6: Making Help Page a Database-Driven CMS
+
+**What people do:** Create a `help_articles` table and an admin UI to manage FAQ content.
+
+**Why it's wrong:** For a small, infrequently-changing FAQ page, a CMS adds enormous complexity (admin UI, content model, API endpoints, caching) with minimal benefit. Content changes require deployment anyway since they affect page structure.
+
+**Do this instead:** Static JSX or MDX in `help/page.tsx`. Content changes go through the same deployment process as any feature change. Upgrade to a CMS only if the help content becomes a high-frequency update concern.
+
+## Build Order
+
+Dependencies between features determine safe build order.
+
+**Phase 1 — Database foundation (blocks all account work):**
+1. Add `accountTypeEnum` to schema
+2. Add `financialAccounts` table to schema
+3. Add nullable `accountId` FK to `statements` table
+4. Add Drizzle relations for `financialAccounts` and updated `statements`
+5. Generate migration (migration 0011): `npm run db:generate && npm run db:migrate`
+
+**Phase 2 — Account CRUD (blocks account detail page):**
+6. `lib/validations/account.ts` — Zod discriminated union schema
+7. `app/api/accounts/route.ts` — GET list + POST create (with optional source linking)
+8. `app/api/accounts/[id]/route.ts` — GET detail + PATCH update + DELETE
+9. `lib/hooks/use-accounts.ts` — `useAccounts`, `useAccount`, `useCreateAccount`, `useUpdateAccount`, `useDeleteAccount`
+10. `components/accounts/account-form.tsx` — type switcher + conditional fields
+11. `components/accounts/account-type-badge.tsx` and `account-card.tsx`
+12. `components/accounts/account-list.tsx` — grid with empty state
+13. `app/(dashboard)/accounts/page.tsx` — account list page
+
+**Phase 3 — Account detail page (needs CRUD + existing CoverageGrid):**
+14. `app/api/accounts/[id]/coverage/route.ts` — adapt coverage query from `/api/sources`
+15. `app/api/accounts/[id]/transactions/route.ts` — adapt from `/api/transactions` + accountId WHERE
+16. `app/api/accounts/[id]/spending/route.ts` — simple SUM + currency normalization
+17. `lib/hooks/use-account-coverage.ts` and `use-account-spending.ts`
+18. `components/accounts/account-detail-tabs.tsx` — assemble CoverageGrid + TransactionBrowser + SpendingSummary
+19. `app/(dashboard)/accounts/[id]/page.tsx`
+20. `components/accounts/source-migration-banner.tsx` — add to `/accounts` page
+
+**Phase 4 — Nav restructure (can overlap with Phase 2-3, cleaner to do after new pages exist):**
+21. Modify `AppSidebar` with three named section groups
+22. Add Accounts, Schema, Help to appropriate sections
+23. Verify all existing nav links still resolve
+
+**Phase 5 — Payment Type Selector (fully isolated):**
+24. Add `paymentType` to `TransactionFilters` type in `types/transaction.ts`
+25. Modify `TransactionFilters` component with ToggleGroup UI
+26. Modify `useTransactions` to pass `paymentType` as query param
+27. Modify `/api/transactions/route.ts` to translate `paymentType` to tagStatus conditions
+
+**Phase 6 — Static pages (zero dependencies, do last if time-pressured):**
+28. `app/(dashboard)/help/page.tsx` — FAQ content
+29. `components/schema/` — `SchemaViewer` + `TableCard`
+30. `app/(dashboard)/schema/page.tsx`
+
+**Rationale for this order:**
+- Schema change first because the entire account feature depends on the new table existing
+- Account CRUD before account detail (detail page needs account data to display)
+- Nav restructure deferred because existing pages work fine with the old nav during development
+- Payment type filter is fully isolated from account work — can be done in parallel with Phase 2-3
+- Static pages last because they have zero dependencies and are the lowest risk if time runs short
+
+## Integration Points: External Boundaries
+
+| Boundary | Communication Pattern | Notes |
+|----------|-----------------------|-------|
+| `AppSidebar` → new pages | Next.js `Link` hrefs to `/accounts`, `/schema`, `/help` | No special handling needed |
+| `AccountDetailPage` → `CoverageGrid` | Props: `sources: CoverageSource[]`, `months: string[]` | Zero changes to CoverageGrid |
+| `AccountDetailPage` → `TransactionBrowser` | Prop: `accountId?: string` | Browser scopes its query when accountId is present |
+| `accounts` API → `statements` table | SQL: `accountId FK` set during source linking | Account create optionally runs UPDATE statements |
+| Source migration → `useSources` cache | Mutation invalidates `["sources"]` | SourceDashboard reflects link status automatically |
+| `CoverageGrid` click → historical upload | Existing `HistoricalUploadModal` pattern | CoverageGrid's `onCellClick` unchanged |
 
 ## Sources
 
-### Primary (HIGH confidence — verified against codebase)
-
-- `src/lib/db/schema.ts` lines 495-533 — `statements` table with `pdfStoragePath` field
-- `src/app/api/batch/upload/route.ts` — Upload flow, TODO comment at line 97
-- `src/app/api/batch/process/route.ts` — Processing flow, in-memory PDF handling
-- `src/app/api/statements/[id]/route.ts` — Statement GET pattern to follow
-- `src/components/sources/statement-detail.tsx` — Existing statement UI pattern
-- `src/lib/hooks/use-statement.ts` — TanStack Query hook pattern to follow
-
-### Primary (HIGH confidence — verified against official docs)
-
-- [Supabase Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control) — RLS policies for user-scoped storage
-- [Supabase createSignedUrl](https://supabase.com/docs/reference/javascript/storage-from-createsignedurl) — Signed URL API
-- [Supabase Resumable Uploads](https://supabase.com/docs/guides/storage/uploads/resumable-uploads) — Upload patterns and size recommendations
-
-### Secondary (MEDIUM confidence — community-verified)
-
-- [react-pdf GitHub](https://github.com/wojtekmaj/react-pdf) — Next.js App Router compatibility, worker config requirement
-- [NextJS 14 and react-pdf integration](https://benhur-martins.medium.com/nextjs-14-and-react-pdf-integration-ccd38b1fd515) — Dynamic import pattern with SSR bypass
-- [Supabase service role in Next.js](https://adrianmurage.com/posts/supabase-service-role-secret-key/) — Server-side client setup pattern
+Direct codebase analysis (HIGH confidence — all patterns from existing files):
+- `src/components/layout/app-sidebar.tsx` — current nav structure, SidebarGroup composition
+- `src/lib/db/schema.ts` — complete database schema (13 tables), enum patterns
+- `src/app/api/transactions/route.ts` — keyset pagination, filter translation, tagStatus conditions
+- `src/app/api/sources/route.ts` — coverage aggregation query pattern to adapt
+- `src/components/transactions/transaction-browser.tsx` — existing browser architecture (275 lines)
+- `src/components/transactions/transaction-filters.tsx` — existing filter bar, prop interface
+- `src/components/vault/coverage-grid.tsx` — existing component, props interface to reuse
+- `src/components/vault/vault-page.tsx` — tab pattern for multi-view pages
+- `src/lib/hooks/use-sources.ts` — TanStack Query hook pattern (canonical example)
+- `src/types/transaction.ts` — existing `TransactionFilters` type to extend
+- `src/types/source.ts` — existing `SourceCoverage` type (reused for account coverage)
+- `src/lib/features/config.ts` — feature gating system (unchanged for v3.0)
+- `.planning/codebase/ARCHITECTURE.md` — prior architecture analysis (2026-01-24)
+- `.planning/phases/06-statement-source-tracking/06-RESEARCH.md` — sourceType history
 
 ---
-
-*Architecture research for: PDF Vault (Supabase Storage + react-pdf + Dual-View UI)*
-*Researched: 2026-02-19*
-*Confidence: HIGH*
+*Architecture research for: v3.0 Navigation & Account Vault — Subscription Manager*
+*Researched: 2026-02-22*

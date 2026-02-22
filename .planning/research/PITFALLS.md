@@ -1,258 +1,232 @@
 # Pitfalls Research
 
-**Domain:** Financial Data Vault — PDF blob storage, in-app viewing, and vault UI added to existing Next.js + Supabase subscription manager
-**Researched:** 2026-02-19
-**Confidence:** HIGH (Vercel limits and Supabase Storage limits confirmed via official docs; PDF viewer issues confirmed via multiple GitHub issues; RLS issues corroborated by official Supabase docs and community reports)
+**Domain:** v3.0 Navigation & Account Vault — adding multi-level navigation restructure, account management with type-discriminated schema, source-to-account migration, account detail pages, payment type filtering, data schema viewer, and help page to an existing Next.js 16 App Router + Supabase subscription manager
+**Researched:** 2026-02-22
+**Confidence:** HIGH (based on direct codebase inspection + official Next.js, Drizzle, and PostgreSQL documentation; confirmed by known community patterns)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Routing PDF Uploads Through the Vercel Serverless Function
+### Pitfall 1: `sourceType` String Is Used as a Primary Key Everywhere — Not a Safe Migration Target
 
 **What goes wrong:**
-The existing import flow receives PDFs as base64 through `POST /api/import`. When adding persistent storage, the natural instinct is to extend the same route to also forward the bytes to Supabase Storage. This hits Vercel's hard 4.5 MB request body limit and returns HTTP 413: `FUNCTION_PAYLOAD_TOO_LARGE`. The problem is invisible in development with small test files — it only surfaces with real bank statement PDFs, which commonly range from 3-15 MB.
-
-Base64 encoding adds approximately 33% overhead, meaning a 3.3 MB PDF becomes a 4.5 MB encoded payload, hitting the limit exactly. Any statement larger than 3.3 MB will fail silently from the user's perspective.
+The existing `statements` table uses a plain `varchar sourceType` (e.g., `"Chase Sapphire"`) as the grouping key for all vault, coverage, and source components. This string appears in 37 files across API routes, hooks, vault components, source components, and transaction types. When the new `financial_accounts` table is introduced and statements get linked via a UUID foreign key (`accountId`), any code that still drives behavior off `sourceType` string will silently ignore the new structure. The worst outcome: account renaming via the new edit form updates the account name but leaves `statements.sourceType` unchanged — the vault grid and coverage API still show the old string and treat renamed accounts as separate sources.
 
 **Why it happens:**
-The existing import route already handles the file server-side. Developers naturally extend it to also persist the file. Dev test files are usually small. The 4.5 MB limit is not obvious during local development (no Vercel function wrapper locally).
+`sourceType` was a pragmatic early decision (v1.1, Phase 6) that deferred a formal accounts table. It is a denormalized string, not a FK. Migration will feel complete once the new table exists and statements have an `accountId` column — but the old string is still queryable and many components will keep using it if not explicitly audited.
 
 **How to avoid:**
-Use Supabase's signed upload URL pattern for direct client-to-storage uploads. The server creates a signed upload URL (expires in 2 hours), returns it to the browser, and the browser uploads directly to Supabase Storage — bypassing Vercel entirely. The server only processes metadata after the upload completes.
-
-```typescript
-// Server action: generate signed URL and scoped path only
-const path = `${userId}/${year}-${month}/${statementId}.pdf`;
-const { data } = await supabase.storage
-  .from('statements')
-  .createSignedUploadUrl(path);
-// Return { signedUrl, token, path } to client
-
-// Client: upload directly to Supabase Storage (bypasses Vercel)
-await supabase.storage
-  .from('statements')
-  .uploadToSignedUrl(path, token, file);
-
-// Client then notifies server with the storage path only
-await fetch('/api/import', { method: 'POST', body: JSON.stringify({ storagePath: path }) });
-```
+- Add `accountId uuid REFERENCES financial_accounts(id)` to `statements` with `ON DELETE SET NULL` (nullable, not null — old statements have no account yet)
+- Keep `sourceType` as the display name denormalized on `financial_accounts.name`; drop the column on `statements` only after all consumers are migrated
+- Audit every file in the `sourceType` grep result (37 files) before declaring migration complete
+- After migration, queries should drive grouping off `accountId`, not off the string
+- The source APIs (`/api/sources`, `/api/vault/coverage`, `/api/vault/timeline`) must be updated to JOIN through `financial_accounts` — not retired; only repointed
 
 **Warning signs:**
-- Uploads work in dev with small 1-2 MB test PDFs but fail in production
-- HTTP 413 errors in Vercel function logs
-- Users report "upload failed" for files over 3-4 MB
-- The existing `react-dropzone` 10 MB client-side limit gives false confidence that large files work
+- Coverage grid still shows the old name after an account is renamed
+- Vault file-cabinet groups duplicated (new name AND old name both appear)
+- Source filter dropdown on the transaction browser still lists raw `sourceType` strings
+- Historical upload wizard auto-fills based on string match, breaks after rename
 
-**Phase to address:** Storage Foundation phase (the first phase that wires up Supabase Storage). This architectural decision must be made before any upload code is written.
+**Phase to address:** Account schema and migration phase (first account-related phase). Audit and freeze the `sourceType` usage list before writing any new account code. Treat as the top-priority dependency graph item.
 
 ---
 
-### Pitfall 2: react-pdf / pdfjs-dist Breaks the Next.js App Router Build
+### Pitfall 2: Adding `accountId` FK to `statements` Fails If Existing Rows Violate NOT NULL
 
 **What goes wrong:**
-Installing `react-pdf` (which depends on `pdfjs-dist`) and importing it in a standard App Router component causes build failures or silent runtime crashes. Documented failure modes as of 2025:
-- `TypeError: Promise.withResolvers is not a function` during `next build`
-- `Can't resolve 'pdfjs-dist/build/pdf.worker.min.mjs'` webpack error
-- Blank white box where the PDF should appear (worker silently failed, no error thrown)
-- The `pdfjs-dist` bundle (~3 MB) inflates the server function bundle and can approach the 250 MB unzipped Vercel limit
+Drizzle generates a migration that adds `account_id uuid REFERENCES financial_accounts(id)`. If the column is `NOT NULL`, the migration fails immediately because every existing statement row has a NULL value. If it is nullable but then code assumes `accountId` is always present, null-pointer-style TypeScript errors propagate through account detail pages that look up a statement's account.
+
+A second failure mode: the Drizzle migration generator has a documented bug (GitHub issue #4147) where adding a foreign key and a new column in the same migration can generate incorrect SQL — the FK reference may point to the wrong temporary table. Applying this unreviewed migration in production corrupts the schema.
 
 **Why it happens:**
-`react-pdf` depends on browser-only APIs (Canvas, Web Workers). The Next.js App Router server-renders components unless explicitly opted out. PDF.js ships a Web Worker that webpack does not know how to bundle without explicit configuration. Setting `pdfjs.GlobalWorkerOptions.workerSrc` in a shared utility file is unreliable — due to module execution order, the default value can overwrite the custom setting.
+Developers make the column `NOT NULL` thinking every statement should have an account, forgetting that 10 migrations' worth of existing production data has no account concept yet. Or they trust the auto-generated migration SQL without reviewing it.
 
 **How to avoid:**
-Three-layer dynamic import pattern — not optional, required:
+- Make `accountId` nullable on the `statements` table. This is required — old statements cannot have an account until a backfill runs.
+- After adding the column, run a backfill migration that creates one `financial_account` per distinct `sourceType` and sets `statements.account_id` for all matching rows
+- Always read the generated `.sql` migration file before `db:migrate` — especially when adding a FK and a new column in the same Drizzle schema change
+- Do not add a `NOT NULL` constraint until after backfill is verified complete
 
-```typescript
-// Layer 1: PDFViewerCore.tsx — actual react-pdf components
-// THIS FILE must be "use client" and must set workerSrc locally
-'use client';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
+**Warning signs:**
+- `db:migrate` throws `not-null constraint violation` on the `account_id` column
+- Coverage or vault APIs return empty arrays because the JOIN on `accountId` drops all rows where it is NULL
+- Account detail pages crash with "Cannot read property of null" for statements that predate the account system
 
-// Set workerSrc IN THIS SAME FILE — not in a separate module
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+**Phase to address:** Account schema and migration phase. The backfill migration must be the second migration in the sequence — add nullable column first, backfill second.
 
-// Layer 2: PDFViewer.tsx — wrapper that disables SSR
-import dynamic from 'next/dynamic';
-const PDFViewerCore = dynamic(() => import('./PDFViewerCore'), { ssr: false });
-export default function PDFViewer(props) { return <PDFViewerCore {...props} />; }
+---
 
-// Layer 3: next.config.ts — prevent canvas binary from breaking webpack
-// and exclude pdfjs from server bundle
-const nextConfig = {
-  webpack: (config) => {
-    config.resolve.alias.canvas = false;
-    return config;
-  },
-  serverExternalPackages: ['pdfjs-dist'], // Next.js 15+
+### Pitfall 3: Route Restructure Breaks Existing Pathname-Based Active Link Logic
+
+**What goes wrong:**
+The current sidebar uses `pathname === item.href` for exact matches and `pathname.startsWith(item.href)` for prefix matches. After restructuring into a multi-section sidebar with sections like "fin Vault," "payments Portal," and "Support," several existing routes will move. For example, `/sources` will likely become `/accounts` or `/vault/accounts`. Any hardcoded path string in `app-sidebar.tsx`, breadcrumb definitions, or `isActive` checks that references the old paths will silently show no active state or an incorrect active item.
+
+Worse: existing pages export `DashboardHeader` breadcrumbs with hardcoded `href` values like `{ label: "Dashboard", href: "/dashboard" }`. If the route hierarchy changes such that "Dashboard" becomes `/` or nests under a section prefix, all breadcrumb trails for existing pages become incorrect without touching those individual page files.
+
+**Why it happens:**
+Path strings are duplicated across the sidebar config array, individual page breadcrumb props, and any `router.push()` calls in client components. There is no central route constants file. When routes move, each duplication must be found and updated manually.
+
+**How to avoid:**
+- Create `src/lib/constants/routes.ts` before restructuring — a single export of all named routes (`ROUTES.DASHBOARD = "/dashboard"`, `ROUTES.ACCOUNTS = "/accounts"`, etc.)
+- Refactor the sidebar nav items array to use `ROUTES.*` constants
+- Update DashboardHeader breadcrumb props in individual page files to reference constants, not strings
+- The isActive check for section-level nav items with sub-pages must use `pathname.startsWith(item.href)` — not exact equality — to keep the parent section highlighted when a child route is active
+- After restructuring, test every nav item in both collapsed and expanded sidebar states; active highlight is easy to miss in the collapsed icon-only view
+
+**Warning signs:**
+- No nav item appears highlighted after clicking a restructured section
+- Clicking the old `/sources` path results in a 404 (not redirected to the new route)
+- Multiple nav items appear active simultaneously (prefix collision — e.g., `/vault` prefix matching both `/vault/accounts` and `/vault`)
+- Breadcrumbs point to old URLs that no longer resolve
+
+**Phase to address:** Navigation restructure phase (must come first, before any new account/detail pages are added, since those new routes must be defined in the new structure from the start).
+
+---
+
+### Pitfall 4: Old Routes Have No Redirect — Existing Users Get 404 After Deployment
+
+**What goes wrong:**
+When routes are renamed (e.g., `/sources` becomes `/accounts`, `/transactions` moves to a new section), any user who has that URL bookmarked, cached in their browser, or deep-linked from a notification email (renewal reminders link back to the app) will land on a 404 page after the deployment. This is particularly damaging for renewal reminder emails that were sent before the deployment and contain hardcoded URLs like `/subscriptions/[id]`.
+
+**Why it happens:**
+Developers focus on the new routes and forget to handle the old ones. The 404 is invisible in development because the developer always navigates to the new paths. It only appears when existing sessions or bookmarks are used.
+
+**How to avoid:**
+- Add permanent redirects (308) in `next.config.ts` for every URL that moves:
+  ```js
+  redirects: async () => [
+    { source: '/sources', destination: '/accounts', permanent: true },
+    // Add one entry per moved route
+  ]
+  ```
+- Do NOT use `permanent: true` for routes that may move again — start with temporary (307) and finalize to permanent (308) only when the URL structure is locked
+- Audit all outbound links in email templates (reminder, trial-ending, payment-failed) for hardcoded paths before deployment
+- For internally linked deep routes (e.g., `/subscriptions/[id]`), keep existing paths intact if they are included in email templates — do not rename until email templates are updated
+
+**Warning signs:**
+- 404 errors in Vercel access logs on the day after deployment
+- User-reported "that link in the email doesn't work"
+- Sentry captures 404 events at the old route patterns
+
+**Phase to address:** Navigation restructure phase — add redirects as part of the nav work, not as a cleanup step after. Each route that moves gets a redirect in the same commit.
+
+---
+
+### Pitfall 5: Type-Discriminated Account Fields Using Nullable Columns Without CHECK Constraints Creates Inconsistent Data
+
+**What goes wrong:**
+The new `financial_accounts` table will have a `type` field (bank/debit, credit card, loan) with type-specific fields (e.g., `creditLimit`, `interestRate` for credit cards; `routingNumber` for bank accounts). The temptation is to add all fields as nullable columns on the single table and rely on application code to fill in the correct subset. Without a CHECK constraint enforcing which fields must be non-null for each type, the database accepts logically invalid rows: a loan account with `creditLimit` populated, a bank account with `interestRate` set, or a credit card account with a routing number. TypeScript discriminated unions enforce this at compile time, but TypeScript types are erased at runtime — a malformed API request or a future developer's mistake can write inconsistent data.
+
+**Why it happens:**
+PostgreSQL does not natively support discriminated union types. Nullable columns on a single table is the simplest implementation. CHECK constraints that enforce cross-column invariants feel like over-engineering for a new feature.
+
+**How to avoid:**
+Add a PostgreSQL CHECK constraint that enforces which fields are populated per account type:
+```sql
+ALTER TABLE financial_accounts
+ADD CONSTRAINT type_field_consistency CHECK (
+  (type = 'bank_debit' AND credit_limit IS NULL AND interest_rate IS NULL) OR
+  (type = 'credit_card' AND routing_number IS NULL) OR
+  (type = 'loan' AND routing_number IS NULL AND credit_limit IS NULL)
+);
+```
+If the type-specific fields are few (2-3 per type), a simpler approach is `JSONB` for type-specific metadata — the base table stores `type`, `name`, `accountId`; a `metadata JSONB` column stores the type-specific data. This avoids nullable column sprawl entirely and is validated at the application layer via Zod schemas keyed to the `type` value.
+
+**Warning signs:**
+- Account form submits successfully but type-specific fields from another type are present in the DB row
+- Coverage grid shows loan accounts with a credit limit badge
+- TypeScript errors disappear but incorrect data appears in the UI after a schema change
+
+**Phase to address:** Account schema design phase. Decide between nullable columns + CHECK constraint vs. JSONB metadata before writing the migration — changing the approach after data exists requires a second migration.
+
+---
+
+### Pitfall 6: TanStack Query Cache Not Invalidated After Account Name Change — Stale Data Appears Across Multiple Pages
+
+**What goes wrong:**
+When a user renames an account via the account edit form, the mutation calls `PATCH /api/accounts/[id]` and invalidates the `["accounts"]` query key. However, the vault coverage grid (`useVaultCoverage`), the vault timeline (`useVaultTimeline`), the source dashboard (`useSources`), and the transaction browser (`useTransactions`) all contain the `sourceType` string (which becomes the account name). These components are powered by separate query keys (`["vault", "coverage"]`, `["vault", "timeline"]`, etc.) that are NOT invalidated by the account mutation. The user renames "Chase Sapphire" to "Chase Checking," saves, sees the account list update — but the vault grid still shows "Chase Sapphire" until a manual page refresh.
+
+**Why it happens:**
+Query invalidation is only as complete as the invalidation list in the mutation's `onSuccess` handler. Developers invalidate the query they edited but forget all the derived views that embed the same data. As coverage and account data is progressively unified, the fan-out invalidation set grows.
+
+**How to avoid:**
+When implementing the account PATCH mutation, invalidate all known query keys that contain account/source name data:
+```ts
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["accounts"] });
+  queryClient.invalidateQueries({ queryKey: ["vault", "coverage"] });
+  queryClient.invalidateQueries({ queryKey: ["vault", "timeline"] });
+  queryClient.invalidateQueries({ queryKey: ["sources"] });
+  queryClient.invalidateQueries({ queryKey: ["transactions"] }); // if sourceType is in filter options
 };
 ```
+Alternatively, after the accounts migration is complete, query keys that previously started with `["sources"]` should be retired in favor of `["accounts"]`, and the vault coverage/timeline queries should embed account name via JOIN rather than storing it independently.
 
 **Warning signs:**
-- `TypeError: Promise.withResolvers is not a function` during `next build`
-- `Can't resolve 'pdfjs-dist/build/pdf.worker.min.mjs'` in webpack output
-- PDF component renders in dev but deployment fails
-- Blank PDF area on production with no console error (worker failed silently)
-- Vercel deployment logs show function bundle approaching 250 MB
+- Renaming an account updates the account list but not the vault grid
+- Transaction browser still shows the old account name in the filter dropdown
+- Coverage cells show a mix of old and new names for the same account after rename
+- Stale name persists until the component unmounts and remounts (navigation away and back)
 
-**Phase to address:** PDF Viewer phase — isolate this from the storage phase to contain the webpack complexity.
+**Phase to address:** Account CRUD phase (account edit form). Document the full query invalidation fan-out in the mutation handler — do not discover it post-deployment via user reports.
 
 ---
 
-### Pitfall 3: Supabase Storage RLS Left Open or Blocking All Access
+### Pitfall 7: Multi-Level Sidebar isActive Logic Causes Multiple Items to Appear Simultaneously Active
 
 **What goes wrong:**
-Two opposite failure modes on the same bucket:
+The current sidebar uses two patterns: `pathname === item.href` (exact) for most items and `pathname.startsWith(item.href)` (prefix) for settings. When restructuring to sections with sub-items, a route like `/vault/accounts/[id]/transactions` will match `startsWith("/vault")`, `startsWith("/vault/accounts")`, AND `startsWith("/vault/accounts/[id]")` simultaneously. All three levels appear highlighted. This is visually broken and confusing.
 
-(a) **Too open:** No RLS policies on the bucket (or RLS disabled) — any authenticated user can read any other user's bank statements by constructing the storage path. Financial data exposed.
-
-(b) **Too closed:** RLS enabled but no policies created — every upload and download returns a 403 error. No data can be written or read. Manifests as mysterious "Unauthorized" errors that look like auth bugs.
-
-A 2025 security audit found that 83% of exposed Supabase databases involved RLS misconfigurations.
+The secondary issue: the section-level "fin Vault" label is not a link — it is just a `SidebarGroupLabel`. If the designer wants the section header itself to be clickable (linking to an overview page like `/vault`), the existing shadcn `SidebarGroupLabel` does not support `asChild`. Adding an `<a>` inside it breaks the DOM structure.
 
 **Why it happens:**
-The Supabase Dashboard SQL editor runs as the postgres superuser, which bypasses all RLS. Developers test their queries in the dashboard, see correct results, deploy, and discover real users get 403 errors or cross-user access. Storage bucket RLS policies are configured separately from database table RLS and require distinct SQL policies scoped to `storage.objects`.
+Prefix matching is the correct approach for hierarchical nav, but without an explicit depth check, every ancestor segment matches. The shadcn sidebar component was designed for single-level navigation items and its `SidebarGroupLabel` does not take an `asChild` prop.
 
 **How to avoid:**
-Create explicit RLS policies scoped to the user's own folder path before writing any upload code. The convention `userId/...` as the path prefix makes the policy simple:
-
-```sql
--- Enable RLS on storage.objects (required first)
--- This is done via the Supabase Dashboard Storage settings or:
--- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
--- Allow users to upload only to their own folder
-CREATE POLICY "users upload own statements"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'statements' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Allow users to read only their own statements
-CREATE POLICY "users read own statements"
-ON storage.objects FOR SELECT
-USING (
-  bucket_id = 'statements' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Allow users to delete only their own statements
-CREATE POLICY "users delete own statements"
-ON storage.objects FOR DELETE
-USING (
-  bucket_id = 'statements' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-```
-
-Test RLS by creating two separate authenticated Supabase clients with two different user sessions and attempting cross-user read — do not test from the dashboard.
-
-**Warning signs:**
-- All storage operations succeed in testing with the service role key — test switched to anon key reveals 403
-- No RLS policies listed in Supabase Dashboard > Storage > Policies
-- User A can construct a URL for User B's PDF and view it
-- All uploads return 403 in production but not in local dev (service role vs authenticated client)
-
-**Phase to address:** Storage Foundation phase — configure RLS before writing any upload code. This is a security-first decision.
-
----
-
-### Pitfall 4: Storage File and Database Record Get Out of Sync
-
-**What goes wrong:**
-The upload flow requires two steps that must both succeed: (1) file uploaded to Supabase Storage, (2) database record created in `import_audits` (or a new `statements` table). If step 1 succeeds and step 2 fails due to a network blip, validation error, or DB timeout, you get an orphaned file in S3 with no database reference. Conversely, if the database record is written first and storage upload fails, the DB shows a record pointing to a non-existent file. Neither failure is automatically cleaned up.
-
-**Why it happens:**
-Storage and database are separate systems. Supabase does queue an internal `ObjectAdminDelete` event if the S3 upload commits but the `storage.objects` row fails (internal storage consistency), but this does not cover failures in your application code's database write. The supabase-js client does not support cross-service transactions.
-
-**How to avoid:**
-Upload-then-record protocol with explicit compensating action on DB failure:
-
-```typescript
-async function uploadAndRecord(file: File, userId: string) {
-  const path = `${userId}/${generateStatementPath(file)}`;
-
-  // Step 1: Upload file to storage
-  const { error: uploadError } = await supabase.storage
-    .from('statements').upload(path, file);
-  if (uploadError) throw uploadError; // Safe: nothing written yet
-
-  // Step 2: Write database record
-  const { error: dbError } = await db.insert(importAudits).values({
-    storagePath: path,
-    userId,
-    fileHash: await computeSHA256(file),
-    // ...
-  });
-
-  // Step 3: Compensate if DB write failed
-  if (dbError) {
-    // Clean up the orphaned storage file
-    await supabase.storage.from('statements').remove([path]);
-    throw dbError;
-  }
+For each item, define an explicit `isActive` function rather than relying on `startsWith` alone:
+```ts
+// Match exactly OR match as parent of deeper routes, but NOT match sibling sections
+function isItemActive(pathname: string, href: string, children?: string[]): boolean {
+  if (pathname === href) return true;
+  if (children?.some(child => pathname.startsWith(child))) return true;
+  return pathname.startsWith(href + "/");
 }
 ```
-
-Additionally: build a periodic cleanup cron that queries `storage.objects` for files with no matching `import_audits.storage_path` and removes them via the Storage API. **Never delete storage files via SQL `DELETE FROM storage.objects`** — this leaves the S3 object intact (orphaned at the S3 level) while only removing the metadata row.
+For section-level links (if the section header should be clickable), wrap a `SidebarMenuItem` + `SidebarMenuButton` styled to look like a header rather than attempting to extend `SidebarGroupLabel`.
 
 **Warning signs:**
-- Storage bucket size grows faster than database record count
-- Users see entries in the vault UI that return 404 when clicked
-- DB write failure error logs with no corresponding storage cleanup log
-- Orphaned file count in storage grows over time
+- Two or more sidebar items appear highlighted on the same route
+- Section header is not clickable even though the design calls for it
+- Clicking a child page deselects the parent section item
 
-**Phase to address:** Storage Foundation phase — design the upload protocol correctly from day one; retrofitting compensating logic is error-prone.
+**Phase to address:** Navigation restructure phase — define the isActive logic for the new multi-level structure before adding any account or sub-pages.
 
 ---
 
-### Pitfall 5: Signed URL Expiry Breaks the Vault UI After the Tab Has Been Open
+### Pitfall 8: Account Detail Pages With Dynamic Route Segments Break the Coverage Grid's `sourceType`-Keyed API
 
 **What goes wrong:**
-Private bucket files require signed URLs to serve. Signed URLs expire (the default is 1 hour, configurable). The vault UI fetches signed URLs when the page loads and stores them in React state or TanStack Query's cache with its default 1-minute stale time. A user opens the vault, browses statements, leaves the tab open for 90 minutes, comes back, and clicks a PDF — the URL is expired and the viewer shows a blank page or a 400 error. The URL string in state still looks valid; no obvious indicator.
+Account detail pages will use the route `/accounts/[accountId]` (or `/vault/accounts/[accountId]`). The coverage grid and source-statements API currently key everything off `sourceType` (a string). The historical upload modal (`historical-upload-modal.tsx`) sends `sourceType` as a query parameter to determine which source to fill gaps for. The reimport wizard similarly uses `sourceType` to fetch the relevant statements. When the account detail page is reached via `[accountId]`, these components need the account's `sourceType` string to remain compatible with existing APIs — OR the APIs must be updated to accept `accountId` UUID instead.
 
-An additional quirk: `createSignedUrl()` generates a different signature each time it is called, which means HTTP-level `If-None-Match` caching does not work — every call generates a fresh round-trip to Supabase, even for the same file.
+If account detail pages pass `accountId` to the coverage component but the coverage API only understands `sourceType`, the grid will render empty. The API update and the component update must be in sync.
 
 **Why it happens:**
-Signed URLs are the correct security mechanism for private bucket files. But developers fetch them eagerly for the entire vault list (to avoid delays on click) and cache them alongside other data. The expiry is invisible to application state management.
+Account detail is a new concept layered onto a coverage system that was not designed with FK-based account identity. The first instinct is to pass the `accountId` from the URL params into the existing `useSources`, `useVaultCoverage`, or `useSourceStatements` hooks — but those hooks fetch by `sourceType` string.
 
 **How to avoid:**
-Generate signed URLs on-demand (at the moment of user action) rather than eagerly for the entire vault list. The vault list page stores only the `storagePath` from the database. A signed URL is generated only when the user clicks "View" or "Download":
-
-```typescript
-// WRONG: pre-fetch signed URLs for all visible files
-const vaultItems = useQuery(['vault'], async () => {
-  const files = await fetchStatements(); // Returns storagePaths
-  return Promise.all(files.map(f =>
-    supabase.storage.from('statements').createSignedUrl(f.storagePath, 3600)
-  ));
-});
-
-// CORRECT: generate signed URL only when user acts
-async function handleViewStatement(storagePath: string) {
-  const { data, error } = await supabase.storage
-    .from('statements')
-    .createSignedUrl(storagePath, 3600); // 1-hour URL
-  if (error) throw error;
-  openPDFViewer(data.signedUrl);
-}
-```
-
-If the PDF viewer needs to hold the URL for a session, add a refresh mechanism that detects 400 responses and re-fetches the signed URL automatically.
+- On the account detail page, fetch the account by `accountId` first, extract `account.name` (the display name = former `sourceType`)
+- Pass `account.name` as the source type filter to the existing coverage and statement hooks until the APIs are migrated to accept `accountId`
+- In a subsequent phase, migrate the coverage API to accept `accountId` as an optional query param (prefer UUID over string; fall back to string for backward compat during transition)
+- Do NOT attempt to do the API migration and the UI page simultaneously — they will break each other
 
 **Warning signs:**
-- Users report "PDF won't load" intermittently — especially after leaving the app open
-- 400/403 errors in browser console on Supabase storage URLs
-- Errors appear only hours after page load, not on first visit
-- Refreshing the page fixes the problem
+- Account detail page loads but coverage grid is empty
+- Statement list on account detail shows zero items (API filtering by accountId that the source-statements API doesn't recognize)
+- Historical upload modal shows sources from other accounts (sourceType-based filtering not scoped to this account)
 
-**Phase to address:** PDF Viewer / Vault UI phase — this must be a design decision before the URL-fetching logic is built.
+**Phase to address:** Account detail pages phase. The transition strategy (name-passthrough vs. full API migration) must be decided before writing the page component.
 
 ---
 
@@ -260,14 +234,13 @@ If the PDF viewer needs to hold the URL for a session, add a refresh mechanism t
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Proxy PDF bytes through Next.js API route (not signed URL) | Simpler auth check in one place | Hits 4.5 MB Vercel body limit; latency doubles; costs compute | Never |
-| Public bucket instead of private + signed URLs | No URL generation code | Bank statements publicly accessible by URL, no revocation possible | Never for financial data |
-| Store signed URLs in database column | Avoids generating at read time | URLs expire; stale column values; if leaked, cannot revoke | Never |
-| Store signed URLs in TanStack Query with default staleTime | Fewer API calls | Expired URLs silently fail after 1 hour | Never — generate on-demand |
-| Skip file hash before upload | Simpler upload flow | Users re-upload same statement, trigger duplicate AI extraction, waste storage quota | Acceptable in MVP if storage is low; add hash check when adding bulk upload |
-| Use `import_audit.id` as the storage file path | Simple unique mapping | UUID paths give no human-readable debugging info | Acceptable — but `userId/YYYY-MM/statementId.pdf` is better for ops |
-| Delete storage files via SQL `DELETE FROM storage.objects` | Familiar SQL pattern | S3 object persists; orphaned at S3 level; storage bill grows | Never — always use the Storage API |
-| Load all PDF pages simultaneously in viewer | Simpler component | Multi-page bank statements (20-50 pages) freeze or crash browser tab | Never — paginate from page 1, load pages on demand |
+| Keep `sourceType` string on `statements` forever (no FK migration) | Avoids migration complexity | Cannot rename accounts without breaking coverage; cannot query by account type; no referential integrity | Never — the entire v3.0 value prop requires proper account identity |
+| Hardcode new route strings in sidebar instead of using a `ROUTES` constants file | Faster to write | Same paths repeated in sidebar, breadcrumbs, email templates, `router.push()` — each must be updated manually on every move | Acceptable for MVP; add `ROUTES` constants before the nav structure is considered stable |
+| Add all type-specific fields as nullable columns (no CHECK constraint) | Simpler migration | Inconsistent data; credit card fields set on loan accounts; TypeScript guards erased at runtime | Acceptable in MVP if the UI strictly controls which fields appear per type; add CHECK constraint before v4.0 |
+| Invalidate only the direct query key in account mutations | Simpler mutation handlers | Stale data in vault, coverage, and transaction views after account rename | Never — stale financial data shown after a user action is a trust failure |
+| Implement nav restructure and account pages in one phase | Fewer deployments | Mixing routing concerns with data model concerns makes rollback impossible; debugging is harder | Never — separate navigation restructure from account schema migration |
+| Static help page as raw HTML without a component structure | Fastest to ship | Cannot reuse FAQ items, cannot localize, cannot add search later | Acceptable if help page is truly static and minimal; do not wire to CMS until needed |
+| Skip breadcrumb updates for moved routes | Saves time per page | Breadcrumbs point to 404 routes; users cannot navigate back contextually | Never for routes that are user-facing destinations |
 
 ---
 
@@ -275,14 +248,15 @@ If the PDF viewer needs to hold the URL for a session, add a refresh mechanism t
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Supabase Storage + existing `/api/import` route | Extend existing route to also receive and store the PDF | Client uploads directly to storage via signed URL; server route receives only the storage path post-upload |
-| Supabase Storage + Drizzle schema | Store `signedUrl` in a database column | Store `storagePath` (e.g., `userId/2025-01/abc.pdf`); generate signed URLs at read time |
-| react-pdf + Next.js App Router | Import `react-pdf` in a Server Component or without `ssr: false` | Always wrap in `dynamic(() => import('./...'), { ssr: false })`; set `workerSrc` in the same client component file |
-| Supabase Storage + account deletion API | Delete the user from DB, leave storage files | Add storage file cleanup step to account deletion route (`/api/user/delete`) before `db.delete(users)` — this is already identified as a bug in `CONCERNS.md` |
-| Supabase Storage + GDPR right-to-erasure | Delete DB record, leave PDF in S3 | Delete storage file first via Storage API, then delete DB record; compensate if DB delete fails |
-| Bulk historical upload + existing `import_audits` | Re-process statements already in the database | Check SHA-256 file hash against existing `import_audits.file_hash` before triggering OpenAI extraction; skip known files |
-| Supabase Storage RLS + service role key | Use `SUPABASE_SERVICE_ROLE_KEY` for all storage ops — bypasses RLS silently | Use the user's authenticated Supabase client (anon key + user session JWT) for user-scoped storage operations; reserve service role only for admin cron jobs |
-| Free tier storage quota | Assume 1 GB is sufficient long-term | 1 GB fits roughly 67-333 statements (3-15 MB each) across all users; design a per-user storage quota warning and a file retention policy from the start |
+| `statements.sourceType` → `financial_accounts.id` migration | Add `accountId` as NOT NULL immediately | Add nullable, backfill, then add a NOT NULL default only if truly required; leave nullable for legacy statements |
+| TanStack Query + account rename | Invalidate `["accounts"]` only | Invalidate all query keys that embed account name: coverage, timeline, sources, transactions |
+| shadcn SidebarGroupLabel + clickable section headers | Add `<a>` tag inside `SidebarGroupLabel` | Use `SidebarMenuItem` + `SidebarMenuButton` styled as a group header instead |
+| Next.js `usePathname` + multi-level active state | `pathname.startsWith(href)` at all levels | Scope prefix matching to the deepest specific segment; exact-match for terminal leaf items |
+| Account detail page + coverage grid | Pass `accountId` to old `sourceType`-keyed coverage hook | Read `account.name` from the account fetch; pass name to existing hooks; migrate the hook to accept `accountId` in a later phase |
+| Drizzle migration + FK + new column in same schema change | Trust the auto-generated migration SQL | Always read the generated `.sql` file; FK + column added in same migration is a known Drizzle bug (issue #4147) |
+| Routing restructure + email templates with hardcoded paths | Restructure routes, forget emails | Audit all email templates for `/subscriptions`, `/settings/billing`, and other deep links before any route rename deploys |
+| Data schema viewer + Drizzle introspection | Generate schema dynamically by introspecting the live database | Use a static snapshot of the schema definitions (read from `schema.ts` at build time or keep a maintained static data structure) — live introspection adds DB latency to a read-only page |
+| Payment type filter + transaction `tagStatus` enum | Add a new enum value for "payment type" category | The existing `transactionTagStatusEnum` maps to user review state, not payment type; add a separate `paymentType` column or derive it from the subscription conversion logic rather than conflating with tag status |
 
 ---
 
@@ -290,13 +264,12 @@ If the PDF viewer needs to hold the URL for a session, add a refresh mechanism t
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Generating signed URLs for entire vault list on page load | Vault page takes 3-8s to load with 24 months of statements (24+ Supabase API calls) | Generate signed URLs only on user action (click to view/download) | ~12 files visible in vault |
-| Rendering all PDF pages simultaneously in viewer | Browser tab freezes or crashes on 20+ page statements | Render one page at a time; use `pageNumber` state; provide next/prev controls | Bank statements with 20-50 pages |
-| Loading PDF as base64 in React state | 5 MB PDF = 6.7 MB in memory; viewer component re-renders with full string | Pass a signed URL string to react-pdf, not the file bytes | Files over 2-3 MB |
-| No pagination on vault query | Vault loads 24+ statements with full metadata on every render | Add `limit`/`offset` to vault API; default to 12-24 per page | 24+ months of statements per user |
-| No index on `import_audits.storage_path` and `file_hash` | Orphan cleanup cron and duplicate-check queries do full table scans | Add indexes on `storage_path`, `user_id`, `file_hash` at schema creation | Thousands of import records |
-| pdfjs-dist included in server bundle | Build size inflates; may approach 250 MB Vercel unzipped limit | Add to `serverExternalPackages` in `next.config.ts` | Always — pdfjs-dist is ~3 MB and has no server use |
-| No upload progress feedback | Users submit same file multiple times believing upload froze | Show upload progress using `XMLHttpRequest.upload.onprogress`; react-dropzone supports this | Any file over 1-2 MB on slow connections |
+| Account detail page fetches all statements for the account without pagination | Account detail loads slowly for accounts with 24+ months of statements | Add limit/offset or cursor pagination to the account-scoped statement API | Accounts with 12+ statements (~100+ transactions per account) |
+| Spending summary per account runs aggregation on every page load | Account detail spending section takes 2-4s to load | Cache the spending aggregation query (TanStack Query staleTime 5 min); or compute in a materialized view update | Accounts with 1000+ transactions |
+| Nav restructure causes all sidebar items to re-render on every route change | Sidebar flickers or stutters on navigation | Memoize nav item active-state calculations; ensure the sidebar is rendered in a layout that does not unmount on navigation (it is — the dashboard layout wraps it) | Always visible on navigation-heavy user flows |
+| Data schema viewer dynamically queries the live database to generate the schema display | Schema page adds a DB query to every load | Read schema definitions from a static data structure built at compile time from `schema.ts` exports | Every page load — unnecessary DB cost for a read-only informational page |
+| Payment type filter with multiple toggles triggers separate API calls per toggle | Transaction browser flickering with each toggle change | Debounce filter changes by 300ms; combine all active filters into a single query param before sending the API request | Every user interaction with the filter UI |
+| Account list page loads all accounts + all statements count per account in N+1 queries | Accounts page loads slowly with 5+ accounts | Use a single JOIN query with COUNT aggregation; no per-account sub-queries from the UI layer | 3+ accounts |
 
 ---
 
@@ -304,13 +277,10 @@ If the PDF viewer needs to hold the URL for a session, add a refresh mechanism t
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Private bucket without user-scoped RLS | Any authenticated user reads any user's bank statements by constructing the path | `(storage.foldername(name))[1] = auth.uid()::text` RLS policy; test with two separate user sessions |
-| Storing signed URLs in database | URLs expire; revocation not possible if URL is leaked before expiry | Store only `storagePath`; generate signed URLs at read time |
-| Serving PDF via API route that pipes storage bytes | Exposes to 4.5 MB Vercel limit; route must be perfectly auth-gated or anyone with the URL can access any file | Use storage-generated signed URLs — Supabase enforces auth, not your route |
-| No server-side file type validation | Users upload malicious files renamed as `.pdf`; stored and served to the user or other users | Validate MIME type AND check magic bytes (`%PDF` header) server-side before triggering any storage operation |
-| Signed upload URL not scoped to the authenticated user's path | Theoretical: user manipulates the path in the signed URL request to write to another user's folder | Always construct the path with `${userId}/...` on the server before calling `createSignedUploadUrl`; never accept path from client |
-| No file size check before generating signed URL | User submits 200 MB file; signed URL is generated; upload starts; storage quota exhausted | Check `file.size` client-side AND verify server-side when issuing the signed URL; Supabase free tier maximum is 50 MB per file |
-| Bank statement files in public bucket | Statement URLs are shareable, indexable, and not revocable | Always create the bucket with `public: false`; never store financial data in a public bucket |
+| Account API (`/api/accounts/[id]`) does not verify that the account belongs to the requesting user | Any authenticated user can read or modify another user's account by guessing a UUID | Always include `WHERE userId = session.user.id AND id = params.id` in account queries; never trust UUID alone as an authorization mechanism |
+| Data schema viewer exposes real column names and table structure to any user | Internal schema knowledge aids SQL injection or targeted attacks | The schema viewer shows Drizzle ORM model names, not raw SQL column names; never expose connection strings, migration history, or actual SQL `INFORMATION_SCHEMA` output |
+| Account type-specific fields (routing number for bank accounts) stored in plaintext | Routing numbers + account-level context = partial account info for phishing | Routing numbers are public (not secret) but should not appear in API responses unless explicitly requested; mask partial routing numbers in the UI (show last 4 digits only) |
+| New account CRUD routes skip the existing `isUserActive` billing check | Trial-expired users can still create accounts via the API | Apply the same `isUserActive(session.user)` guard used in subscription routes to all account API routes |
 
 ---
 
@@ -318,31 +288,29 @@ If the PDF viewer needs to hold the URL for a session, add a refresh mechanism t
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| No upload progress indicator for large PDFs | User believes upload froze; uploads same file multiple times; duplicate records created | Show per-file progress bar using `XMLHttpRequest.upload.onprogress`; react-dropzone exposes this |
-| Dual-view (file cabinet / timeline) state not persisted across navigation | User switches to timeline, navigates to a subscription, returns to file cabinet view | Persist active view in localStorage or as a URL search param (`?view=timeline`) |
-| No visual status badge on vault cards | User cannot tell if a statement has been processed, is processing, or failed | Display status badge: "Stored" / "Processing" / "Extracted" / "Failed" on each vault entry |
-| PDF viewer opens in-page without escape | Mobile users trapped in full-page PDF with no visible close button | Always render the viewer in a modal with a prominent close button; add keyboard `Escape` listener |
-| Re-uploading same statement not caught with feedback | User uploads January 2024 statement twice; duplicate AI extraction triggered; duplicate subscriptions created | Check SHA-256 hash before upload; display "Already uploaded — [link to existing entry]" message |
-| Bulk upload shows no per-file status | User uploads 12 statements; 3 fail silently; user unaware | Show per-file status in the upload queue: queued / uploading / success / failed with error message |
-| File cabinet view shows files with no bank/source label | User has 24 PDFs with no indication which bank they belong to | Require bank/source label at upload time; display prominently in vault grid |
-| Vault loads slowly on first visit | User sees empty state or spinner for several seconds | Implement skeleton loading (shadcn/ui Skeleton) for vault cards while metadata loads; signed URL generation happens only on click |
+| Nav restructure deploys and existing `/sources` bookmark 404s with no explanation | User thinks the app is broken; trust failure | Add a redirect AND a helpful message in the 404 page: "The Sources page has moved — find it in the fin Vault section" |
+| Account type selector shows all type-specific fields regardless of type selection | Bank account form shows credit limit field; confusing | Use conditional rendering — only show fields relevant to the selected type; hide other fields with zero layout shift |
+| Account detail page has four sub-sections (details, coverage, transactions, spending) with no tab or scroll anchoring | User lands on account detail and does not find transactions (they scroll past it) | Use tab navigation or anchor links within the detail page to jump to the desired sub-section |
+| Renaming an account does not update the breadcrumb on the current detail page | User renames account, breadcrumb still shows old name | Invalidate the account query key on successful rename; the detail page re-fetches the account name from TanStack Query |
+| Payment type filter UI resets when user navigates away and back | User sets up a complex filter, clicks a transaction, hits back, filter is gone | Persist filter state in URL search params (not component state); allows bookmarking and back-navigation |
+| Help page is added as a static route with no link from error states | Users who hit an error have no discoverable path to help | Add a "View Help" link in the generic error boundary and in empty states where the user is likely confused |
+| Account list empty state does not explain what accounts are or how they relate to existing sources | New users see an empty list and do not know what to add | Empty state for accounts should say "Your bank and credit card accounts from imported statements will appear here — or add one manually" with a visual reference to existing sources |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Storage upload:** Works in dev with 1 MB test PDF — verify with a real 8-15 MB multi-page bank statement in a Vercel preview deployment
-- [ ] **Vercel body limit:** Upload succeeds through the current flow — verify the upload path bypasses the server function entirely (confirm via Vercel function logs showing no body received for large files)
-- [ ] **RLS policies:** Storage operations work in dashboard testing — verify by creating two Supabase client instances with two different user JWTs and attempting cross-user read (should return 403)
-- [ ] **PDF viewer build:** Component renders in development — run `next build` and check for webpack errors related to pdfjs before any deployment
-- [ ] **PDF viewer pages:** Renders page 1 — verify with a 30-page statement; verify page navigation controls work; verify no browser crash
-- [ ] **Signed URL expiry:** PDF loads on first click — generate a signed URL, wait 90 minutes (or test with a 10-second expiry URL), attempt to load; confirm graceful error message and re-fetch
-- [ ] **Account deletion:** User removed from DB — check Supabase Storage dashboard after deleting a test account to confirm storage files were also removed
-- [ ] **Upload failure compensation:** Upload completes normally — simulate a forced DB write failure after a successful storage upload; verify the orphaned file is deleted from storage
-- [ ] **Duplicate detection:** New upload accepted — upload the exact same PDF file a second time; confirm hash check catches it and shows the correct feedback
-- [ ] **Bulk upload partial failure:** All 5 test files upload successfully — upload a batch where 1 file is corrupt; verify the other 4 still succeed and per-file status reflects the failure accurately
-- [ ] **Free tier capacity:** Uploads work now — calculate: 24 months x average statement size (5-10 MB) x expected user count; 1 GB free tier is roughly 100-200 statements across all users at 5-10 MB each
-- [ ] **Mobile PDF viewer:** Looks correct on desktop — verify on a 375 px wide viewport; PDF.js canvas does not auto-scale to mobile width by default and requires explicit width configuration
+- [ ] **Nav restructure complete:** All new sections render — verify that every existing page route still works (no 404s) and every old route that moved has a redirect configured in `next.config.ts`
+- [ ] **Account migration complete:** `financial_accounts` table exists and `statements.accountId` is set — verify by querying `SELECT COUNT(*) FROM statements WHERE account_id IS NULL` after the backfill migration; should be 0 for all non-legacy rows
+- [ ] **Coverage grid post-migration:** Coverage grid renders for an account — verify that renaming the account updates the coverage grid header label without requiring a page refresh
+- [ ] **isActive correct at all depths:** Sidebar shows correct active item — navigate to `/vault/accounts/[id]/transactions` and verify that only the accounts item (not dashboard, not subscriptions) is highlighted; verify that the vault section group is also highlighted
+- [ ] **Account API user-scoping:** Account CRUD works — attempt to read another user's account UUID via the API (requires a test user); confirm 404 or 403 is returned, not the account data
+- [ ] **Type-specific fields:** Credit card account form shows credit limit field — create a bank account and verify `creditLimit` is NULL in the database; create a credit card and verify `routingNumber` is NULL
+- [ ] **Payment type filter:** Toggle between "recurring payments" and "subscriptions" — verify the transaction count changes; verify toggling both off shows an empty state, not all transactions
+- [ ] **Query invalidation fan-out:** Rename an account — verify that the vault coverage grid, vault timeline, source dashboard, and transaction browser all reflect the new name without a page refresh
+- [ ] **Redirect from old routes:** Navigate to `/sources` after deployment — verify it redirects to the new account/sources URL, not 404
+- [ ] **Help page linked from nav:** Help page renders correctly — verify the link appears in the Support section of the sidebar and is accessible to trial, active, and expired users (no feature gate required for a help page)
+- [ ] **Data schema viewer:** Renders all tables — verify no DB query is triggered (check network tab); verify no raw SQL or connection metadata is exposed in the response
 
 ---
 
@@ -350,13 +318,14 @@ If the PDF viewer needs to hold the URL for a session, add a refresh mechanism t
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Orphaned storage files (file in S3, no DB record) | LOW | Query `storage.objects` LEFT JOIN `import_audits` on `storage_path`; call `supabase.storage.from('statements').remove([path])` for unmatched entries via cron or one-off script |
-| Expired signed URL in viewer | LOW | Add error handler in the PDF viewer that automatically calls `createSignedUrl` again on 400/403 response and retries load |
-| RLS too permissive discovered post-launch | MEDIUM | Immediately add restrictive policies; audit Supabase Storage access logs for unauthorized reads; notify affected users if cross-user access occurred |
-| react-pdf build failure after Next.js upgrade | MEDIUM | Pin `react-pdf` to last-known-good version; check the `wojtekmaj/react-pdf` GitHub issues for the Next.js version combination; as a fallback, render PDF in an `<iframe>` with the signed URL (no webpack issues, but limited UI control) |
-| Storage approaching 1 GB free tier limit | MEDIUM | Add per-user storage usage display; implement file retention/deletion UI so users can manage their vault; upgrade to Supabase Pro ($25/mo, 100 GB) if needed |
-| Vercel 4.5 MB body limit blocking real PDF uploads | HIGH if existing flow was used | This requires an architectural change — cannot be patched with configuration. Must refactor to signed upload URL pattern. Mitigation: deploy the fix as emergency, use Supabase Storage resumable upload URL for interim period |
-| Duplicate AI extractions from re-uploaded statements | MEDIUM | Add `file_hash` column to `import_audits`; backfill by hashing existing stored files via a migration script; add unique constraint on `(user_id, file_hash)` going forward |
+| `sourceType` string data inconsistent after partial account migration | MEDIUM | Run a one-off backfill script that re-scans `statements.sourceType` and creates missing `financial_accounts` rows; update `accountId` FK for any NULLs |
+| Account rename left stale data in vault/coverage/transactions views | LOW | Force a TanStack Query cache reset via `queryClient.clear()` from a settings action or by adding missing invalidation keys to the account PATCH mutation |
+| Route restructure caused 404s for existing users | LOW | Add redirects in `next.config.ts` immediately; deploy as a hotfix; existing bookmarks and email deep links resolve again within minutes |
+| Type-inconsistent data (wrong fields set for account type) | LOW-MEDIUM | Add a one-time cleanup migration that NULLs out fields not appropriate for each account type; add CHECK constraint going forward |
+| Multi-level sidebar active state broken (wrong item highlighted) | LOW | Fix the `isActive` logic in `app-sidebar.tsx`; no data migration required |
+| Account detail coverage grid empty after API migration mismatch | LOW | Revert the account detail page to pass `account.name` to the old `sourceType`-keyed hook while the API migration is completed |
+| `NOT NULL` constraint migration fails on existing statements | MEDIUM | Roll back the migration; re-apply with nullable column; run backfill; re-apply NOT NULL only after verifying all rows have values |
+| Payment type filter conflating `tagStatus` with payment type | MEDIUM | Add a separate `paymentType` or `transactionType` column to `transactions`; migrate existing data based on `convertedToSubscriptionId` presence; retire the conflated filter UI |
 
 ---
 
@@ -364,46 +333,51 @@ If the PDF viewer needs to hold the URL for a session, add a refresh mechanism t
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Vercel 4.5 MB body limit on uploads | Storage Foundation (Phase 1 of milestone) | Upload a real 10 MB bank statement; confirm no 413 error; confirm Vercel function logs show no large body |
-| Supabase Storage RLS misconfiguration | Storage Foundation (Phase 1) | Test with two user accounts; confirm cross-user read returns 403 |
-| Storage-database split-brain on failure | Storage Foundation (Phase 1) | Simulate DB write failure after storage upload; verify file is cleaned up from storage |
-| react-pdf webpack/SSR build failures | PDF Viewer phase (isolated from storage phase) | Run `next build` after adding react-pdf; zero webpack errors related to pdfjs |
-| pdfjs-dist inflating server function bundle | PDF Viewer phase | Check function bundle size after adding react-pdf; confirm `serverExternalPackages` is set |
-| Signed URL expiry in vault UI | PDF Viewer / Vault UI phase | Generate URL, simulate expiry, attempt load; confirm graceful error handling and re-fetch |
-| Orphaned files on account deletion | Storage Foundation or Account Management phase | Delete test account; check storage bucket in Supabase dashboard for remaining files |
-| Duplicate re-uploads triggering redundant AI extraction | Bulk Upload / Historical Upload phase | Upload same PDF twice; confirm second upload is caught by file hash and blocked with feedback |
-| No per-file status in bulk upload | Bulk Upload / Historical Upload phase | Upload 5 files where 1 is deliberately invalid; verify other 4 succeed with clear per-file status |
-| GDPR right-to-erasure for bank statement PDFs | Storage Foundation (design decision: retain path for deletion) | Document deletion cascade; verify deleting a user removes their storage files |
-| Free tier storage quota exhaustion | Monitoring / Vault Management phase | Build storage usage query; alert when approaching 800 MB (80% of 1 GB) |
+| `sourceType` used as identity everywhere (37 files) | Account schema phase — audit all usages before writing any migration | `grep -r sourceType src/ --include="*.ts" --include="*.tsx"` returns 0 unexpected consumers post-migration |
+| NOT NULL FK migration fails on existing data | Account schema phase — nullable column + backfill migration pair | `SELECT COUNT(*) FROM statements WHERE account_id IS NULL` = 0 after backfill |
+| Route restructure breaks active link detection | Navigation restructure phase — define isActive logic first | Navigate to every route; verify exactly one sidebar item is highlighted per route |
+| Old routes 404 without redirects | Navigation restructure phase — redirects added with the restructure | Access all previous route paths after deployment; confirm all redirect to new destinations |
+| Type-discriminated fields without CHECK constraint | Account schema design phase | Insert an invalid combination via direct DB query; confirm constraint rejects it |
+| TanStack Query stale data after account rename | Account CRUD phase — document full invalidation fan-out | Rename an account; verify vault, coverage, timeline, and transaction filter all reflect new name without refresh |
+| Multi-level sidebar active state collisions | Navigation restructure phase — implement `isActive` before sub-pages exist | Navigate to all depth levels; verify only one item per depth level is active |
+| Account detail page breaks coverage grid | Account detail phase — agree on sourceType passthrough strategy before coding | Account detail coverage grid shows correct cells for the account; historical upload wizard opens with correct source pre-filled |
+| Missing query-key fan-out invalidation | Account CRUD phase | Integration test: rename account, assert all five query keys show updated data |
+| Payment type filter conflates `tagStatus` | Payment type filter phase — define the data model for type classification before the UI | Toggle "subscriptions" filter; verify only `convertedToSubscriptionId IS NOT NULL` rows appear; toggle "recurring" filter; verify different rows appear |
+| Data schema viewer hitting live DB | Data schema viewer phase | Open browser DevTools Network tab while loading schema viewer; confirm zero database API calls |
 
 ---
 
 ## Sources
 
 **Official documentation (HIGH confidence):**
-- [Vercel Functions Limits — 4.5 MB body limit, 300s timeout, 2 GB memory confirmed](https://vercel.com/docs/functions/limitations)
-- [Supabase Storage File Size Limits — 50 MB max per file on free tier, 1 GB total storage](https://supabase.com/docs/guides/storage/uploads/file-limits)
-- [Supabase Storage Access Control / RLS — official policy examples](https://supabase.com/docs/guides/storage/security/access-control)
-- [Supabase create signed upload URL — API reference](https://supabase.com/docs/reference/javascript/storage-from-createsigneduploadurl)
-- [Supabase Storage Bandwidth — 10 GB/month free tier egress (5 GB cached + 5 GB uncached)](https://supabase.com/docs/guides/storage/serving/bandwidth)
-- [Supabase Delete Objects — must use Storage API, not SQL DELETE](https://supabase.com/docs/guides/storage/management/delete-objects)
+- [Next.js App Router redirects — next.config.js redirects reference](https://nextjs.org/docs/app/api-reference/config/next-config-js/redirects)
+- [Next.js permanentRedirect function — 308 vs 307 behavior](https://nextjs.org/docs/app/api-reference/functions/permanentRedirect)
+- [Next.js usePathname hook — client-side pathname in App Router](https://nextjs.org/docs/app/getting-started/linking-and-navigating)
+- [TanStack Query invalidateQueries — query invalidation reference](https://tanstack.com/query/latest/docs/framework/react/guides/query-invalidation)
+- [Drizzle ORM migration pitfalls — bug report: FK + column added in same migration generates incorrect SQL (issue #4147)](https://github.com/drizzle-team/drizzle-orm/issues/4147)
+- [PostgreSQL CHECK constraints — cross-column constraint syntax](https://www.postgresql.org/docs/current/ddl-constraints.html)
+- [PostgreSQL zero-downtime FK addition — validate constraint pattern](https://travisofthenorth.com/blog/2017/2/2/postgres-adding-foreign-keys-with-zero-downtime)
+- [PostgreSQL NOT NULL migration on existing rows — squawk linter documentation](https://squawkhq.com/docs/adding-not-nullable-field)
 
-**GitHub issues (MEDIUM-HIGH confidence — multiple corroborating reports):**
-- [react-pdf + Next.js 14: Promise.withResolvers build failure (vercel/next.js #70239)](https://github.com/vercel/next.js/issues/70239)
-- [react-pdf worker path resolution in App Router (wojtekmaj/react-pdf #1855)](https://github.com/wojtekmaj/react-pdf/issues/1855)
-- [Supabase orphaned files — objects deleted via SQL leave S3 intact (Discussion #34254)](https://github.com/orgs/supabase/discussions/34254)
-- [Supabase Storage transaction atomicity (Discussion #19895)](https://github.com/orgs/supabase/discussions/19895)
-- [Signed URL different signature each call — caching implications (Discussion #7626)](https://github.com/orgs/supabase/discussions/7626)
+**Codebase evidence (HIGH confidence — direct inspection):**
+- `src/components/layout/app-sidebar.tsx` — `pathname === item.href` and `pathname.startsWith(item.href)` active link logic confirmed; will require extension for multi-level sections
+- `src/lib/db/schema.ts` — `statements.sourceType varchar` confirmed as denormalized string with no FK; `accounts` table confirmed as NextAuth OAuth accounts (naming conflict risk with new financial accounts table)
+- `grep sourceType src/` — 37 files confirmed as consumers; full migration audit required
+- `src/lib/hooks/use-vault-coverage.ts` — `CoverageSource.sourceType: string` confirmed as the identifier throughout coverage data model
+- `src/lib/features/config.ts` — `FEATURES` const object pattern confirmed; new account management features should follow this pattern if feature-gated
+- `src/app/api/sources/route.ts` — groups by `statements.sourceType` confirmed; API must be updated to support account-based querying
+- `.planning/codebase/CONCERNS.md` — `accounts` table naming collision noted (NextAuth uses `accounts` table); new financial accounts table must use a distinct name (e.g., `financial_accounts`)
 
-**Community articles (MEDIUM confidence — verified against official docs):**
-- [Bypass Vercel 4.5 MB limit using Supabase direct upload](https://medium.com/@jpnreddy25/how-to-bypass-vercels-4-5mb-body-size-limit-for-serverless-functions-using-supabase-09610d8ca387)
-- [Signed URL uploads with Next.js and Supabase](https://medium.com/@olliedoesdev/signed-url-file-uploads-with-nextjs-and-supabase-74ba91b65fe0)
-- [Next.js PDF viewer with React-PDF and Nutrient SDK — three-layer pattern](https://www.nutrient.io/blog/how-to-build-a-nextjs-pdf-viewer/)
-
-**Security research (MEDIUM confidence):**
-- [Supabase RLS — 83% of exposed databases involve RLS misconfigurations (2025)](https://designrevision.com/blog/supabase-row-level-security)
-- [Supabase Storage RLS policy violation on admin upload](https://www.technetexperts.com/supabase-storage-rls-admin-upload-fix/)
+**Community patterns (MEDIUM confidence — verified against codebase structure):**
+- [Modelling discriminated unions in Postgres — single table + check constraint pattern](https://weiyen.net/articles/modelling-discriminated-unions-in-postgres/)
+- [shadcn Nested Sidebar Items — collapsible multi-level pattern](https://www.shadcn.io/patterns/collapsible-sidebar-1)
+- [App Router pitfalls — active link detection, error.tsx, caching](https://imidef.com/en/2026-02-11-app-router-pitfalls)
+- [TanStack Query + Next.js App Router cache invalidation discussion (issue #3037 — invalidateQueries behavior across route changes)](https://github.com/TanStack/query/discussions/3037)
 
 ---
-*Pitfalls research for: Financial Data Vault (PDF blob storage + in-app viewer + vault UI added to existing Vercel-deployed Next.js + Supabase subscription manager)*
-*Researched: 2026-02-19*
+
+**Critical naming collision note:** The existing `schema.ts` already exports an `accounts` table (line 120) for NextAuth OAuth provider accounts. A new `financial_accounts` table for bank/credit card/loan accounts MUST use a different name. Calling it `accounts` would conflict with the existing NextAuth table, break DrizzleAdapter, and silently corrupt OAuth login flows.
+
+---
+*Pitfalls research for: v3.0 Navigation & Account Vault — nav restructure, account management, source migration, account detail pages, payment type filtering, data schema viewer, help page*
+*Researched: 2026-02-22*

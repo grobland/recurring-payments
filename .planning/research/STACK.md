@@ -1,275 +1,385 @@
 # Stack Research
 
-**Domain:** Financial Document Vault — PDF blob storage, in-app viewing, dual-view vault UI
-**Researched:** 2026-02-19
-**Confidence:** HIGH (core additions verified), MEDIUM (worker config patterns, community-sourced)
+**Domain:** Navigation restructure, account management, schema viewer, payment type filtering — v3.0
+**Researched:** 2026-02-22
+**Confidence:** HIGH
 
 ---
 
-## Context: What Already Exists
+## Context: What Exists vs. What Is New
 
-The project uses `postgres` directly for database queries (Drizzle ORM) and has **no
-`@supabase/supabase-js` client installed**. The `statements` table already has a
-`pdf_storage_path` column (nullable `text`) ready to receive Supabase Storage paths.
-PDFs are currently processed in-memory and discarded — v2.2 adds permanent storage.
+This milestone adds to a mature Next.js 16 + Supabase + Drizzle ORM codebase (~48,000 lines). The existing stack
+(React 19, TanStack Query, shadcn/ui, Zod, React Hook Form, Recharts, Tailwind CSS v4) covers all general-purpose
+needs. This document covers only what is NEW or CHANGED for v3.0 features.
 
-**Critical infrastructure constraint:** Vercel serverless functions have a **4.5 MB
-hard body size limit**. Bank statement PDFs regularly exceed this. The upload flow must
-bypass the Next.js API layer and write directly from the browser to Supabase Storage
-using a signed upload URL pattern.
+**Existing stack that requires NO additions for v3.0:**
+- shadcn/ui sidebar primitives (Sidebar, SidebarGroup, SidebarMenu, SidebarMenuSub, SidebarMenuSubItem,
+  SidebarMenuSubButton) — all already exported from `src/components/ui/sidebar.tsx` lines 640-720
+- Collapsible primitive — `radix-ui` ^1.4.3 already installed; `src/components/ui/collapsible.tsx` already exists
+  and used in `folder-card.tsx`
+- Drizzle ORM — handles the new `financial_accounts` table migration with the same `pgTable`/`pgEnum` pattern
+- TanStack Query — account CRUD hooks and type-filtered transaction queries follow existing `use-*.ts` patterns
+- React Hook Form + Zod — account forms with discriminated union schemas for type-specific fields
+- Tailwind CSS v4 — all layout and styling for account detail pages, schema viewer, help page
+- Recharts — already installed for any new spending charts on account detail pages
 
 ---
 
-## Recommended Stack Additions
+## Recommended Stack (New Additions)
 
-### Core Technologies (New)
+### Core Technologies
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| `@supabase/supabase-js` | `^2.97.0` | Supabase Storage: upload, signed URLs, download | The only official SDK for Supabase Storage. The project uses `postgres` directly for DB (no supabase-js needed there), but Storage has no postgres-compatible alternative — supabase-js is required. Bundles storage-js internally. |
-| `react-pdf` | `^10.3.0` | In-app PDF rendering (canvas-based, no iframe) | Most-maintained open source PDF renderer for React. v10 supports React 19, pdfjs-dist 5.x, and confirmed Next.js App Router compatibility (requires Next.js >=14.1.1; project is on 16.1.4). Renders in `<canvas>` — no iframe, no browser chrome, no CORS issues with signed blob URLs. |
+| nuqs | ^2.8.8 | URL search param state for payment type filter toggles in the transaction browser | Replaces `useState` + `router.push` boilerplate. Next.js App Router's `useSearchParams` is read-only in client components — writing requires `router.push()` which triggers full navigation and resets the virtualized list scroll position. nuqs provides shallow updates by default, behaves like `useState` but syncs to URL, making filter state persist through reloads and be bookmarkable. 6 kB gzipped. |
 
-### Supporting Libraries (None New)
+**That's the only new package.** All five v3.0 feature areas are buildable with what's already installed.
 
-The vault UI requires no additional libraries beyond the two above. Everything else is
-already installed:
+### Supporting Libraries (Already Installed — Usage Patterns for v3.0)
 
-| Capability | Already Available | Package |
-|------------|------------------|---------|
-| Dual-view tabs (file cabinet / timeline) | `@radix-ui/react-tabs` | Installed via `radix-ui ^1.4.3` |
-| Virtualized file list | `@tanstack/react-virtual` | `^3.13.18` already installed |
-| Drag-and-drop upload | `react-dropzone` | `^14.3.8` already installed |
-| PDF download button | Native `URL.createObjectURL + <a download>` | No library needed; file-saver is a legacy polyfill |
-| Date grouping for timeline view | `date-fns` | `^4.1.0` already installed |
-| File hash for deduplication | Custom SHA-256 util | Already in `/lib/utils/file-hash.ts` |
+| Library | Installed Version | v3.0 Usage | Notes |
+|---------|------------------|-----------|-------|
+| `radix-ui` | ^1.4.3 | `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` for collapsible sidebar sections | Already used in `folder-card.tsx`; import from `"radix-ui"` as shown in `collapsible.tsx` line 3 |
+| shadcn/ui sidebar | n/a (generated component) | `SidebarMenuSub`, `SidebarMenuSubItem`, `SidebarMenuSubButton` for nested nav items | All three exported from `sidebar.tsx` lines 640-720; zero setup required |
+| Drizzle ORM | ^0.45.1 | New `financial_accounts` table + `accountTypeEnum` + `accountId` FK on `statements` | 11th migration; `pgEnum` + `pgTable` pattern identical to 8 existing enums |
+| Zod | ^4.3.5 | Discriminated union schemas for bank/credit-card/loan type-specific field sets | `z.discriminatedUnion("accountType", [...])` — same pattern as existing validation schemas |
+| `@tanstack/react-query` | ^5.90.19 | Account CRUD hooks (`use-accounts.ts`), type-filtered transaction queries | Same `useQuery`/`useMutation` pattern as `use-subscriptions.ts`, `use-tags.ts` |
+
+### Development Tools
+
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| `drizzle-kit generate` + `drizzle-kit migrate` | Generate and apply the `financial_accounts` migration | Run after schema.ts additions; this will be migration 0011 |
 
 ---
 
 ## Installation
 
 ```bash
-# Exactly two new packages
-npm install @supabase/supabase-js react-pdf
+# Only new dependency for v3.0
+npm install nuqs@^2.8.8
+
+# After adding financial_accounts table to schema.ts
+npm run db:generate
+npm run db:migrate
 ```
 
-`pdfjs-dist` (react-pdf's rendering engine) installs automatically as a dependency of
-react-pdf at version 5.4.x. Do NOT install it separately — react-pdf pins a compatible
-version.
+No other installs required for any v3.0 feature.
 
 ---
 
-## Environment Variables to Add
+## Feature-by-Feature Stack Decisions
 
-```bash
-# Add to .env.local and .env.example
-# Supabase Storage client (separate from DATABASE_URL which stays as-is for Drizzle)
-NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT_REF].supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="[anon key — safe to expose in browser]"
-SUPABASE_SERVICE_ROLE_KEY="[service role key — server-side ONLY, never NEXT_PUBLIC_]"
-```
+### 1. Multi-Level Sidebar Navigation
 
-`DATABASE_URL` continues to serve Drizzle. The Supabase JS client only touches Storage,
-not the Postgres database directly.
+**Approach:** Compose existing primitives — no new library needed.
 
----
+The current `app-sidebar.tsx` uses flat `SidebarGroup` + `SidebarMenu` lists (one "Menu" group, one "Support" group,
+one conditional "Admin" group). The v3.0 restructure introduces collapsible section headers with sub-items, using
+primitives already installed and verified present in the codebase.
 
-## Integration Patterns
-
-### Pattern 1: Two Supabase Clients
-
-Create separate clients for server vs. client contexts. Never use the service role key
-in browser code.
+**Pattern — collapsible section with SidebarMenuSub children:**
 
 ```typescript
-// src/lib/supabase/server.ts  (server components, API routes)
-import { createClient } from "@supabase/supabase-js";
+// src/components/layout/app-sidebar.tsx
+// Import already-present primitives
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"; // already exists
 
-export function createSupabaseServerClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!  // Bypasses RLS — trusted server ops only
-  );
-}
+import {
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+} from "@/components/ui/sidebar"; // already exported, lines 640-720
 
-// src/lib/supabase/client.ts  (browser — upload only)
-import { createClient } from "@supabase/supabase-js";
+// Official shadcn/ui collapsible section pattern:
+<Collapsible defaultOpen className="group/collapsible">
+  <SidebarGroup>
+    <SidebarGroupLabel asChild>
+      <CollapsibleTrigger>
+        Data Vault
+        <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+      </CollapsibleTrigger>
+    </SidebarGroupLabel>
+    <CollapsibleContent>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === "/vault"}>
+              <Link href="/vault">
+                <Archive className="size-4" />
+                <span>Vault</span>
+              </Link>
+            </SidebarMenuButton>
+            <SidebarMenuSub>
+              <SidebarMenuSubItem>
+                <SidebarMenuSubButton asChild isActive={pathname.startsWith("/accounts")}>
+                  <Link href="/accounts">Accounts</Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+              <SidebarMenuSubItem>
+                <SidebarMenuSubButton asChild isActive={pathname === "/sources"}>
+                  <Link href="/sources">Sources</Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            </SidebarMenuSub>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </CollapsibleContent>
+  </SidebarGroup>
+</Collapsible>
+```
 
-export const supabaseBrowserClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!  // RLS-governed, safe for browser
+**Active state strategy:**
+- Section-level: `pathname.startsWith("/vault")` keeps the collapsible open when on any vault sub-page
+- Item-level: `pathname === "/accounts"` for exact leaf matches
+
+**Why not a third-party nav library:** All primitives are already present. The v3.0 restructure is a
+reorganization of existing items into collapsible groups — not a complex routing change.
+
+---
+
+### 2. Account Management (bank/debit, credit card, loan)
+
+**Approach:** New `financial_accounts` Drizzle table + `accountTypeEnum` + discriminated union Zod schema
++ standard React Hook Form pattern.
+
+**Schema additions to `src/lib/db/schema.ts`:**
+
+```typescript
+export const accountTypeEnum = pgEnum("account_type", [
+  "bank_debit",
+  "credit_card",
+  "loan",
+]);
+
+export const financialAccounts = pgTable(
+  "financial_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Core fields shared by all account types
+    name: varchar("name", { length: 100 }).notNull(),       // "Chase Sapphire", "Wells Fargo Checking"
+    accountType: accountTypeEnum("account_type").notNull(),
+    institution: varchar("institution", { length: 100 }),    // "Chase", "Wells Fargo" (optional)
+    currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    notes: text("notes"),
+
+    // Credit card specific (null for bank_debit and loan)
+    creditLimit: decimal("credit_limit", { precision: 12, scale: 2 }),
+    statementClosingDay: integer("statement_closing_day"),  // 1-31
+
+    // Loan specific (null for bank_debit and credit_card)
+    originalBalance: decimal("original_balance", { precision: 12, scale: 2 }),
+    interestRate: decimal("interest_rate", { precision: 5, scale: 4 }), // 0.0499 = 4.99%
+    loanTermMonths: integer("loan_term_months"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("financial_accounts_user_id_idx").on(table.userId),
+    index("financial_accounts_type_idx").on(table.accountType),
+  ]
 );
 ```
 
-### Pattern 2: Upload Flow (Bypassing the 4.5 MB Vercel Limit)
+**Why a single table with nullable type-specific columns instead of separate tables:**
+The three types share ~80% of their fields. Separate tables would multiply the API routes, hooks, and page
+components by three for just 3-5 unique fields per type. A single table with a discriminated Zod union
+gives type safety without that overhead.
 
-Direct-to-storage upload via signed URL. File never passes through the Next.js
-serverless function body.
-
-```
-Browser
-  1. Hash PDF client-side → POST /api/batch/check-hash  (existing)
-  2. POST /api/statements/create-upload-url  (NEW)
-     → Server: auth check, create statement record (pending)
-     → Server: supabase.storage.createSignedUploadUrl(path, 7200)
-     → Returns { signedUrl, token, storagePath }
-  3. Browser: supabaseBrowserClient.storage.uploadToSignedUrl(
-       "statements", storagePath, token, file
-     )
-     → Writes directly from browser to Supabase Storage bucket
-     → Zero serverless function body involvement
-  4. Browser: POST /api/batch/process  (existing — receives PDF from Storage)
-     → Server reads file: supabase.storage.download(storagePath)
-     → Processes with pdf2json + OpenAI
-     → Updates statements.pdf_storage_path via Drizzle
-```
-
-### Pattern 3: PDF Viewer Setup (react-pdf + Next.js)
-
-The PDF viewer component must be a client component loaded with `ssr: false`. The
-worker must be configured in the same module that renders `<Document>` / `<Page>`.
+**Discriminated union Zod schema:**
 
 ```typescript
-// src/components/vault/PdfViewer.tsx
-"use client";
+// src/lib/validations/financial-account.ts
+const baseSchema = z.object({
+  name: z.string().min(1).max(100),
+  institution: z.string().max(100).optional(),
+  currency: z.string().length(3),
+  notes: z.string().max(500).optional(),
+});
 
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
+const bankDebitSchema = baseSchema.extend({
+  accountType: z.literal("bank_debit"),
+});
 
-// Worker must be configured HERE, not in a separate file
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+const creditCardSchema = baseSchema.extend({
+  accountType: z.literal("credit_card"),
+  creditLimit: z.number().positive().optional(),
+  statementClosingDay: z.number().int().min(1).max(31).optional(),
+});
 
-export function PdfViewer({ url }: { url: string }) {
-  const [numPages, setNumPages] = useState<number>(0);
+const loanSchema = baseSchema.extend({
+  accountType: z.literal("loan"),
+  originalBalance: z.number().positive().optional(),
+  interestRate: z.number().min(0).max(1).optional(),  // decimal form: 0.0499
+  loanTermMonths: z.number().int().positive().optional(),
+});
+
+export const financialAccountSchema = z.discriminatedUnion("accountType", [
+  bankDebitSchema,
+  creditCardSchema,
+  loanSchema,
+]);
+```
+
+---
+
+### 3. Source-to-Account Migration (Data Linking)
+
+**Approach:** Additive nullable FK `accountId` on `statements` table. No data backfill. No data loss.
+
+```typescript
+// Addition to statements table in schema.ts
+accountId: uuid("account_id").references(() => financialAccounts.id, {
+  onDelete: "set null",  // Deleting account does not delete statement history
+}),
+```
+
+Existing `statements.sourceType` (the user-entered string like "Chase Sapphire") remains unchanged.
+The new `accountId` is the entity FK. Both coexist:
+- `sourceType` — display label, populated at import time
+- `accountId` — nullable entity link; populated when user assigns a statement to an account
+
+**Migration path for existing data:** No backfill script needed. Users link existing `sourceType` strings
+to `financialAccounts` records via the account detail UI. New imports pick the account from the combobox
+(which displays account names from `financial_accounts`) and populate both `sourceType` and `accountId`.
+
+---
+
+### 4. Data Schema Viewer (Read-Only)
+
+**Approach:** Static React Server Component page — no external library.
+
+**Why no diagramming library (Mermaid.js, React Flow):**
+- The requirement is "read-only system data model page" — documentation, not an interactive ER diagram
+- Mermaid.js adds ~200 kB; React Flow adds ~100 kB for what is a reference page
+- shadcn/ui Table + Card components render a clear, styled schema reference server-side with zero JS
+
+**Implementation:**
+
+```typescript
+// src/lib/schema-docs/tables.ts — static build-time data, not runtime introspection
+export interface ColumnDoc {
+  name: string;
+  type: string;
+  nullable: boolean;
+  notes?: string;
+}
+
+export interface TableDoc {
+  name: string;
+  description: string;
+  columns: ColumnDoc[];
+}
+
+export const SCHEMA_DOCS: TableDoc[] = [
+  {
+    name: "financial_accounts",
+    description: "Named financial accounts (bank, credit card, loan) owned by users",
+    columns: [
+      { name: "id", type: "uuid", nullable: false, notes: "Primary key" },
+      { name: "account_type", type: "enum(bank_debit|credit_card|loan)", nullable: false },
+      // ...
+    ],
+  },
+  // all 15+ tables documented here
+];
+
+// src/app/(dashboard)/schema/page.tsx — React Server Component (zero client JS)
+import { SCHEMA_DOCS } from "@/lib/schema-docs/tables";
+
+export default function SchemaPage() {
   return (
-    <Document file={url} onLoadSuccess={({ numPages }) => setNumPages(numPages)}>
-      {Array.from({ length: numPages }, (_, i) => (
-        <Page key={i + 1} pageNumber={i + 1} width={600} />
+    <div className="space-y-8">
+      {SCHEMA_DOCS.map((table) => (
+        <section key={table.name} id={table.name}>
+          <h2>{table.name}</h2>
+          <p>{table.description}</p>
+          <Table>{/* shadcn/ui Table */}</Table>
+        </section>
       ))}
-    </Document>
+    </div>
   );
 }
 ```
 
+**If an interactive ER diagram is explicitly requested later:** Use `reactflow` (MIT, React 18+, maintained).
+But the current scope is static documentation — a server component loads instantly and needs no JS bundle.
+
+---
+
+### 5. Payment Type Filtering (Transaction Browser)
+
+**Approach:** nuqs for URL-persisted filter toggles + existing transaction query pattern.
+
+The transaction browser currently accepts `tagStatus`, `dateFrom`, `dateTo`, `search`, `sourceType` as URL params
+(confirmed in `src/app/api/transactions/route.ts` lines 19-25). Payment type filtering extends this pattern.
+
+**Why nuqs over native `useSearchParams` + `router.push`:**
+- `useSearchParams` in client components is read-only — writing requires `router.push()` which triggers a full
+  navigation and resets the virtualized list scroll position (TransactionBrowser uses `@tanstack/react-virtual`)
+- nuqs provides shallow updates by default: URL updates without triggering server re-render or scroll reset
+- Type-safe `useQueryState` behaves like `useState` but syncs to URL — no boilerplate
+- Filter state persists through reloads and is bookmarkable/shareable with colleagues
+- 6 kB gzipped — negligible
+
+**Amount sign convention check required:** Before building the client-side toggle, verify whether imported
+transactions use signed amounts (positive = debit, negative = credit/refund) or always-positive amounts.
+This determines whether filtering is client-side (sign inference) or requires a schema addition.
+
+**Option A — Amount sign convention is signed (positive = debit, negative = credit):**
+No schema migration needed. Filter is client-side inference:
+
 ```typescript
-// Consume with dynamic import — prevents SSR crash
-// src/components/vault/PdfViewerLazy.tsx
-import dynamic from "next/dynamic";
+// src/lib/hooks/use-payment-type-filter.ts
+import { useQueryState, parseAsStringEnum } from "nuqs";
 
-export const PdfViewerLazy = dynamic(
-  () => import("./PdfViewer").then((m) => m.PdfViewer),
-  { ssr: false, loading: () => <PdfViewerSkeleton /> }
-);
-```
+const PAYMENT_TYPES = ["all", "debit", "credit"] as const;
+type PaymentType = (typeof PAYMENT_TYPES)[number];
 
-No `next.config.ts` webpack changes needed — the ES module `import.meta.url` worker
-reference is resolved correctly by Next.js 16's bundler.
-
-Add `canvas` to `serverExternalPackages` if server-side PDF operations fail (typically
-only needed if server-side rendering of PDF pages is attempted):
-
-```typescript
-// next.config.ts — only if needed
-serverExternalPackages: ["pino", "pino-pretty"],  // canvas omitted unless needed
-```
-
-### Pattern 4: Serving PDFs (Signed URL for Viewer)
-
-PDFs live in a private bucket. Never expose storage paths directly. Generate 5-minute
-signed URLs server-side after auth + ownership checks.
-
-```typescript
-// src/app/api/statements/[id]/pdf-url/route.ts  (NEW)
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // Verify ownership via Drizzle (not Supabase)
-  const statement = await db.query.statements.findFirst({
-    where: and(eq(statements.id, params.id), eq(statements.userId, session.user.id)),
-    columns: { pdfStoragePath: true },
-  });
-
-  if (!statement?.pdfStoragePath) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase.storage
-    .from("statements")
-    .createSignedUrl(statement.pdfStoragePath, 300);  // 5-minute expiry
-
-  if (error) return NextResponse.json({ error: "Storage error" }, { status: 500 });
-
-  return NextResponse.json({ signedUrl: data.signedUrl });
+export function usePaymentTypeFilter() {
+  return useQueryState(
+    "paymentType",
+    parseAsStringEnum([...PAYMENT_TYPES]).withDefault("all")
+  );
 }
 ```
 
----
+Then in the transaction query: pass `paymentType` to the API which adds
+`gt(transactions.amount, "0")` or `lt(transactions.amount, "0")` to the filter conditions.
 
-## Supabase Storage Bucket Configuration
+**Option B — Amounts are always positive (direction lost at import):**
+Add `transactionType pgEnum("debit" | "credit")` to transactions table, populated at AI extraction time.
+This is a larger change — verify the data before committing to this path.
 
-**Bucket name:** `statements`
-**Access mode:** Private (not public — never expose files without auth)
-**Max file size:** 50 MB (matches existing `MAX_FILE_SIZE` constant in batch/upload)
-**Allowed MIME types:** `application/pdf` only
+**nuqs setup in Next.js App Router:**
 
-**Storage path convention:** `{userId}/{statementId}.pdf`
-Maps directly into `statements.pdf_storage_path` (already in schema as nullable text).
+```typescript
+// src/app/providers.tsx — add NuqsAdapter (required for Next.js App Router)
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
-**RLS policies (SQL — run in Supabase Dashboard SQL editor):**
-
-```sql
--- Users can upload only to their own userId folder
-create policy "Users upload own statements"
-on storage.objects for insert
-to authenticated
-with check (
-  bucket_id = 'statements'
-  and (storage.foldername(name))[1] = (select auth.jwt()->>'sub')
-);
-
--- Users can read only their own files
-create policy "Users read own statements"
-on storage.objects for select
-to authenticated
-using (
-  bucket_id = 'statements'
-  and (storage.foldername(name))[1] = (select auth.jwt()->>'sub')
-);
-
--- Users can delete their own files
-create policy "Users delete own statements"
-on storage.objects for delete
-to authenticated
-using (
-  bucket_id = 'statements'
-  and (storage.foldername(name))[1] = (select auth.jwt()->>'sub')
-);
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <NuqsAdapter>
+      <SessionProvider>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      </SessionProvider>
+    </NuqsAdapter>
+  );
+}
 ```
-
-Note: The server client uses `SUPABASE_SERVICE_ROLE_KEY` which bypasses RLS.
-The browser client uses `NEXT_PUBLIC_SUPABASE_ANON_KEY` and is governed by these
-policies. The path-based approach (`foldername(name)[1] = auth.uid()`) is the
-canonical Supabase pattern for per-user file isolation.
-
----
-
-## What NOT to Use
-
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| Routing PDF uploads through Next.js API route body | Vercel 4.5 MB hard limit on serverless function bodies; bank statements exceed this regularly | Signed upload URL → direct browser-to-Supabase upload |
-| `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` | Exposes service role to browser, bypassing all RLS and granting any user full storage access | `SUPABASE_SERVICE_ROLE_KEY` (no NEXT_PUBLIC_ prefix) — server only |
-| `pdfjs-dist` installed separately | react-pdf pins a compatible version; installing separately risks version mismatch causing silent render failures or CORS errors with the worker | Let react-pdf manage pdfjs-dist as a transitive dependency |
-| `@supabase/storage-js` installed separately | Already bundled inside `@supabase/supabase-js` — installing separately adds nothing | `@supabase/supabase-js` only |
-| `@supabase/auth-helpers-nextjs` | Deprecated; project uses NextAuth (not Supabase Auth) — auth helpers are irrelevant | NextAuth session + custom Supabase admin client |
-| `<iframe src={signedUrl}>` for PDF viewing | Browser adds its own PDF toolbar/chrome breaking vault UI; CORS headers on signed URLs can block iframes | `react-pdf` canvas-based rendering |
-| Storing PDF blobs in Postgres `bytea` | Column size limits, backup bloat, no CDN delivery, no streaming support | Supabase Storage (S3-backed with global CDN) |
-| `file-saver` for download | Legacy polyfill for old browsers; modern targets (React 19 / Next.js 16) support native `URL.createObjectURL + <a download>` pattern natively | Native blob URL download |
 
 ---
 
@@ -277,64 +387,81 @@ canonical Supabase pattern for per-user file isolation.
 
 | Recommended | Alternative | Why Not |
 |-------------|-------------|---------|
-| `react-pdf` (wojtekmaj) | `@pdf-viewer/react` | Commercial/paid for production use; react-pdf is fully open source and sufficient for read-only vault display |
-| `react-pdf` (wojtekmaj) | Raw `pdfjs-dist` directly | react-pdf is a maintained React wrapper — using pdfjs-dist directly adds significant boilerplate with no benefit |
-| Supabase Storage | Vercel Blob | Project is already on Supabase infrastructure; Vercel Blob adds a second vendor for the same capability with no advantage |
-| Supabase Storage | AWS S3 direct | S3 requires additional SDK, IAM setup, credential rotation — Supabase Storage is already provisioned with the project |
-| Signed URL (5 min expiry) | Public bucket URLs | Public URLs expose all user financial documents without authentication; signed URLs enforce auth per-request |
+| nuqs for URL filter state | `useState` + `router.push` | Full navigation on every toggle resets virtualized list scroll; no type safety; no bookmarkability |
+| nuqs for URL filter state | `useSearchParams` (read-only) | Cannot update search params in client components without router.push; same scroll reset problem |
+| Static RSC schema page | Mermaid.js | ~200 kB bundle for a static reference page; no interactive requirement in scope |
+| Static RSC schema page | React Flow / @xyflow/react | ~100 kB bundle; overkill for read-only documentation |
+| Single `financial_accounts` table | Separate tables per type | 3x the API routes and hooks for 3-5 unique fields per type; no benefit |
+| Additive `accountId` FK on statements | Replace `sourceType` string with account FK | Destructive — breaks existing vault/coverage queries; `sourceType` is user-visible display label, `accountId` is entity FK — they serve different purposes |
+| `SidebarMenuSub` + `Collapsible` | Third-party nav library | All primitives already installed; library adds bundle with no benefit for a structural reorganization |
 
 ---
 
-## Version Compatibility
+## What NOT to Add
 
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| `react-pdf@10.3.0` | React `^19.2.3`, Next.js `16.1.4` | v10 explicitly supports React 19 peer dep; Next.js compatibility confirmed >=14.1.1 |
-| `react-pdf@10.3.0` | `pdfjs-dist@5.4.624` | Pinned automatically as dependency |
-| `react-pdf@10.3.0` | `pdf2json@4.0.2` (existing) | No conflict — react-pdf handles client rendering, pdf2json handles server text extraction |
-| `react-pdf@10.3.0` | `@tanstack/react-virtual@3.13.18` | No conflict; virtual scrolling applies to file list, not the PDF canvas renderer |
-| `@supabase/supabase-js@2.97.0` | Node.js 18+, browser ESM | Works in both API routes and browser; no SSR gotchas for storage-only usage |
-| `@supabase/supabase-js@2.97.0` | `postgres@3.4.8` (existing Drizzle) | No conflict — supabase-js is storage-only; postgres client remains the DB transport |
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `mermaid` or `@mermaid-js/mermaid-react` | 200 kB+ for a static reference page; no interactive requirement | shadcn/ui Table + Card components as RSC |
+| `reactflow` / `@xyflow/react` | Overkill for read-only schema display | Build only if interactive ER diagram is explicitly required in a future milestone |
+| Separate `bank_accounts`, `credit_cards`, `loans` tables | 3x schema + API surface for minimal field variation | Single `financial_accounts` table with discriminated Zod union |
+| `@radix-ui/react-collapsible` (separate package) | Already available via `radix-ui` ^1.4.3 meta-package | Import from `"radix-ui"` as in existing `collapsible.tsx` line 3 |
+| Any new chart library for account detail pages | Recharts ^3.7.0 already installed | Reuse Recharts components from `src/components/dashboard/` for spending summaries |
+| `nuqs` v1.x | v1.x was designed for Next.js 13; v2.x required for Next.js 14+ App Router | `nuqs@^2.8.8` only |
 
 ---
 
 ## Stack Patterns by Variant
 
-**If PDF files regularly exceed 6 MB:**
-- Use Supabase resumable uploads (TUS protocol via `tus-js-client`) instead of `uploadToSignedUrl`
-- Because the standard signed upload URL approach may time out on slow connections for large files
-- Note: Most bank statements are under 6 MB; start with standard signed URL and add resumable if monitoring shows failures
+**If transaction amounts are signed (positive=debit, negative=credit/refund):**
+- No schema migration needed for payment type filtering
+- API adds `gt(transactions.amount, "0")` / `lt(transactions.amount, "0")` condition based on `paymentType` param
+- Client uses `usePaymentTypeFilter()` hook with nuqs
 
-**If the vault file list grows beyond ~500 items per user:**
-- Already handled — `@tanstack/react-virtual` is installed and virtualizes any list
-- No additional setup needed
+**If transaction amounts are always positive (direction lost at import):**
+- Add `transactionType pgEnum("debit" | "credit")` column to transactions table
+- Populate at PDF extraction time in `src/lib/openai/pdf-parser.ts`
+- This is migration 0012 if financial_accounts is 0011
+- Verify the existing data in the transactions table before choosing this path
 
-**If multi-page PDFs need in-vault scrolling:**
-- Use react-pdf's `<Page>` in a `@tanstack/react-virtual` container
-- Lazy-load pages only as they enter the viewport (react-pdf supports this natively via `<Document onLoadSuccess>` + per-page rendering)
-- Do NOT pre-render all pages on mount — a 200-page statement would allocate hundreds of canvas elements
+**If account detail pages need spending charts:**
+- Recharts ^3.7.0 already installed — reuse `AreaChart` or `BarChart` from `src/components/dashboard/`
+- API endpoint: `GET /api/accounts/[id]/spending?period=...` — standard TanStack Query hook
 
-**If the Supabase project uses Supabase Auth (it does not — uses NextAuth):**
-- The signed URL approach would integrate with `supabase.auth.getSession()` instead
-- This project keeps NextAuth for auth and uses Supabase service role server-side; the browser upload uses anon key with path-based RLS
+**If the schema viewer needs anchor links between related tables:**
+- Native HTML `id` attributes on each `<section>` + `href="#table-name"` links — no library needed
+- RSC renders to static HTML; anchor navigation is free
+
+**If nuqs causes conflicts with existing URL params in the transaction browser:**
+- nuqs coexists with other URL params — it only manages the keys you tell it to (`paymentType`)
+- Existing `tagStatus`, `dateFrom`, `dateTo`, `search`, `sourceType` params are unaffected
+
+---
+
+## Version Compatibility
+
+| Package | Version | Compatible With | Notes |
+|---------|---------|-----------------|-------|
+| nuqs | ^2.8.8 | Next.js 14+, React 18+ | v2.x required for Next.js 14+ App Router; verified current via `npm view nuqs version` |
+| nuqs | ^2.8.8 | `@tanstack/react-query` ^5.90.19 | No conflict — nuqs manages URL state, React Query manages server state independently |
+| `radix-ui` Collapsible | ^1.4.3 (installed) | Next.js 16, React 19 | Verified compatible — already used in `folder-card.tsx` with no issues |
+| Drizzle ORM `pgEnum` | ^0.45.1 (installed) | PostgreSQL (Supabase) | `accountTypeEnum` follows identical pattern to 8 existing enums in schema.ts |
+| Zod discriminated union | ^4.3.5 (installed) | React Hook Form ^7.71.1 via `@hookform/resolvers` ^5.2.2 | Standard pattern — same resolver integration as existing subscription form schemas |
 
 ---
 
 ## Sources
 
-- `npm view react-pdf version` → `10.3.0` — verified 2026-02-19 (HIGH confidence)
-- `npm view @supabase/supabase-js version` → `2.97.0` — verified 2026-02-19 (HIGH confidence)
-- `npm view pdfjs-dist version` → `5.4.624` — verified 2026-02-19 (HIGH confidence)
-- [react-pdf GitHub (wojtekmaj/react-pdf)](https://github.com/wojtekmaj/react-pdf) — Next.js App Router worker setup, React 19 peer dep confirmation (HIGH confidence)
-- [Supabase Docs: createSignedUploadUrl](https://supabase.com/docs/reference/javascript/storage-from-createsigneduploadurl) — signed upload URL pattern (HIGH confidence)
-- [Supabase Docs: Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control) — RLS path-based policy SQL with `storage.foldername()` (HIGH confidence)
-- [Supabase Docs: File Limits](https://supabase.com/docs/guides/storage/uploads/file-limits) — 50 MB free tier limit, 500 GB Pro (HIGH confidence)
-- [Vercel KB: Bypass 4.5 MB body limit](https://vercel.com/kb/guide/how-to-bypass-vercel-body-size-limit-serverless-functions) — confirmed hard limit for serverless functions (HIGH confidence)
-- Codebase: `src/app/api/batch/upload/route.ts` — existing `MAX_FILE_SIZE = 50MB` constant, confirms 50MB intended limit (HIGH confidence)
-- Codebase: `src/lib/db/schema.ts` — `statements.pdf_storage_path` already exists as nullable text (HIGH confidence)
-- WebSearch: react-pdf v10 Next.js worker config patterns, multiple community sources — confirmed consistent with official docs (MEDIUM confidence)
+- shadcn/ui sidebar docs — https://ui.shadcn.com/docs/components/sidebar — `SidebarMenuSub`, `Collapsible` pattern, `SidebarGroupAction` (HIGH confidence — official docs)
+- nuqs official site — https://nuqs.dev/ — type-safe URL params, RSC support, 6 kB size, `NuqsAdapter` requirement (HIGH confidence — official docs)
+- nuqs version — `npm view nuqs version` → 2.8.8 — verified 2026-02-22 (HIGH confidence)
+- Next.js `useSearchParams` docs — https://nextjs.org/docs/app/api-reference/functions/use-search-params — read-only limitation in client components confirmed (HIGH confidence — official docs)
+- Codebase: `src/components/ui/sidebar.tsx` lines 640-720 — `SidebarMenuSub`, `SidebarMenuSubItem`, `SidebarMenuSubButton` exports verified (HIGH confidence)
+- Codebase: `src/components/ui/collapsible.tsx` — `Collapsible` from `"radix-ui"` already used (HIGH confidence)
+- Codebase: `src/app/api/transactions/route.ts` lines 19-25 — existing URL filter param pattern (HIGH confidence)
+- Codebase: `src/lib/db/schema.ts` — full schema analyzed; no `transactionType` or `accountType` fields exist (HIGH confidence)
+- `package.json` — all existing dependency versions confirmed exact (HIGH confidence)
 
 ---
 
-*Stack research for: Financial Data Vault — PDF Blob Storage + In-App Viewer + Vault UI*
-*Researched: 2026-02-19*
+*Stack research for: v3.0 Navigation & Account Vault — subscription manager*
+*Researched: 2026-02-22*
