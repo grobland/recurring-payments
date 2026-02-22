@@ -17,11 +17,11 @@ CREATE TABLE "financial_accounts" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-DROP INDEX "statements_user_hash_idx";--> statement-breakpoint
+DROP INDEX IF EXISTS "statements_user_hash_idx";--> statement-breakpoint
 ALTER TABLE "statements" ADD COLUMN "account_id" uuid;--> statement-breakpoint
 ALTER TABLE "financial_accounts" ADD CONSTRAINT "financial_accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "financial_accounts_user_id_idx" ON "financial_accounts" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "financial_accounts_type_idx" ON "financial_accounts" USING btree ("account_type");--> statement-breakpoint
 ALTER TABLE "statements" ADD CONSTRAINT "statements_account_id_financial_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."financial_accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE UNIQUE INDEX "statements_user_hash_source_idx" ON "statements" USING btree ("user_id","pdf_hash","source_type");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "statements_user_hash_source_idx" ON "statements" USING btree ("user_id","pdf_hash","source_type");--> statement-breakpoint
 CREATE INDEX "statements_account_id_idx" ON "statements" USING btree ("account_id");
