@@ -142,9 +142,27 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - ✓ Non-fatal storage degradation (imports succeed without storage) — v2.2
 - ✓ hasPdf boolean API pattern (storage paths never exposed to client) — v2.2
 
+## Current Milestone: v3.0 Navigation & Account Vault
+
+**Goal:** Restructure the entire navigation into a structured financial hub and introduce account-level management where sources become named accounts with dedicated pages showing coverage, transactions, and spending.
+
+**Target features:**
+- Full sidebar/nav restructure (fin Vault, payments Portal, Support sections)
+- data Vault: account management for Bank/Debit, Credit Cards, Loans (sources migrate to accounts)
+- Account detail pages: edit form, coverage grid, transactions, spending summary
+- Data Schema viewer: read-only system data model page
+- Payment Type Selector: transaction browser with type toggles and filters
+- Help page: static FAQ/documentation
+
 ### Active
 
-(No active requirements — next milestone not yet planned)
+- [ ] Complete nav restructure with new section hierarchy
+- [ ] data Vault with account CRUD per type (bank/debit, credit card, loan)
+- [ ] Source-to-account migration and linking
+- [ ] Account detail pages (details, coverage, transactions, spending)
+- [ ] Data Schema viewer
+- [ ] Payment Type Selector with type toggles and filters
+- [ ] Help page (static FAQ)
 
 ### Out of Scope
 
@@ -235,4 +253,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | statementDate as first-of-month UTC | Avoids timezone ambiguity in coverage grid month mapping | ✓ Good |
 
 ---
-*Last updated: 2026-02-21 after v2.2 milestone*
+*Last updated: 2026-02-22 after v3.0 milestone start*

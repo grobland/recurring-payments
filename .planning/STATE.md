@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 
 ## Current Position
 
-Phase: All complete through Phase 34
-Plan: N/A — between milestones
-Status: v2.2 Financial Data Vault shipped
-Last activity: 2026-02-21 — Milestone v2.2 archived
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v3.0
+Last activity: 2026-02-22 — Milestone v3.0 started
 
-Progress: [██████████] 100% (v2.2 complete — all 7 milestones shipped)
+Progress: [░░░░░░░░░░] 0% (v3.0 in planning)
 
 ## Archived Milestones
 
