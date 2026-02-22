@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-21)
+See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Planning next milestone
+**Current focus:** v3.0 Navigation & Account Vault — Phase 35 ready to plan
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 35 of 40 (Database Foundation)
 Plan: —
-Status: Defining requirements for v3.0
-Last activity: 2026-02-22 — Milestone v3.0 started
+Status: Ready to plan
+Last activity: 2026-02-22 — v3.0 roadmap created (Phases 35-40)
 
-Progress: [░░░░░░░░░░] 0% (v3.0 in planning)
+Progress: [░░░░░░░░░░] 0% (v3.0 Phase 35 not started)
 
 ## Archived Milestones
 
@@ -34,29 +34,37 @@ Progress: [░░░░░░░░░░] 0% (v3.0 in planning)
 
 **Velocity:**
 - Total plans completed: 98
-- Total phases: 34
-- Total milestones: 7
-- Development span: 2026-01-26 → 2026-02-21 (27 days)
+- Total phases: 34 complete, 6 planned (v3.0)
+- Total milestones: 7 complete, 1 in progress
 
 ## Accumulated Context
 
 ### Decisions
 
-Cleared — full decision log in PROJECT.md Key Decisions table and MILESTONES.md per-milestone entries.
+Recent decisions affecting v3.0 work:
+- financial_accounts (not accounts) — NextAuth owns the accounts table at schema.ts line 120; naming collision is a hard constraint
+- Nullable accountId FK on statements — all existing statements predate accounts; NOT NULL would cause migration failure
+- User-driven source-to-account migration — no automatic backfill; user creates accounts and links sources via UI
+- Read generated SQL before db:migrate — Drizzle bug #4147: FK + column in same migration can generate incorrect SQL
+- nuqs@^2.8.8 — only new npm package for entire v3.0 milestone; needed for URL-persisted filter state without scroll reset
 
 ### Blockers/Concerns
+
+**Phase 35 (Database Foundation):**
+- Always read generated .sql file before running db:migrate (Drizzle FK bug #4147)
+- Decide CHECK constraint approach before generating migration: nullable-only (simpler) vs nullable + PostgreSQL CHECK (safer)
+
+**Phase 37 (Account CRUD):**
+- Run grep -r sourceType src/ and audit all 37 consumers before writing migration logic
+- PATCH /api/accounts/[id] must invalidate five query keys: ["accounts"], ["vault","coverage"], ["vault","timeline"], ["sources"], ["transactions"]
 
 **Production deployment (carried forward):**
 - RESEND_FROM_EMAIL needs verified domain for email delivery
 - NEXT_PUBLIC_SENTRY_DSN needed for Sentry error tracking
-
-**Supabase Storage env vars needed:**
-- NEXT_PUBLIC_SUPABASE_URL (browser-side storage)
-- NEXT_PUBLIC_SUPABASE_ANON_KEY (browser-side storage)
-- SUPABASE_SERVICE_ROLE_KEY (server-side uploads — no NEXT_PUBLIC_ prefix)
+- NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY required for storage
 
 ## Session Continuity
 
-Last session: 2026-02-21
-Stopped at: v2.2 milestone archived
-Resume with: `/gsd:new-milestone` for next milestone planning
+Last session: 2026-02-22
+Stopped at: v3.0 roadmap created — Phases 35-40 defined
+Resume with: `/gsd:plan-phase 35`

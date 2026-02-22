@@ -75,33 +75,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 | — | Pending |
-| NAV-02 | — | Pending |
-| NAV-03 | — | Pending |
-| NAV-04 | — | Pending |
-| ACCT-01 | — | Pending |
-| ACCT-02 | — | Pending |
-| ACCT-03 | — | Pending |
-| ACCT-04 | — | Pending |
-| ACCT-05 | — | Pending |
-| ACCT-06 | — | Pending |
-| ACCT-07 | — | Pending |
-| ACCT-08 | — | Pending |
-| DETAIL-01 | — | Pending |
-| DETAIL-02 | — | Pending |
-| DETAIL-03 | — | Pending |
-| DETAIL-04 | — | Pending |
-| FILTER-01 | — | Pending |
-| FILTER-02 | — | Pending |
-| FILTER-03 | — | Pending |
-| SCHEMA-01 | — | Pending |
-| HELP-01 | — | Pending |
+| NAV-01 | Phase 36 | Pending |
+| NAV-02 | Phase 36 | Pending |
+| NAV-03 | Phase 36 | Pending |
+| NAV-04 | Phase 36 | Pending |
+| ACCT-01 | Phase 37 | Pending |
+| ACCT-02 | Phase 37 | Pending |
+| ACCT-03 | Phase 37 | Pending |
+| ACCT-04 | Phase 37 | Pending |
+| ACCT-05 | Phase 37 | Pending |
+| ACCT-06 | Phase 37 | Pending |
+| ACCT-07 | Phase 37 | Pending |
+| ACCT-08 | Phase 37 | Pending |
+| DETAIL-01 | Phase 38 | Pending |
+| DETAIL-02 | Phase 38 | Pending |
+| DETAIL-03 | Phase 38 | Pending |
+| DETAIL-04 | Phase 38 | Pending |
+| FILTER-01 | Phase 39 | Pending |
+| FILTER-02 | Phase 39 | Pending |
+| FILTER-03 | Phase 39 | Pending |
+| SCHEMA-01 | Phase 40 | Pending |
+| HELP-01 | Phase 40 | Pending |
 
 **Coverage:**
 - v3.0 requirements: 21 total
-- Mapped to phases: 0 (populated by roadmapper)
-- Unmapped: 21 ⚠️
+- Mapped to phases: 21 (Phase 35 is infrastructure enabling ACCT-* phases)
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-22*
-*Last updated: 2026-02-22 after initial definition*
+*Last updated: 2026-02-22 after roadmap creation — traceability populated*
