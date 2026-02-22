@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Navigation & Account Vault — Phase 35 ready to plan
+**Current focus:** v3.0 Navigation & Account Vault — Phase 35 Plan 01 complete
 
 ## Current Position
 
 Phase: 35 of 40 (Database Foundation)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-02-22 — v3.0 roadmap created (Phases 35-40)
+Plan: 1 of 2 complete
+Status: In progress
+Last activity: 2026-02-22 — Phase 35 Plan 01 complete (schema.ts + backfill rename)
 
-Progress: [░░░░░░░░░░] 0% (v3.0 Phase 35 not started)
+Progress: [█░░░░░░░░░] 5% (v3.0 Phase 35 Plan 01 done)
 
 ## Archived Milestones
 
@@ -28,13 +28,13 @@ Progress: [░░░░░░░░░░] 0% (v3.0 Phase 35 not started)
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 98 plans completed, 131 requirements validated across 7 milestones
+**Total:** 99 plans completed, 131 requirements validated across 7 milestones (+ 6 ACCT requirements in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 98
-- Total phases: 34 complete, 6 planned (v3.0)
+- Total plans completed: 99
+- Total phases: 34 complete, 6 planned (v3.0, Phase 35 in progress)
 - Total milestones: 7 complete, 1 in progress
 
 ## Accumulated Context
@@ -66,5 +66,5 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: v3.0 roadmap created — Phases 35-40 defined
-Resume with: `/gsd:plan-phase 35`
+Stopped at: Completed 35-01-PLAN.md (schema.ts edits + backfill rename)
+Resume with: `/gsd:execute-phase 35` (Plan 02 — db:generate + db:migrate)

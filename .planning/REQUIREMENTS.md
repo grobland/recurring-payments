@@ -16,12 +16,12 @@ Requirements for v3.0 Navigation & Account Vault milestone.
 
 ### Account Management
 
-- [ ] **ACCT-01**: User can create a financial account with name, type (Bank/Debit, Credit Card, or Loan), and institution name
-- [ ] **ACCT-02**: Loan accounts include type-specific fields: interest rate and loan term
-- [ ] **ACCT-03**: Credit card accounts include type-specific field: credit limit
-- [ ] **ACCT-04**: User can edit a financial account's details
-- [ ] **ACCT-05**: User can delete a financial account
-- [ ] **ACCT-06**: User can see all accounts on the data Vault page grouped by type (Bank/Debit, Credit Cards, Loans)
+- [x] **ACCT-01**: User can create a financial account with name, type (Bank/Debit, Credit Card, or Loan), and institution name
+- [x] **ACCT-02**: Loan accounts include type-specific fields: interest rate and loan term
+- [x] **ACCT-03**: Credit card accounts include type-specific field: credit limit
+- [x] **ACCT-04**: User can edit a financial account's details
+- [x] **ACCT-05**: User can delete a financial account
+- [x] **ACCT-06**: User can see all accounts on the data Vault page grouped by type (Bank/Debit, Credit Cards, Loans)
 - [ ] **ACCT-07**: User can link an existing statement source (sourceType string) to a financial account
 - [ ] **ACCT-08**: Future PDF imports from a linked source are automatically assigned to the associated account
 
@@ -79,12 +79,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NAV-02 | Phase 36 | Pending |
 | NAV-03 | Phase 36 | Pending |
 | NAV-04 | Phase 36 | Pending |
-| ACCT-01 | Phase 37 | Pending |
-| ACCT-02 | Phase 37 | Pending |
-| ACCT-03 | Phase 37 | Pending |
-| ACCT-04 | Phase 37 | Pending |
-| ACCT-05 | Phase 37 | Pending |
-| ACCT-06 | Phase 37 | Pending |
+| ACCT-01 | Phase 37 | Complete |
+| ACCT-02 | Phase 37 | Complete |
+| ACCT-03 | Phase 37 | Complete |
+| ACCT-04 | Phase 37 | Complete |
+| ACCT-05 | Phase 37 | Complete |
+| ACCT-06 | Phase 37 | Complete |
 | ACCT-07 | Phase 37 | Pending |
 | ACCT-08 | Phase 37 | Pending |
 | DETAIL-01 | Phase 38 | Pending |
