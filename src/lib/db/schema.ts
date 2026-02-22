@@ -62,6 +62,12 @@ export const tierEnum = pgEnum("tier", ["primary", "enhanced", "advanced"]);
 
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 
+export const accountTypeEnum = pgEnum("account_type", [
+  "bank_debit",
+  "credit_card",
+  "loan",
+]);
+
 // ============ USERS TABLE ============
 
 export const users = pgTable("users", {
@@ -490,6 +496,42 @@ export const alerts = pgTable(
   ]
 );
 
+// ============ FINANCIAL ACCOUNTS TABLE ============
+
+export const financialAccounts = pgTable(
+  "financial_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Core identity fields — all account types
+    name: varchar("name", { length: 100 }).notNull(),
+    accountType: accountTypeEnum("account_type").notNull(),
+    institution: varchar("institution", { length: 100 }),
+    currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    notes: text("notes"),
+
+    // credit_card only (null for bank_debit and loan)
+    creditLimit: decimal("credit_limit", { precision: 12, scale: 2 }),
+    statementClosingDay: integer("statement_closing_day"), // 1-31
+
+    // loan only (null for bank_debit and credit_card)
+    originalBalance: decimal("original_balance", { precision: 12, scale: 2 }),
+    interestRate: decimal("interest_rate", { precision: 5, scale: 4 }), // e.g. 0.0499 = 4.99%
+    loanTermMonths: integer("loan_term_months"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("financial_accounts_user_id_idx").on(table.userId),
+    index("financial_accounts_type_idx").on(table.accountType),
+  ]
+);
+
 // ============ STATEMENTS TABLE ============
 
 export const statements = pgTable(
@@ -519,6 +561,11 @@ export const statements = pgTable(
     processingError: text("processing_error"),
     transactionCount: integer("transaction_count").default(0).notNull(),
 
+    // Account linkage (nullable — all existing statements predate accounts)
+    accountId: uuid("account_id").references(() => financialAccounts.id, {
+      onDelete: "set null",
+    }),
+
     // Timestamps
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -529,6 +576,7 @@ export const statements = pgTable(
     index("statements_user_id_idx").on(table.userId),
     index("statements_pdf_hash_idx").on(table.pdfHash),
     uniqueIndex("statements_user_hash_source_idx").on(table.userId, table.pdfHash, table.sourceType), // User+source-scoped uniqueness
+    index("statements_account_id_idx").on(table.accountId),
   ]
 );
 
@@ -702,6 +750,17 @@ export const trialExtensions = pgTable(
 
 // ============ RELATIONS ============
 
+export const financialAccountsRelations = relations(
+  financialAccounts,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [financialAccounts.userId],
+      references: [users.id],
+    }),
+    statements: many(statements),
+  })
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   sessions: many(sessions),
@@ -716,6 +775,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   transactions: many(transactions),
   tags: many(tags),
   trialExtensions: many(trialExtensions),
+  financialAccounts: many(financialAccounts),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -827,6 +887,10 @@ export const statementsRelations = relations(statements, ({ one, many }) => ({
     references: [users.id],
   }),
   transactions: many(transactions),
+  financialAccount: one(financialAccounts, {
+    fields: [statements.accountId],
+    references: [financialAccounts.id],
+  }),
 }));
 
 export const transactionsRelations = relations(transactions, ({ one, many }) => ({
@@ -926,3 +990,7 @@ export type Tier = "primary" | "enhanced" | "advanced";
 
 export type TrialExtension = typeof trialExtensions.$inferSelect;
 export type NewTrialExtension = typeof trialExtensions.$inferInsert;
+
+export type FinancialAccount = typeof financialAccounts.$inferSelect;
+export type NewFinancialAccount = typeof financialAccounts.$inferInsert;
+export type AccountType = "bank_debit" | "credit_card" | "loan";
