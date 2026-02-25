@@ -26,7 +26,7 @@ export default function NotFound() {
               </Link>
             </Button>
             <Button asChild className="flex-1">
-              <Link href="/dashboard">
+              <Link href="/payments/dashboard">
                 <Home className="mr-2 h-4 w-4" />
                 Dashboard
               </Link>

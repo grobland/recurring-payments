@@ -54,7 +54,7 @@ export function useBulkAcceptPatterns() {
           action: {
             label: "View Subscriptions",
             onClick: () => {
-              window.location.href = "/subscriptions";
+              window.location.href = "/payments/subscriptions";
             },
           },
         }

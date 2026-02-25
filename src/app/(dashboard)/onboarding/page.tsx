@@ -71,7 +71,7 @@ export default function OnboardingPage() {
         });
 
         toast.success("Welcome! Your account is all set up.");
-        router.push("/dashboard");
+        router.push("/payments/dashboard");
       } catch (error) {
         toast.error("Failed to complete setup. Please try again.");
       }
@@ -93,9 +93,9 @@ export default function OnboardingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ onboardingCompleted: true }),
       });
-      router.push("/dashboard");
+      router.push("/payments/dashboard");
     } catch (error) {
-      router.push("/dashboard");
+      router.push("/payments/dashboard");
     }
   };
 
@@ -289,7 +289,7 @@ export default function OnboardingPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <button
-                    onClick={() => router.push("/subscriptions/new")}
+                    onClick={() => router.push("/payments/subscriptions/new")}
                     className="flex w-full items-center justify-between rounded-lg border p-4 text-left hover:bg-muted/50"
                   >
                     <div>
@@ -301,7 +301,7 @@ export default function OnboardingPage() {
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </button>
                   <button
-                    onClick={() => router.push("/import")}
+                    onClick={() => router.push("/vault/load")}
                     className="flex w-full items-center justify-between rounded-lg border p-4 text-left hover:bg-muted/50"
                   >
                     <div>
@@ -313,7 +313,7 @@ export default function OnboardingPage() {
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </button>
                   <button
-                    onClick={() => router.push("/dashboard")}
+                    onClick={() => router.push("/payments/dashboard")}
                     className="flex w-full items-center justify-between rounded-lg border p-4 text-left hover:bg-muted/50"
                   >
                     <div>

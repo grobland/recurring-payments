@@ -20,7 +20,7 @@ export default function StatementDetailPage({ params }: PageProps) {
       <DashboardHeader
         title="Statement Details"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
+          { label: "subs Dash", href: "/payments/dashboard" },
           { label: "Sources", href: "/sources" },
           { label: "Statement Details" },
         ]}

@@ -53,7 +53,7 @@ export default function Error({
               Try again
             </Button>
             <Button variant="outline" asChild className="flex-1">
-              <Link href="/dashboard">
+              <Link href="/payments/dashboard">
                 <Home className="mr-2 h-4 w-4" />
                 Go to Dashboard
               </Link>

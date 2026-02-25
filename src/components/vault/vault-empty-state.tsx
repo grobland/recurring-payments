@@ -16,7 +16,7 @@ export function VaultEmptyState() {
         </p>
       </div>
       <Button asChild>
-        <Link href="/import/batch">
+        <Link href="/vault/load">
           <Upload className="size-4 mr-2" />
           Upload Statements
         </Link>

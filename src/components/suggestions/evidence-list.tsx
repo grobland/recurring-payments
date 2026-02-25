@@ -48,7 +48,7 @@ export function EvidenceList({
           return (
             <Link
               key={`${date}-${index}`}
-              href={`/transactions?search=${encodeURIComponent(merchantName)}&dateFrom=${searchDate}`}
+              href={`/payments/transactions?search=${encodeURIComponent(merchantName)}&dateFrom=${searchDate}`}
               className="group flex items-center justify-between rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted"
             >
               <span className="text-muted-foreground">

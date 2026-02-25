@@ -24,7 +24,7 @@ import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/payments/dashboard";
   const error = searchParams.get("error");
 
   const [isLoading, setIsLoading] = useState(false);

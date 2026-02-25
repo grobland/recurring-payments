@@ -64,7 +64,7 @@ export function IncompleteBatchBanner() {
           variant="outline"
           className="h-7 border-amber-300 hover:bg-amber-200 dark:border-amber-700 dark:hover:bg-amber-800"
         >
-          <Link href="/import/batch">Resume</Link>
+          <Link href="/vault/load">Resume</Link>
         </Button>
 
         <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

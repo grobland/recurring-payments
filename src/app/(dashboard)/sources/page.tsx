@@ -13,7 +13,7 @@ export default function SourcesPage() {
       <DashboardHeader
         title="Statement Sources"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
+          { label: "subs Dash", href: "/payments/dashboard" },
           { label: "Sources" },
         ]}
       />

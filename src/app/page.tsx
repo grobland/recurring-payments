@@ -16,7 +16,7 @@ export default async function HomePage() {
 
   // Redirect authenticated users to dashboard
   if (session?.user) {
-    redirect("/dashboard");
+    redirect("/payments/dashboard");
   }
 
   return (

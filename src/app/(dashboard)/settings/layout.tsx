@@ -20,7 +20,7 @@ const settingsNav = [
   },
   {
     title: "Notifications",
-    href: "/reminders",
+    href: "/payments/reminders",
     icon: Bell,
   },
   {
@@ -42,7 +42,7 @@ export default function SettingsLayout({
       <DashboardHeader
         title="Settings"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
+          { label: "subs Dash", href: "/payments/dashboard" },
           { label: "Settings" },
         ]}
       />

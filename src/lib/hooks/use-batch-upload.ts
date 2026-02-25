@@ -389,7 +389,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
           action: {
             label: "View Suggestions",
             onClick: () => {
-              window.location.href = "/suggestions";
+              window.location.href = "/payments/suggestions";
             },
           },
         }

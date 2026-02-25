@@ -13,7 +13,7 @@ export default function VaultRoutePage() {
       <DashboardHeader
         title="Vault"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
+          { label: "subs Dash", href: "/payments/dashboard" },
           { label: "Vault" },
         ]}
       />
