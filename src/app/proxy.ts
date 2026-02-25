@@ -4,11 +4,15 @@ import { getToken } from "next-auth/jwt";
 
 // Routes that require authentication
 const protectedRoutes = [
-  "/dashboard",
-  "/subscriptions",
-  "/import",
-  "/analytics",
-  "/reminders",
+  "/dashboard",      // kept — redirect fires before proxy anyway, harmless
+  "/payments",       // NEW — covers all /payments/* routes via startsWith check
+  "/vault",          // NEW — covers /vault and /vault/load
+  "/accounts",       // NEW — data Vault placeholder page
+  "/subscriptions",  // kept for safety during transition
+  "/import",         // kept for safety during transition
+  "/analytics",      // kept for safety during transition
+  "/reminders",      // kept for safety during transition
+  "/sources",        // NEW — was implicitly unprotected, add for completeness
   "/settings",
   "/onboarding",
 ];
@@ -51,7 +55,7 @@ export async function proxy(request: NextRequest) {
     if (!onboardingCompleted) {
       return NextResponse.redirect(new URL("/onboarding", nextUrl));
     }
-    return NextResponse.redirect(new URL("/dashboard", nextUrl));
+    return NextResponse.redirect(new URL("/payments/dashboard", nextUrl));
   }
 
   // For protected routes, check if onboarding is needed
@@ -62,7 +66,7 @@ export async function proxy(request: NextRequest) {
     }
     // If onboarding is completed and user tries to access /onboarding, redirect to dashboard
     if (onboardingCompleted && pathname === "/onboarding") {
-      return NextResponse.redirect(new URL("/dashboard", nextUrl));
+      return NextResponse.redirect(new URL("/payments/dashboard", nextUrl));
     }
   }
 
