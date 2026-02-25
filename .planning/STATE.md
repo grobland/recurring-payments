@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Navigation & Account Vault — Phase 36 in progress (Plan 02 of 2 complete)
+**Current focus:** v3.0 Navigation & Account Vault — Phase 36 in progress (Plan 03 of 3 complete)
 
 ## Current Position
 
 Phase: 36 of 40 (Navigation Restructure) — IN PROGRESS
-Plan: 2 of 2 complete
-Status: Phase 36 complete — sidebar restructured, redirects and placeholder pages in place
-Last activity: 2026-02-25 — Phase 36 Plan 02 complete (sidebar restructured into three named sections)
+Plan: 3 of 3 complete
+Status: Phase 36 complete — new route files created, all internal links updated to new URL paths
+Last activity: 2026-02-25 — Phase 36 Plan 03 complete (11 new route files under /payments/* and /vault/load/, plus 15 shared files updated)
 
-Progress: [██░░░░░░░░] 10% (v3.0 Phase 36 complete — 2/2 plans)
+Progress: [██░░░░░░░░] 10% (v3.0 Phase 36 complete — 3/3 plans)
 
 ## Archived Milestones
 
@@ -28,12 +28,12 @@ Progress: [██░░░░░░░░] 10% (v3.0 Phase 36 complete — 2/2 p
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 103 plans completed, 141 requirements validated across 7 milestones (+ 8 ACCT requirements complete in Phase 35, + NAV-01, NAV-03 in Phase 36)
+**Total:** 104 plans completed, 142 requirements validated across 7 milestones (+ 8 ACCT requirements complete in Phase 35, + NAV-01, NAV-02, NAV-03 in Phase 36)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 103
+- Total plans completed: 104
 - Total phases: 36 complete, 4 planned (v3.0, Phase 37 next)
 - Total milestones: 7 complete, 1 in progress
 
@@ -54,6 +54,8 @@ Recent decisions affecting v3.0 work:
 - More-specific redirect paths listed before less-specific in next.config.ts redirects() array (e.g., /dashboard/forecasting before /dashboard, /subscriptions/:path* before /subscriptions)
 - All proxy.ts hardcoded /dashboard redirect destinations updated to /payments/dashboard to eliminate redirect chaining
 - /sources added to protectedRoutes in proxy.ts — was previously unprotected, added for completeness
+- Verbatim copy strategy for new /payments/* route files — no refactoring at copy time to minimize diff surface
+- 5 additional files updated beyond plan scope (sources, statements, vault breadcrumbs; error.tsx; not-found.tsx) — had /dashboard hrefs
 
 ### Blockers/Concerns
 
@@ -69,5 +71,5 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Phase 36 Plan 01 complete — 308 redirects added to next.config.ts, proxy.ts updated with new protected routes, /accounts placeholder page created (NAV-04)
-Resume with: `/gsd:execute-phase 36` (Plan 02 remaining)
+Stopped at: Phase 36 Plan 03 complete — 13 new route files, 15 shared files updated, npm build passes
+Resume with: `/gsd:execute-phase 37` (Phase 37 next)

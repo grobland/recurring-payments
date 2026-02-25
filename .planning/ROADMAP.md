@@ -94,7 +94,7 @@
 **Milestone Goal:** Restructure the entire navigation into a structured financial hub and introduce account-level management where sources become named accounts with dedicated pages showing coverage, transactions, and spending.
 
 - [x] **Phase 35: Database Foundation** - financial_accounts table + nullable accountId FK on statements (migration 0011) — completed 2026-02-22
-- [ ] **Phase 36: Navigation Restructure** - New sidebar section hierarchy, 308 redirects, active-state fix
+- [x] **Phase 36: Navigation Restructure** - New sidebar section hierarchy, 308 redirects, active-state fix (completed 2026-02-25)
 - [ ] **Phase 37: Account CRUD + List Page** - API routes, hooks, AccountForm, account list grouped by type, source linking
 - [ ] **Phase 38: Account Detail Pages** - Per-account page with coverage, transactions, and spending tabs
 - [ ] **Phase 39: Payment Type Selector** - nuqs URL filters, type toggles, combined filters on Payments page
@@ -199,7 +199,7 @@ Plans:
 | 24-30 | v2.1 | 19/19 | Complete | 2026-02-18 |
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
 | 35. Database Foundation | v3.0 | Complete    | 2026-02-22 | 2026-02-22 |
-| 36. Navigation Restructure | 2/3 | In Progress|  | - |
+| 36. Navigation Restructure | 3/3 | Complete   | 2026-02-25 | - |
 | 37. Account CRUD + List Page | v3.0 | 0/TBD | Not started | - |
 | 38. Account Detail Pages | v3.0 | 0/TBD | Not started | - |
 | 39. Payment Type Selector | v3.0 | 0/TBD | Not started | - |
