@@ -7,13 +7,11 @@ import {
   LayoutDashboard,
   CreditCard,
   BarChart3,
-  FileUp,
   FolderUp,
   FileStack,
   Receipt,
   Bell,
   Settings,
-  HelpCircle,
   ChevronUp,
   User2,
   Sun,
@@ -21,10 +19,10 @@ import {
   Monitor,
   TrendingUp,
   Sparkles,
-  Activity,
   Shield,
   Webhook,
   Archive,
+  Database,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -54,84 +52,42 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useUserStatus } from "@/lib/hooks";
-import { LockedNavItem } from "@/components/features";
-import { FEATURES } from "@/lib/features";
 
-const mainNavItems = [
-  {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Vault",
-    href: "/vault",
-    icon: Archive,
-  },
-  {
-    title: "Subscriptions",
-    href: "/subscriptions",
-    icon: CreditCard,
-  },
-  {
-    title: "Analytics",
-    href: "/analytics",
-    icon: BarChart3,
-  },
-  {
-    title: "Forecast",
-    href: "/dashboard/forecasting",
-    icon: TrendingUp,
-  },
-  {
-    title: "Import",
-    href: "/import",
-    icon: FileUp,
-  },
-  {
-    title: "Batch Import",
-    href: "/import/batch",
-    icon: FolderUp,
-  },
-  {
-    title: "Transactions",
-    href: "/transactions",
-    icon: Receipt,
-  },
-  {
-    title: "Suggestions",
-    href: "/suggestions",
-    icon: Sparkles,
-  },
-  {
-    title: "Sources",
-    href: "/sources",
-    icon: FileStack,
-  },
-  {
-    title: "Reminders",
-    href: "/reminders",
-    icon: Bell,
-  },
+const finVaultItems = [
+  { title: "doc Vault", href: "/vault", icon: Archive },
+  { title: "doc Load", href: "/vault/load", icon: FolderUp },
+  { title: "Sources", href: "/sources", icon: FileStack },
+  { title: "data Vault", href: "/accounts", icon: Database },
 ];
 
-const secondaryNavItems = [
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
-  },
-  {
-    title: "Help",
-    href: "/help",
-    icon: HelpCircle,
-  },
+const paymentsPortalItems = [
+  { title: "subs Dash", href: "/payments/dashboard", icon: LayoutDashboard },
+  { title: "Analytics", href: "/payments/analytics", icon: BarChart3 },
+  { title: "subs Forecast", href: "/payments/forecast", icon: TrendingUp },
+  { title: "subs Master List", href: "/payments/subscriptions", icon: CreditCard },
+  { title: "subs Selector", href: "/payments/transactions", icon: Receipt },
+  { title: "subs Suggestions", href: "/payments/suggestions", icon: Sparkles },
+  { title: "Reminders", href: "/payments/reminders", icon: Bell },
 ];
+
+const supportItems = [
+  { title: "Settings", href: "/settings", icon: Settings },
+  // Help and Schema added by Phase 40
+];
+
+function isNavItemActive(pathname: string, href: string): boolean {
+  // Items with child routes use prefix match; others use exact match
+  const prefixMatchItems = ["/payments/subscriptions", "/settings"];
+  if (prefixMatchItems.includes(href)) {
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+  return pathname === href;
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { isTrialActive, daysLeftInTrial, billingStatus } = useUserStatus();
+  const { isTrialActive, daysLeftInTrial } = useUserStatus();
   const { theme, setTheme } = useTheme();
 
   const isAdmin = session?.user?.role === "admin";
@@ -152,7 +108,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
+              <Link href="/payments/dashboard">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <CreditCard className="size-4" />
                 </div>
@@ -170,12 +126,15 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>fin Vault</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) => (
+              {finVaultItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={pathname === item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isNavItemActive(pathname, item.href)}
+                  >
                     <Link href={item.href}>
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
@@ -183,16 +142,27 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              <SidebarMenuItem>
-                <LockedNavItem feature={FEATURES.SPENDING_MONITORING}>
-                  <SidebarMenuButton asChild isActive={pathname === "/spending"}>
-                    <Link href="/spending">
-                      <Activity className="size-4" />
-                      <span>Spending Monitor</span>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>payments Portal</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {paymentsPortalItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isNavItemActive(pathname, item.href)}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="size-4" />
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                </LockedNavItem>
-              </SidebarMenuItem>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -201,11 +171,11 @@ export function AppSidebar() {
           <SidebarGroupLabel>Support</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {secondaryNavItems.map((item) => (
+              {supportItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith(item.href)}
+                    isActive={isNavItemActive(pathname, item.href)}
                   >
                     <Link href={item.href}>
                       <item.icon className="size-4" />
