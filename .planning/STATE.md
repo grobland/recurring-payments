@@ -51,6 +51,9 @@ Recent decisions affecting v3.0 work:
 - Manual drizzle.__drizzle_migrations seeding strategy — when journal is empty but DB has tables, compute SHA256(sql_content) per migration and INSERT with journal.when as created_at
 - isNavItemActive uses exact match by default, prefix match only for /payments/subscriptions and /settings (routes with real children) — prevents /vault false-activating at /vault/load
 - LockedNavItem/Spending Monitor removed from Phase 36 nav spec — deferred feature, intentionally absent
+- More-specific redirect paths listed before less-specific in next.config.ts redirects() array (e.g., /dashboard/forecasting before /dashboard, /subscriptions/:path* before /subscriptions)
+- All proxy.ts hardcoded /dashboard redirect destinations updated to /payments/dashboard to eliminate redirect chaining
+- /sources added to protectedRoutes in proxy.ts — was previously unprotected, added for completeness
 
 ### Blockers/Concerns
 
@@ -66,5 +69,5 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Phase 36 Plan 02 complete — sidebar restructured into three named sections (fin Vault, payments Portal, Support)
-Resume with: `/gsd:execute-phase 37`
+Stopped at: Phase 36 Plan 01 complete — 308 redirects added to next.config.ts, proxy.ts updated with new protected routes, /accounts placeholder page created (NAV-04)
+Resume with: `/gsd:execute-phase 36` (Plan 02 remaining)

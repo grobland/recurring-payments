@@ -12,7 +12,7 @@ Requirements for v3.0 Navigation & Account Vault milestone.
 - [x] **NAV-01**: User can see reorganized sidebar with fin Vault, payments Portal, and Support sections with correct sub-items per spec
 - [ ] **NAV-02**: User can navigate to all existing screens via new menu paths (doc Vault, doc Load, subs Dash, subs Forecast, subs Master List, subs Selector, subs Suggestions, subs Settings)
 - [x] **NAV-03**: Active nav item highlights correctly for nested section structure
-- [ ] **NAV-04**: Old URL routes redirect (308) to new paths preserving bookmarks and email links
+- [x] **NAV-04**: Old URL routes redirect (308) to new paths preserving bookmarks and email links
 
 ### Account Management
 
@@ -78,7 +78,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NAV-01 | Phase 36 | Complete |
 | NAV-02 | Phase 36 | Pending |
 | NAV-03 | Phase 36 | Complete |
-| NAV-04 | Phase 36 | Pending |
+| NAV-04 | Phase 36 | Complete |
 | ACCT-01 | Phase 37 | Complete |
 | ACCT-02 | Phase 37 | Complete |
 | ACCT-03 | Phase 37 | Complete |
