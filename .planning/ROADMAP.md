@@ -126,10 +126,12 @@ Plans:
   2. All existing screens are reachable via the new menu paths (doc Vault, doc Load, subs Dash, subs Forecast, subs Master List, subs Selector, subs Suggestions, subs Settings)
   3. The active nav item highlights for exactly the current page with no false positives on parent or sibling items in the nested structure
   4. Any URL that moved returns a 308 redirect to the new path so existing bookmarks and email links continue to work
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 36-01: TBD
+- [ ] 36-01-PLAN.md — 308 redirects (next.config.ts + proxy.ts) + /accounts placeholder page
+- [ ] 36-02-PLAN.md — Sidebar restructure: three named sections, correct active-state logic (app-sidebar.tsx)
+- [ ] 36-03-PLAN.md — New route files (/payments/*, /vault/load) + internal link updates across codebase
 
 ### Phase 37: Account CRUD + List Page
 **Goal**: Users can create, view, edit, and delete financial accounts of three types (Bank/Debit, Credit Card, Loan) with type-specific fields, see all accounts grouped by type on the data Vault page, and link existing statement sources to accounts
