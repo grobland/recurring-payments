@@ -63,6 +63,6 @@ Recent decisions affecting v3.0 work:
 
 ## Session Continuity
 
-Last session: 2026-02-22
-Stopped at: Completed 35-02-PLAN.md (migration 0011 applied — financial_accounts table, account_type enum, statements.account_id FK live in Supabase)
-Resume with: `/gsd:execute-phase 36` (Phase 36 — Navigation)
+Last session: 2026-02-25
+Stopped at: Phase 36 context gathered — CONTEXT.md written, ready for planning
+Resume with: `/gsd:plan-phase 36`
