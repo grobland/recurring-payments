@@ -71,5 +71,6 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Phase 36 Plan 03 complete — 13 new route files, 15 shared files updated, npm build passes
-Resume with: `/gsd:execute-phase 37` (Phase 37 next)
+Stopped at: Phase 37 context gathered — CONTEXT.md written with form, list, linking, and delete decisions
+Resume file: .planning/phases/37-account-crud-list-page/37-CONTEXT.md
+Resume with: `/gsd:plan-phase 37`
