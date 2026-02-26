@@ -8,3 +8,4 @@ export { TransactionCard } from "./transaction-card";
 export { TagStatusBadge } from "./tag-status-badge";
 export { TagBadge } from "./tag-badge";
 export { TagCombobox } from "./tag-combobox";
+export { PaymentTypeSelector } from "./payment-type-selector";
