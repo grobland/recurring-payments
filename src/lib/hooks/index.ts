@@ -68,3 +68,12 @@ export { useTransactions, transactionKeys } from "./use-transactions";
 export { useSources, sourceKeys } from "./use-sources";
 export { useSourceStatements, sourceStatementKeys } from "./use-source-statements";
 export { useStatementTransactions, statementTransactionKeys } from "./use-statement-transactions";
+
+// Account CRUD hooks
+export {
+  accountKeys,
+  useAccounts,
+  useCreateAccount,
+  useUpdateAccount,
+  useDeleteFinancialAccount,
+} from "./use-accounts";
