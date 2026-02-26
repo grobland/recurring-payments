@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import type { CSSProperties } from "react";
 import { ArrowRightCircle } from "lucide-react";
-import type { TransactionWithSource } from "@/types/transaction";
+import type { TransactionWithSource, PaymentType } from "@/types/transaction";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ interface TransactionCardProps {
   style: CSSProperties;
   isSelected: boolean;
   onToggle: () => void;
+  paymentType?: PaymentType;
 }
 
 const MAX_VISIBLE_TAGS = 3;
@@ -28,12 +29,18 @@ const MAX_VISIBLE_TAGS = 3;
 /**
  * Card component for mobile transaction view.
  * Uses absolute positioning for virtualization.
+ *
+ * When paymentType === 'recurring', shows an inline subscription checkbox:
+ * - Confirmed subscription: checked + disabled (already converted)
+ * - Suggested subscription: checked with amber dot indicator (potential_subscription)
+ * - Plain recurring: unchecked, checking triggers convert flow
  */
 export function TransactionCard({
   transaction,
   style,
   isSelected,
   onToggle,
+  paymentType,
 }: TransactionCardProps) {
   const toggleTag = useToggleTransactionTag();
   const convertTransaction = useConvertTransaction();
@@ -62,6 +69,16 @@ export function TransactionCard({
       action,
     });
   };
+
+  // Subscription status logic for inline checkbox
+  const isSubscriptionConfirmed =
+    transaction.convertedToSubscriptionId !== null ||
+    transaction.tagStatus === "converted";
+
+  const isSubscriptionSuggested =
+    transaction.tagStatus === "potential_subscription";
+
+  const showSubscriptionCheckbox = paymentType === "recurring";
 
   return (
     <div className="absolute left-0 right-0 px-2" style={style}>
@@ -106,7 +123,7 @@ export function TransactionCard({
           </div>
         )}
 
-        {/* Bottom row: Source, Category, Tag Status, Convert */}
+        {/* Bottom row: Source, Category, Tag Status, Convert / Subscription checkbox */}
         <div className="flex items-center gap-2 flex-wrap">
           {transaction.sourceType && (
             <Badge variant="outline" className="text-xs">
@@ -120,28 +137,57 @@ export function TransactionCard({
           )}
           <TagStatusBadge status={transaction.tagStatus} />
 
-          {/* Convert Action - positioned separately */}
-          <div className="ml-auto">
-            {transaction.convertedToSubscriptionId ? (
-              <ConvertedBadge subscriptionId={transaction.convertedToSubscriptionId} />
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 text-xs gap-1 px-2"
-                onClick={() =>
-                  convertTransaction.mutate({
-                    transactionId: transaction.id,
-                    merchantName: transaction.merchantName,
-                  })
-                }
-                disabled={convertTransaction.isPending}
-              >
-                <ArrowRightCircle className="h-3.5 w-3.5" />
-                Convert
-              </Button>
-            )}
-          </div>
+          {/* Inline subscription checkbox for recurring payment type view */}
+          {showSubscriptionCheckbox ? (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Subscription</span>
+              <div className="relative">
+                <Checkbox
+                  checked={isSubscriptionConfirmed || isSubscriptionSuggested}
+                  onCheckedChange={(checked) => {
+                    if (checked && !isSubscriptionConfirmed) {
+                      convertTransaction.mutate({
+                        transactionId: transaction.id,
+                        merchantName: transaction.merchantName,
+                      });
+                    }
+                  }}
+                  disabled={isSubscriptionConfirmed || convertTransaction.isPending}
+                  aria-label={`Mark ${transaction.merchantName} as subscription`}
+                />
+                {/* Amber dot for auto-suggested but unconfirmed subscriptions */}
+                {isSubscriptionSuggested && !isSubscriptionConfirmed && (
+                  <span
+                    className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-amber-400"
+                    title="Suggested subscription"
+                  />
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Convert Action - shown when not in recurring view */
+            <div className="ml-auto">
+              {transaction.convertedToSubscriptionId ? (
+                <ConvertedBadge subscriptionId={transaction.convertedToSubscriptionId} />
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs gap-1 px-2"
+                  onClick={() =>
+                    convertTransaction.mutate({
+                      transactionId: transaction.id,
+                      merchantName: transaction.merchantName,
+                    })
+                  }
+                  disabled={convertTransaction.isPending}
+                >
+                  <ArrowRightCircle className="h-3.5 w-3.5" />
+                  Convert
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </Card>
     </div>

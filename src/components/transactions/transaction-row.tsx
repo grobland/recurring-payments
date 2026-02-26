@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import type { CSSProperties } from "react";
 import { ArrowRightCircle } from "lucide-react";
-import type { TransactionWithSource } from "@/types/transaction";
+import type { TransactionWithSource, PaymentType } from "@/types/transaction";
 import { TagStatusBadge } from "./tag-status-badge";
 import { TagBadge } from "./tag-badge";
 import { TagCombobox } from "./tag-combobox";
@@ -19,6 +19,7 @@ interface TransactionRowProps {
   style: CSSProperties;
   isSelected: boolean;
   onToggle: () => void;
+  paymentType?: PaymentType;
 }
 
 const MAX_VISIBLE_TAGS = 2;
@@ -26,12 +27,18 @@ const MAX_VISIBLE_TAGS = 2;
 /**
  * Table row component for desktop transaction view.
  * Uses absolute positioning for virtualization.
+ *
+ * When paymentType === 'recurring', shows an inline subscription checkbox:
+ * - Confirmed subscription: checked + disabled (already converted)
+ * - Suggested subscription: checked with amber dot indicator (potential_subscription)
+ * - Plain recurring: unchecked, checking triggers convert flow
  */
 export function TransactionRow({
   transaction,
   style,
   isSelected,
   onToggle,
+  paymentType,
 }: TransactionRowProps) {
   const toggleTag = useToggleTransactionTag();
   const convertTransaction = useConvertTransaction();
@@ -60,6 +67,16 @@ export function TransactionRow({
       action,
     });
   };
+
+  // Subscription status logic for inline checkbox
+  const isSubscriptionConfirmed =
+    transaction.convertedToSubscriptionId !== null ||
+    transaction.tagStatus === "converted";
+
+  const isSubscriptionSuggested =
+    transaction.tagStatus === "potential_subscription";
+
+  const showSubscriptionCheckbox = paymentType === "recurring";
 
   return (
     <tr
@@ -133,6 +150,34 @@ export function TransactionRow({
           disabled={toggleTag.isPending}
         />
       </td>
+
+      {/* Inline subscription checkbox — visible only in recurring payment type view */}
+      {showSubscriptionCheckbox && (
+        <td className="w-[60px] px-2 py-3 flex items-center justify-center">
+          <div className="relative">
+            <Checkbox
+              checked={isSubscriptionConfirmed || isSubscriptionSuggested}
+              onCheckedChange={(checked) => {
+                if (checked && !isSubscriptionConfirmed) {
+                  convertTransaction.mutate({
+                    transactionId: transaction.id,
+                    merchantName: transaction.merchantName,
+                  });
+                }
+              }}
+              disabled={isSubscriptionConfirmed || convertTransaction.isPending}
+              aria-label={`Mark ${transaction.merchantName} as subscription`}
+            />
+            {/* Amber dot indicator for auto-suggested but unconfirmed subscriptions */}
+            {isSubscriptionSuggested && !isSubscriptionConfirmed && (
+              <span
+                className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-amber-400"
+                title="Suggested subscription"
+              />
+            )}
+          </div>
+        </td>
+      )}
 
       {/* Convert Action */}
       <td className="w-[110px] px-2 py-3">
