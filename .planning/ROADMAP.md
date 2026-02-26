@@ -142,10 +142,11 @@ Plans:
   2. User can edit any account's details and delete an account from the account list or detail page
   3. The data Vault page shows all accounts organized into three type groups (Bank/Debit, Credit Cards, Loans) with an empty state when no accounts exist
   4. User can link an existing statement source (sourceType string) to an account during creation or editing, and future imports from that source are automatically assigned to that account
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 37-01: TBD
+- [ ] 37-01-PLAN.md — Schema migration (linkedSourceType column) + Zod validation + API routes (GET/POST/PATCH/DELETE) + TanStack Query hooks
+- [ ] 37-02-PLAN.md — UI components (AccountForm modal, AccountCard, AccountList with tabs, AccountDeleteDialog) + replace page stub + batch upload auto-assignment (ACCT-08)
 
 ### Phase 38: Account Detail Pages
 **Goal**: Each financial account has a dedicated page where users can view and edit account details, see coverage of linked statements by month, browse all transactions from linked statements, and review a spending summary
