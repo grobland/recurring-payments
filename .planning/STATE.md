@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Account Vault CRUD — Phase 37 in progress (Plan 01 of 3 complete)
+**Current focus:** v3.0 Account Vault CRUD — Phase 37 in progress (Plan 02 of 3 complete)
 
 ## Current Position
 
 Phase: 37 of 40 (Account CRUD List Page) — IN PROGRESS
-Plan: 1 of 3 complete
-Status: Phase 37 Plan 01 complete — migration 0012, validation schemas, 4 API endpoints, 4 TanStack Query hooks
-Last activity: 2026-02-26 — Phase 37 Plan 01 complete (linkedSourceType column, accounts API, use-accounts hooks)
+Plan: 2 of 3 complete
+Status: Phase 37 Plan 02 complete — account UI components (form, card, list, delete dialog), accounts page, batch upload ACCT-08
+Last activity: 2026-02-26 — Phase 37 Plan 02 complete (AccountForm, AccountCard, AccountList, AccountDeleteDialog, ACCT-08 auto-assign)
 
-Progress: [███░░░░░░░] 13% (v3.0 Phase 37 Plan 01 complete — 1/3 plans)
+Progress: [██████░░░░] 27% (v3.0 Phase 37 Plan 02 complete — 2/3 plans)
 
 ## Archived Milestones
 
@@ -28,13 +28,13 @@ Progress: [███░░░░░░░] 13% (v3.0 Phase 37 Plan 01 complete �
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 104 plans completed, 142 requirements validated across 7 milestones (+ 8 ACCT requirements complete in Phase 35, + NAV-01, NAV-02, NAV-03 in Phase 36)
+**Total:** 105 plans completed, 142 requirements validated across 7 milestones (+ 8 ACCT requirements complete in Phase 35, + NAV-01, NAV-02, NAV-03 in Phase 36, + ACCT-01 through ACCT-08 complete in Phase 37)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 104
-- Total phases: 36 complete, 4 planned (v3.0, Phase 37 next)
+- Total plans completed: 105
+- Total phases: 36 complete, 4 planned (v3.0, Phase 37 in progress)
 - Total milestones: 7 complete, 1 in progress
 
 ## Accumulated Context
@@ -56,14 +56,16 @@ Recent decisions affecting v3.0 work:
 - /sources added to protectedRoutes in proxy.ts — was previously unprotected, added for completeness
 - Verbatim copy strategy for new /payments/* route files — no refactoring at copy time to minimize diff surface
 - 5 additional files updated beyond plan scope (sources, statements, vault breadcrumbs; error.tsx; not-found.tsx) — had /dashboard hrefs
+- AccountFormValues uses string fields for all numeric inputs — z.coerce.number() causes unknown inference in useForm generics; parsing done at submit time
+- EmptyState shared component not used in AccountList — requires href prop; account list needs onClick to open modal; inline JSX used instead
 
 ### Blockers/Concerns
 
 **Phase 37 (Account CRUD):**
+- All ACCT-01 through ACCT-08 requirements complete after Plan 02
 - useDeleteFinancialAccount (not useDeleteAccount) — avoids collision with use-user.ts GDPR hook
 - interestRate: form sends percentage, API divides by 100 before DB insert (decimal(5,4) column)
 - PATCH /api/accounts/[id] strips accountType (type locked after creation) and invalidates five query keys: ["accounts"], ["vault","coverage"], ["vault","timeline"], ["sources"], ["transactions"]
-- Plan 02 UI components should import useDeleteFinancialAccount, not useDeleteAccount
 
 **Production deployment (carried forward):**
 - RESEND_FROM_EMAIL needs verified domain for email delivery
@@ -73,6 +75,6 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Phase 37 Plan 01 complete — backend data layer ready for Plan 02 UI
-Resume file: .planning/phases/37-account-crud-list-page/37-01-SUMMARY.md
-Resume with: `/gsd:execute-phase 37` (Plan 02)
+Stopped at: Phase 37 Plan 02 complete — account UI components built, ACCT-08 wired
+Resume file: .planning/phases/37-account-crud-list-page/37-02-SUMMARY.md
+Resume with: `/gsd:execute-phase 37` (Plan 03)
