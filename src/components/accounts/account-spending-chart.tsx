@@ -55,18 +55,18 @@ export function AccountSpendingChart({ data }: AccountSpendingChartProps) {
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="hsl(var(--border))"
+              stroke="var(--border)"
               vertical={false}
             />
             <XAxis
               dataKey="month"
-              stroke="hsl(var(--muted-foreground))"
+              stroke="var(--muted-foreground)"
               fontSize={12}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
-              stroke="hsl(var(--muted-foreground))"
+              stroke="var(--muted-foreground)"
               fontSize={12}
               tickLine={false}
               axisLine={false}
@@ -75,15 +75,15 @@ export function AccountSpendingChart({ data }: AccountSpendingChartProps) {
             <Tooltip
               formatter={(value) => [formatCurrency(Number(value)), "Spent"]}
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
+                backgroundColor: "var(--background)",
+                border: "1px solid var(--border)",
                 borderRadius: "6px",
               }}
-              labelStyle={{ color: "hsl(var(--foreground))" }}
+              labelStyle={{ color: "var(--foreground)" }}
             />
             <Bar
               dataKey="amount"
-              fill="hsl(var(--chart-1))"
+              fill="var(--chart-1)"
               radius={[3, 3, 0, 0]}
             />
           </BarChart>
