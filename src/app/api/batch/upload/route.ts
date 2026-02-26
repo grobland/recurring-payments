@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { statements } from "@/lib/db/schema";
+import { statements, financialAccounts } from "@/lib/db/schema";
 import { isUserActive } from "@/lib/auth/helpers";
 import { eq, and } from "drizzle-orm";
 import { uploadStatementPdf } from "@/lib/storage/pdf-storage";
@@ -98,6 +98,15 @@ export async function POST(request: Request) {
       });
     }
 
+    // Auto-assign account for linked sources (ACCT-08)
+    const linkedAccount = await db.query.financialAccounts.findFirst({
+      where: and(
+        eq(financialAccounts.userId, session.user.id),
+        eq(financialAccounts.linkedSourceType, sourceType.trim())
+      ),
+      columns: { id: true },
+    });
+
     // Create statement record (pending processing)
     const [newStatement] = await db
       .insert(statements)
@@ -108,6 +117,7 @@ export async function POST(request: Request) {
         originalFilename: file.name,
         fileSizeBytes: file.size,
         processingStatus: "pending",
+        accountId: linkedAccount?.id ?? null,
         ...(statementDate ? { statementDate } : {}),
       })
       .returning({ id: statements.id });
