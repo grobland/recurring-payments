@@ -22,6 +22,7 @@ export async function GET(request: Request) {
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const search = searchParams.get("search");
+    const accountId = searchParams.get("accountId");
     const cursorDate = searchParams.get("cursorDate");
     const cursorId = searchParams.get("cursorId");
 
@@ -86,6 +87,13 @@ export async function GET(request: Request) {
           ilike(transactions.categoryGuess, searchTerm)
         )!
       );
+    }
+
+    // Filter by accountId via statements.accountId FK join
+    // The LEFT JOIN to statements is already present; adding this WHERE condition
+    // effectively filters to only transactions from statements linked to the account
+    if (accountId) {
+      conditions.push(eq(statements.accountId, accountId));
     }
 
     // Apply keyset cursor for pagination

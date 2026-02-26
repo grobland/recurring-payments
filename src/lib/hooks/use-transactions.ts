@@ -62,6 +62,9 @@ export function useTransactions(filters: TransactionFilters = {}) {
       if (filters.search) {
         params.set("search", filters.search);
       }
+      if (filters.accountId) {
+        params.set("accountId", filters.accountId);
+      }
 
       // Add cursor if not first page
       if (pageParam) {

@@ -45,6 +45,15 @@ async function fetchAccounts(): Promise<AccountsResponse> {
   return response.json();
 }
 
+async function fetchAccount(id: string): Promise<AccountResponse> {
+  const response = await fetch(`/api/accounts/${id}`);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to fetch account");
+  }
+  return response.json();
+}
+
 async function createAccount(
   data: CreateAccountInput
 ): Promise<AccountResponse> {
@@ -91,6 +100,19 @@ async function deleteAccount(id: string): Promise<DeleteResponse> {
 }
 
 // Hooks
+
+/**
+ * Fetch a single financial account by ID.
+ * Populates accountKeys.detail(id) cache — which useUpdateAccount already writes to via setQueryData.
+ */
+export function useAccount(id: string) {
+  return useQuery({
+    queryKey: accountKeys.detail(id),
+    queryFn: () => fetchAccount(id),
+    staleTime: 5 * 60 * 1000, // Match useAccounts staleTime
+    enabled: !!id,
+  });
+}
 
 /**
  * Fetch all financial accounts for the current user

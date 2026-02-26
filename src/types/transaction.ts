@@ -14,6 +14,8 @@ export interface TransactionFilters {
   dateTo?: string;
   /** Search in merchant name or category guess */
   search?: string;
+  /** Filter to transactions from statements linked to this account */
+  accountId?: string;
 }
 
 /**
