@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Navigation & Account Vault
 status: unknown
-last_updated: "2026-02-26T11:35:37.788Z"
+last_updated: "2026-02-26T12:30:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 3
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Account Detail Pages — Phase 38 context gathered, ready for planning
+**Current focus:** v3.0 Account Detail Pages — Phase 38 Plan 01 complete, ready for Plan 02 (UI components)
 
 ## Current Position
 
-Phase: 38 of 40 (Account Detail Pages) — CONTEXT GATHERED
-Plan: 0 of TBD
-Status: Phase 38 context captured, ready for planning
-Last activity: 2026-02-26 — Phase 38 context gathered (4 areas: layout, coverage, transactions, spending)
+Phase: 38 of 40 (Account Detail Pages) — IN PROGRESS
+Plan: 1 of 2 complete
+Status: Plan 01 complete — data layer (API endpoints + hooks) ready for UI consumption
+Last activity: 2026-02-26 — Phase 38 Plan 01 complete (coverage/spending endpoints + 3 hooks + TransactionFilters extension)
 
-Progress: [██████░░░░] 27% (v3.0 Phase 37 Plan 02 complete — 2/3 plans)
+Progress: [███████░░░] 33% (v3.0 Phase 38 Plan 01 complete — 1/2 plans)
 
 ## Archived Milestones
 
@@ -46,13 +46,18 @@ Progress: [██████░░░░] 27% (v3.0 Phase 37 Plan 02 complete �
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 105
-- Total phases: 36 complete, 4 planned (v3.0, Phase 37 in progress)
+- Total plans completed: 106
+- Total phases: 37 complete, 3 planned (v3.0, Phase 38 in progress)
 - Total milestones: 7 complete, 1 in progress
 
 ## Accumulated Context
 
 ### Decisions
+
+Recent decisions from Phase 38 Plan 01:
+- statements.accountId FK is the authoritative account-to-statement link — use FK not linkedSourceType string for coverage filtering
+- Coverage endpoint returns at most 1 source entry (not all user sources) — account detail is scoped to single account
+- accountId condition added to shared conditions[] array in transactions route (not duplicated in each branch)
 
 Recent decisions affecting v3.0 work:
 - financial_accounts (not accounts) — NextAuth owns the accounts table at schema.ts line 120; naming collision is a hard constraint
@@ -88,6 +93,6 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Phase 38 context gathered — ready for planning
-Resume file: .planning/phases/38-account-detail-pages/38-CONTEXT.md
-Resume with: `/gsd:plan-phase 38`
+Stopped at: Phase 38 Plan 01 complete — account detail data layer ready for UI
+Resume file: .planning/phases/38-account-detail-pages/38-01-SUMMARY.md
+Resume with: Execute Phase 38 Plan 02 (UI components)

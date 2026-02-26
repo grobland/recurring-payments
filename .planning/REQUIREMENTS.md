@@ -27,10 +27,10 @@ Requirements for v3.0 Navigation & Account Vault milestone.
 
 ### Account Detail Pages
 
-- [ ] **DETAIL-01**: User can view account details and edit from the account's own page
-- [ ] **DETAIL-02**: User can view coverage grid scoped to the account's linked statements
-- [ ] **DETAIL-03**: User can browse transactions from the account's linked statements
-- [ ] **DETAIL-04**: User can view spending summary (total spent, top merchants, monthly breakdown) for the account
+- [x] **DETAIL-01**: User can view account details and edit from the account's own page
+- [x] **DETAIL-02**: User can view coverage grid scoped to the account's linked statements
+- [x] **DETAIL-03**: User can browse transactions from the account's linked statements
+- [x] **DETAIL-04**: User can view spending summary (total spent, top merchants, monthly breakdown) for the account
 
 ### Payment Type Selector
 
@@ -87,10 +87,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACCT-06 | Phase 37 | Complete |
 | ACCT-07 | Phase 37 | Complete |
 | ACCT-08 | Phase 37 | Complete |
-| DETAIL-01 | Phase 38 | Pending |
-| DETAIL-02 | Phase 38 | Pending |
-| DETAIL-03 | Phase 38 | Pending |
-| DETAIL-04 | Phase 38 | Pending |
+| DETAIL-01 | Phase 38 | Complete |
+| DETAIL-02 | Phase 38 | Complete |
+| DETAIL-03 | Phase 38 | Complete |
+| DETAIL-04 | Phase 38 | Complete |
 | FILTER-01 | Phase 39 | Pending |
 | FILTER-02 | Phase 39 | Pending |
 | FILTER-03 | Phase 39 | Pending |
