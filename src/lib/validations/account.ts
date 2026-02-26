@@ -5,6 +5,11 @@ import { z } from "zod";
 // The API handler divides by 100 before storing so the DB column (decimal(5,4)) holds 0.0499.
 // This schema validates the percentage range 0–100.
 
+// Preprocessor that treats empty strings as undefined so z.coerce.number()
+// doesn't convert "" → 0 (which would fail .positive() for hidden fields).
+const emptyToUndefined = (v: unknown) =>
+  v === "" || v === undefined || v === null ? undefined : v;
+
 // Base object schema without refinements — used for .partial() (Zod
 // cannot call .partial() on schemas that have .superRefine()).
 const accountBaseSchema = z.object({
@@ -22,23 +27,32 @@ const accountBaseSchema = z.object({
     .optional()
     .nullable()
     .transform((v) => v || null),
-  creditLimit: z.coerce
-    .number()
-    .positive("Credit limit must be positive")
-    .optional()
-    .nullable(),
-  interestRate: z.coerce
-    .number()
-    .min(0, "Interest rate cannot be negative")
-    .max(100, "Interest rate cannot exceed 100%")
-    .optional()
-    .nullable(),
-  loanTermMonths: z.coerce
-    .number()
-    .int("Loan term must be a whole number")
-    .positive("Loan term must be positive")
-    .optional()
-    .nullable(),
+  creditLimit: z.preprocess(
+    emptyToUndefined,
+    z.coerce
+      .number()
+      .positive("Credit limit must be positive")
+      .optional()
+      .nullable(),
+  ),
+  interestRate: z.preprocess(
+    emptyToUndefined,
+    z.coerce
+      .number()
+      .min(0, "Interest rate cannot be negative")
+      .max(100, "Interest rate cannot exceed 100%")
+      .optional()
+      .nullable(),
+  ),
+  loanTermMonths: z.preprocess(
+    emptyToUndefined,
+    z.coerce
+      .number()
+      .int("Loan term must be a whole number")
+      .positive("Loan term must be positive")
+      .optional()
+      .nullable(),
+  ),
 });
 
 // Cross-field refinement for type-specific required fields
