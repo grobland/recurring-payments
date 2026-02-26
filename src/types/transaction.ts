@@ -1,5 +1,9 @@
 import type { Transaction } from "@/lib/db/schema";
 
+/** Payment type values for the segmented filter control */
+export const PAYMENT_TYPES = ['all', 'recurring', 'subscriptions', 'one-time'] as const;
+export type PaymentType = typeof PAYMENT_TYPES[number];
+
 /**
  * Filter parameters for transaction browser
  */
@@ -16,6 +20,8 @@ export interface TransactionFilters {
   search?: string;
   /** Filter to transactions from statements linked to this account */
   accountId?: string;
+  /** Payment type filter: all | recurring | subscriptions | one-time */
+  paymentType?: PaymentType;
 }
 
 /**

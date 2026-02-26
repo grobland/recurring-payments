@@ -65,6 +65,9 @@ export function useTransactions(filters: TransactionFilters = {}) {
       if (filters.accountId) {
         params.set("accountId", filters.accountId);
       }
+      if (filters.paymentType && filters.paymentType !== "all") {
+        params.set("paymentType", filters.paymentType);
+      }
 
       // Add cursor if not first page
       if (pageParam) {
