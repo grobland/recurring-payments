@@ -83,7 +83,7 @@ export function AccountSpendingChart({ data }: AccountSpendingChartProps) {
             />
             <Bar
               dataKey="amount"
-              fill="hsl(var(--primary))"
+              fill="hsl(var(--chart-1))"
               radius={[3, 3, 0, 0]}
             />
           </BarChart>
