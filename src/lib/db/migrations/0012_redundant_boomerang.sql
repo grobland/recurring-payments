@@ -1,0 +1,1 @@
+ALTER TABLE "financial_accounts" ADD COLUMN "linked_source_type" varchar(100);

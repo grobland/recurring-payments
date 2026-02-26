@@ -85,6 +85,13 @@
       "when": 1771800599825,
       "tag": "0011_famous_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772104606850,
+      "tag": "0012_redundant_boomerang",
+      "breakpoints": true
     }
   ]
 }

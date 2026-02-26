@@ -513,6 +513,7 @@ export const financialAccounts = pgTable(
     currency: varchar("currency", { length: 3 }).default("USD").notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     notes: text("notes"),
+    linkedSourceType: varchar("linked_source_type", { length: 100 }), // optional source linking (e.g. "Chase Sapphire")
 
     // credit_card only (null for bank_debit and loan)
     creditLimit: decimal("credit_limit", { precision: 12, scale: 2 }),
