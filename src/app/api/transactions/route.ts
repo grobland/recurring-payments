@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { transactions, statements, transactionTags, tags, subscriptions, categories } from "@/lib/db/schema";
-import { and, eq, or, lt, gte, lte, ilike, desc, inArray, sql } from "drizzle-orm";
+import { and, eq, or, lt, gte, lte, ilike, desc, inArray, sql, isNotNull, isNull } from "drizzle-orm";
 import type { TransactionCursor, TransactionPage, TransactionTag } from "@/types/transaction";
 
 const PAGE_SIZE = 50;
@@ -23,8 +23,15 @@ export async function GET(request: Request) {
     const dateTo = searchParams.get("dateTo");
     const search = searchParams.get("search");
     const accountId = searchParams.get("accountId");
+    const paymentType = searchParams.get("paymentType");
     const cursorDate = searchParams.get("cursorDate");
     const cursorId = searchParams.get("cursorId");
+
+    // Validate paymentType — invalid values are treated as "all" (no filter)
+    const validPaymentTypes = ['recurring', 'subscriptions', 'one-time'];
+    const effectivePaymentType = paymentType && validPaymentTypes.includes(paymentType)
+      ? paymentType
+      : null;
 
     // Build conditions starting with userId filter
     // Using SQL template for complex conditions
@@ -89,11 +96,49 @@ export async function GET(request: Request) {
       );
     }
 
+    // Filter by sourceType via joined statements table
+    if (sourceType) {
+      conditions.push(eq(statements.sourceType, sourceType));
+    }
+
     // Filter by accountId via statements.accountId FK join
     // The LEFT JOIN to statements is already present; adding this WHERE condition
     // effectively filters to only transactions from statements linked to the account
     if (accountId) {
       conditions.push(eq(statements.accountId, accountId));
+    }
+
+    // Filter by paymentType — server-side required for cursor-based pagination correctness
+    if (effectivePaymentType === 'subscriptions') {
+      // Subscriptions: linked to a subscription record OR tagged as converted
+      conditions.push(
+        or(
+          isNotNull(transactions.convertedToSubscriptionId),
+          eq(transactions.tagStatus, 'converted')
+        )!
+      );
+    } else if (effectivePaymentType === 'recurring') {
+      // Recurring: merchant in recurringPatterns for this user OR subscription-related tag/link
+      conditions.push(
+        or(
+          sql`LOWER(${transactions.merchantName}) IN (SELECT LOWER(merchant_name) FROM recurring_patterns WHERE user_id = ${session.user.id})`,
+          eq(transactions.tagStatus, 'potential_subscription'),
+          eq(transactions.tagStatus, 'converted'),
+          isNotNull(transactions.convertedToSubscriptionId)
+        )!
+      );
+    } else if (effectivePaymentType === 'one-time') {
+      // One-time: merchant NOT in recurringPatterns AND no subscription-related tag/link
+      conditions.push(
+        sql`LOWER(${transactions.merchantName}) NOT IN (SELECT LOWER(merchant_name) FROM recurring_patterns WHERE user_id = ${session.user.id})`
+      );
+      conditions.push(
+        or(
+          eq(transactions.tagStatus, 'unreviewed'),
+          eq(transactions.tagStatus, 'not_subscription')
+        )!
+      );
+      conditions.push(isNull(transactions.convertedToSubscriptionId));
     }
 
     // Apply keyset cursor for pagination
@@ -118,10 +163,6 @@ export async function GET(request: Request) {
       }
     }
 
-    // Build query with join to statements for sourceType
-    // We need to handle sourceType filter in the WHERE clause if provided
-    let results;
-
     // Select fields including category from subscription (for converted transactions)
     const selectFields = {
       id: transactions.id,
@@ -144,31 +185,16 @@ export async function GET(request: Request) {
       sourceType: statements.sourceType,
     };
 
-    if (sourceType) {
-      // Filter by sourceType requires join condition
-      results = await db
-        .select(selectFields)
-        .from(transactions)
-        .leftJoin(statements, eq(transactions.statementId, statements.id))
-        .leftJoin(subscriptions, eq(transactions.convertedToSubscriptionId, subscriptions.id))
-        .leftJoin(categories, eq(subscriptions.categoryId, categories.id))
-        .where(
-          and(...conditions, eq(statements.sourceType, sourceType))
-        )
-        .orderBy(desc(transactions.transactionDate), desc(transactions.id))
-        .limit(PAGE_SIZE + 1);
-    } else {
-      // No sourceType filter, still join to get sourceType in results
-      results = await db
-        .select(selectFields)
-        .from(transactions)
-        .leftJoin(statements, eq(transactions.statementId, statements.id))
-        .leftJoin(subscriptions, eq(transactions.convertedToSubscriptionId, subscriptions.id))
-        .leftJoin(categories, eq(subscriptions.categoryId, categories.id))
-        .where(and(...conditions))
-        .orderBy(desc(transactions.transactionDate), desc(transactions.id))
-        .limit(PAGE_SIZE + 1);
-    }
+    // Single unified query — all conditions (including sourceType and paymentType) are in the conditions array
+    const results = await db
+      .select(selectFields)
+      .from(transactions)
+      .leftJoin(statements, eq(transactions.statementId, statements.id))
+      .leftJoin(subscriptions, eq(transactions.convertedToSubscriptionId, subscriptions.id))
+      .leftJoin(categories, eq(subscriptions.categoryId, categories.id))
+      .where(and(...conditions))
+      .orderBy(desc(transactions.transactionDate), desc(transactions.id))
+      .limit(PAGE_SIZE + 1);
 
     // Check if there are more results
     const hasMore = results.length > PAGE_SIZE;
