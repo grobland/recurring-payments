@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Navigation & Account Vault — Phase 36 in progress (Plan 03 of 3 complete)
+**Current focus:** v3.0 Account Vault CRUD — Phase 37 in progress (Plan 01 of 3 complete)
 
 ## Current Position
 
-Phase: 36 of 40 (Navigation Restructure) — IN PROGRESS
-Plan: 3 of 3 complete
-Status: Phase 36 complete — new route files created, all internal links updated to new URL paths
-Last activity: 2026-02-25 — Phase 36 Plan 03 complete (11 new route files under /payments/* and /vault/load/, plus 15 shared files updated)
+Phase: 37 of 40 (Account CRUD List Page) — IN PROGRESS
+Plan: 1 of 3 complete
+Status: Phase 37 Plan 01 complete — migration 0012, validation schemas, 4 API endpoints, 4 TanStack Query hooks
+Last activity: 2026-02-26 — Phase 37 Plan 01 complete (linkedSourceType column, accounts API, use-accounts hooks)
 
-Progress: [██░░░░░░░░] 10% (v3.0 Phase 36 complete — 3/3 plans)
+Progress: [███░░░░░░░] 13% (v3.0 Phase 37 Plan 01 complete — 1/3 plans)
 
 ## Archived Milestones
 
@@ -60,8 +60,10 @@ Recent decisions affecting v3.0 work:
 ### Blockers/Concerns
 
 **Phase 37 (Account CRUD):**
-- Run grep -r sourceType src/ and audit all 37 consumers before writing migration logic
-- PATCH /api/accounts/[id] must invalidate five query keys: ["accounts"], ["vault","coverage"], ["vault","timeline"], ["sources"], ["transactions"]
+- useDeleteFinancialAccount (not useDeleteAccount) — avoids collision with use-user.ts GDPR hook
+- interestRate: form sends percentage, API divides by 100 before DB insert (decimal(5,4) column)
+- PATCH /api/accounts/[id] strips accountType (type locked after creation) and invalidates five query keys: ["accounts"], ["vault","coverage"], ["vault","timeline"], ["sources"], ["transactions"]
+- Plan 02 UI components should import useDeleteFinancialAccount, not useDeleteAccount
 
 **Production deployment (carried forward):**
 - RESEND_FROM_EMAIL needs verified domain for email delivery
@@ -70,7 +72,7 @@ Recent decisions affecting v3.0 work:
 
 ## Session Continuity
 
-Last session: 2026-02-25
-Stopped at: Phase 37 context gathered — CONTEXT.md written with form, list, linking, and delete decisions
-Resume file: .planning/phases/37-account-crud-list-page/37-CONTEXT.md
-Resume with: `/gsd:plan-phase 37`
+Last session: 2026-02-26
+Stopped at: Phase 37 Plan 01 complete — backend data layer ready for Plan 02 UI
+Resume file: .planning/phases/37-account-crud-list-page/37-01-SUMMARY.md
+Resume with: `/gsd:execute-phase 37` (Plan 02)

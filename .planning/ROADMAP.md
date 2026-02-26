@@ -201,7 +201,7 @@ Plans:
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
 | 35. Database Foundation | v3.0 | Complete    | 2026-02-22 | 2026-02-22 |
 | 36. Navigation Restructure | 3/3 | Complete    | 2026-02-25 | - |
-| 37. Account CRUD + List Page | v3.0 | 0/TBD | Not started | - |
+| 37. Account CRUD + List Page | 1/2 | In Progress|  | - |
 | 38. Account Detail Pages | v3.0 | 0/TBD | Not started | - |
 | 39. Payment Type Selector | v3.0 | 0/TBD | Not started | - |
 | 40. Static Pages | v3.0 | 0/TBD | Not started | - |
