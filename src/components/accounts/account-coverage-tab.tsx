@@ -33,10 +33,13 @@ export function AccountCoverageTab({
     }
     // Cell with data: navigate to Transactions tab with month date range
     // Parse month string "yyyy-MM" to dateFrom (first day) and dateTo (last day)
+    // Build strings directly to avoid local-to-UTC timezone shift
     const year = parseInt(info.month.substring(0, 4));
     const monthIdx = parseInt(info.month.substring(5, 7)) - 1;
-    const dateFrom = new Date(year, monthIdx, 1).toISOString().split("T")[0];
-    const dateTo = new Date(year, monthIdx + 1, 0).toISOString().split("T")[0];
+    const mm = String(monthIdx + 1).padStart(2, "0");
+    const lastDay = new Date(year, monthIdx + 1, 0).getDate();
+    const dateFrom = `${year}-${mm}-01`;
+    const dateTo = `${year}-${mm}-${String(lastDay).padStart(2, "0")}`;
     onNavigateToTransactions(dateFrom, dateTo);
   }
 
