@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Account Vault CRUD — Phase 37 in progress (Plan 02 of 3 complete)
+**Current focus:** v3.0 Account Detail Pages — Phase 38 context gathered, ready for planning
 
 ## Current Position
 
-Phase: 37 of 40 (Account CRUD List Page) — IN PROGRESS
-Plan: 2 of 3 complete
-Status: Phase 37 Plan 02 complete — account UI components (form, card, list, delete dialog), accounts page, batch upload ACCT-08
-Last activity: 2026-02-26 — Phase 37 Plan 02 complete (AccountForm, AccountCard, AccountList, AccountDeleteDialog, ACCT-08 auto-assign)
+Phase: 38 of 40 (Account Detail Pages) — CONTEXT GATHERED
+Plan: 0 of TBD
+Status: Phase 38 context captured, ready for planning
+Last activity: 2026-02-26 — Phase 38 context gathered (4 areas: layout, coverage, transactions, spending)
 
 Progress: [██████░░░░] 27% (v3.0 Phase 37 Plan 02 complete — 2/3 plans)
 
@@ -88,6 +88,6 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Phase 37 Plan 02 complete — account UI components built, ACCT-08 wired
-Resume file: .planning/phases/37-account-crud-list-page/37-02-SUMMARY.md
-Resume with: `/gsd:execute-phase 37` (Plan 03)
+Stopped at: Phase 38 context gathered — ready for planning
+Resume file: .planning/phases/38-account-detail-pages/38-CONTEXT.md
+Resume with: `/gsd:plan-phase 38`
