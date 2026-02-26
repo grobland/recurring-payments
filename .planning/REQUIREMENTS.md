@@ -34,9 +34,9 @@ Requirements for v3.0 Navigation & Account Vault milestone.
 
 ### Payment Type Selector
 
-- [ ] **FILTER-01**: User can toggle transaction types (Recurring/Subscriptions, One-time) on the Payment Type Selector page
-- [ ] **FILTER-02**: Selected type filters persist in the URL (nuqs shallow updates, no scroll reset)
-- [ ] **FILTER-03**: Type filters combine with existing tag status, date range, and search filters
+- [x] **FILTER-01**: User can toggle transaction types (Recurring/Subscriptions, One-time) on the Payment Type Selector page
+- [x] **FILTER-02**: Selected type filters persist in the URL (nuqs shallow updates, no scroll reset)
+- [x] **FILTER-03**: Type filters combine with existing tag status, date range, and search filters
 
 ### Static Pages
 
@@ -91,9 +91,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DETAIL-02 | Phase 38 | Complete |
 | DETAIL-03 | Phase 38 | Complete |
 | DETAIL-04 | Phase 38 | Complete |
-| FILTER-01 | Phase 39 | Pending |
-| FILTER-02 | Phase 39 | Pending |
-| FILTER-03 | Phase 39 | Pending |
+| FILTER-01 | Phase 39 | Complete |
+| FILTER-02 | Phase 39 | Complete |
+| FILTER-03 | Phase 39 | Complete |
 | SCHEMA-01 | Phase 40 | Pending |
 | HELP-01 | Phase 40 | Pending |
 

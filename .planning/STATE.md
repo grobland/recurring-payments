@@ -31,16 +31,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Account Detail Pages — Phase 38 complete (both plans done), ready for Phase 39
+**Current focus:** v3.0 Payment Type Selector — Phase 39 Plan 01 complete (infrastructure + API), ready for Plan 02
 
 ## Current Position
 
-Phase: 38 of 40 (Account Detail Pages) — COMPLETE
-Plan: 2 of 2 complete
-Status: Phase 38 complete — full account detail page UI with four tabs, cross-tab navigation, spending chart
-Last activity: 2026-02-26 — Phase 38 Plan 02 complete (8 UI components, AccountCard navigation)
+Phase: 39 of 40 (Payment Type Selector) — IN PROGRESS
+Plan: 1 of 2 complete
+Status: Phase 39 Plan 01 complete — nuqs installed, NuqsAdapter wired, PaymentType types + server-side filter implemented
+Last activity: 2026-02-26 — Phase 39 Plan 01 complete (nuqs, toggle-group, API paymentType filter)
 
-Progress: [████████░░] 67% (v3.0 Phase 38 complete — 2/2 plans)
+Progress: [█████████░] 75% (v3.0 Phase 39 Plan 01 complete — 1/2 plans)
 
 ## Archived Milestones
 
@@ -59,13 +59,19 @@ Progress: [████████░░] 67% (v3.0 Phase 38 complete — 2/2 p
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 107
-- Total phases: 38 complete, 2 planned (v3.0, Phase 39-40 remaining)
+- Total plans completed: 108
+- Total phases: 38 complete, 2 planned (v3.0, Phase 39-40 remaining; Phase 39 in progress)
 - Total milestones: 7 complete, 1 in progress
 
 ## Accumulated Context
 
 ### Decisions
+
+Recent decisions from Phase 39 Plan 01:
+- Raw SQL subquery for recurringPatterns merchant matching (LOWER() case-insensitive) — Drizzle inArray does not support cross-table subqueries cleanly
+- Unified single query builder in transactions route — sourceType moved into shared conditions[] array, eliminating two-branch if/else structure
+- effectivePaymentType validation: invalid values silently treated as 'all' (consistent with tagStatus handling)
+- NuqsAdapter positioned inside QueryClientProvider, wrapping ThemeProvider (enables useQueryState in all child components)
 
 Recent decisions from Phase 38 Plan 02:
 - AccountTransactionsTab is self-contained (not modifying TransactionBrowser) — avoids breaking global transactions page while supporting initialFilters prop
@@ -112,6 +118,6 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Phase 38 Plan 02 complete — account detail pages fully implemented
-Resume file: .planning/phases/38-account-detail-pages/38-02-SUMMARY.md
-Resume with: Execute Phase 39 (next phase per roadmap)
+Stopped at: Phase 39 Plan 01 complete — nuqs infrastructure + paymentType API filter
+Resume file: .planning/phases/39-payment-type-selector/39-01-SUMMARY.md
+Resume with: Execute Phase 39 Plan 02 (UI toggle-group segmented control)
