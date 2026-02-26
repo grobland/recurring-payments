@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { AlertCircle, RefreshCw, FileX2 } from "lucide-react";
+import { useQueryState, parseAsStringLiteral } from "nuqs";
 import { useTransactions } from "@/lib/hooks/use-transactions";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -11,19 +12,38 @@ import { TransactionFilters } from "./transaction-filters";
 import { TransactionTable } from "./transaction-table";
 import { TransactionCardList } from "./transaction-card-list";
 import { BulkActionBar } from "./bulk-action-bar";
+import { PaymentTypeSelector } from "./payment-type-selector";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import type { TransactionFilters as TransactionFiltersType } from "@/types/transaction";
+import type { PaymentType } from "@/types/transaction";
+import { PAYMENT_TYPES } from "@/types/transaction";
+
+/** Contextual empty state messages per payment type */
+const EMPTY_MESSAGES: Record<PaymentType, string> = {
+  all: "No transactions found",
+  recurring: "No recurring payments found",
+  subscriptions: "No subscriptions found",
+  "one-time": "No one-time payments found",
+};
 
 /**
  * Main transaction browser component.
  * Orchestrates filters, data fetching, and responsive table/card views.
+ * Payment type is persisted in the URL via nuqs (shallow update, no scroll reset).
  */
 export function TransactionBrowser() {
   const [filters, setFilters] = useState<TransactionFiltersType>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const selectedIdsRef = useRef(selectedIds);
   const isMobile = useIsMobile();
+
+  // Payment type filter — URL-persisted via nuqs (FILTER-02)
+  // Default is "all"; selecting "all" removes the param from the URL for a clean URL state
+  const [paymentType, setPaymentType] = useQueryState(
+    "paymentType",
+    parseAsStringLiteral(PAYMENT_TYPES).withDefault("all")
+  );
 
   // Sync ref with state for handleBulkTag callback
   useEffect(() => {
@@ -33,13 +53,14 @@ export function TransactionBrowser() {
   // Debounce search input (300ms)
   const debouncedSearch = useDebouncedValue(filters.search, 300);
 
-  // Create debounced filters for the query
+  // Create debounced filters for the query — paymentType combined with existing filters (FILTER-03)
   const debouncedFilters = useMemo(
     () => ({
       ...filters,
       search: debouncedSearch,
+      paymentType: paymentType === "all" ? undefined : paymentType,
     }),
-    [filters, debouncedSearch]
+    [filters, debouncedSearch, paymentType]
   );
 
   const {
@@ -143,22 +164,32 @@ export function TransactionBrowser() {
   }, [allTransactions]);
 
   // Check if we have active filters (for empty state messaging)
+  // Includes paymentType !== 'all' as an active filter
   const hasActiveFilters =
     filters.search ||
     filters.sourceType ||
     filters.tagStatus ||
     filters.dateFrom ||
-    filters.dateTo;
+    filters.dateTo ||
+    paymentType !== "all";
+
+  // Shared filter controls — PaymentTypeSelector above TransactionFilters (FILTER-01)
+  const filterControls = (sourceTypes: string[]) => (
+    <div className="flex flex-col gap-2 mb-2">
+      <PaymentTypeSelector value={paymentType} onChange={setPaymentType} />
+      <TransactionFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        sourceTypes={sourceTypes}
+      />
+    </div>
+  );
 
   // Loading state (initial load)
   if (isLoading) {
     return (
       <div className="flex flex-col h-full">
-        <TransactionFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          sourceTypes={[]}
-        />
+        {filterControls([])}
         <div className="flex-1 space-y-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
@@ -172,11 +203,7 @@ export function TransactionBrowser() {
   if (isError) {
     return (
       <div className="flex flex-col h-full">
-        <TransactionFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          sourceTypes={uniqueSourceTypes}
-        />
+        {filterControls(uniqueSourceTypes)}
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
           <AlertCircle className="h-12 w-12 text-destructive" />
           <div>
@@ -198,17 +225,13 @@ export function TransactionBrowser() {
   if (allTransactions.length === 0) {
     return (
       <div className="flex flex-col h-full">
-        <TransactionFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          sourceTypes={uniqueSourceTypes}
-        />
+        {filterControls(uniqueSourceTypes)}
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
           <FileX2 className="h-12 w-12 text-muted-foreground" />
           <div>
             <h3 className="text-lg font-semibold">
               {hasActiveFilters
-                ? "No transactions match your filters"
+                ? EMPTY_MESSAGES[paymentType]
                 : "No transactions found"}
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
@@ -219,7 +242,10 @@ export function TransactionBrowser() {
           </div>
           {hasActiveFilters && (
             <Button
-              onClick={() => setFilters({})}
+              onClick={() => {
+                setFilters({});
+                setPaymentType("all");
+              }}
               variant="outline"
               className="gap-2"
             >
@@ -234,11 +260,7 @@ export function TransactionBrowser() {
   // Main content
   return (
     <div className="flex flex-col h-full">
-      <TransactionFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        sourceTypes={uniqueSourceTypes}
-      />
+      {filterControls(uniqueSourceTypes)}
 
       {isMobile ? (
         <TransactionCardList
@@ -248,6 +270,7 @@ export function TransactionBrowser() {
           isLoading={isFetchingNextPage}
           selectedIds={selectedIds}
           onToggleOne={toggleOne}
+          paymentType={paymentType}
         />
       ) : (
         <TransactionTable
@@ -260,6 +283,7 @@ export function TransactionBrowser() {
           onToggleOne={toggleOne}
           isAllSelected={isAllVisibleSelected}
           isSomeSelected={isSomeSelected}
+          paymentType={paymentType}
         />
       )}
 

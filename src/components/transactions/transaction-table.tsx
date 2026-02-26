@@ -3,7 +3,7 @@
 import { useRef, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Minus } from "lucide-react";
-import type { TransactionWithSource } from "@/types/transaction";
+import type { TransactionWithSource, PaymentType } from "@/types/transaction";
 import { TransactionRow } from "./transaction-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +18,7 @@ interface TransactionTableProps {
   onToggleOne: (id: string) => void;
   isAllSelected: boolean;
   isSomeSelected: boolean;
+  paymentType?: PaymentType;
 }
 
 const ROW_HEIGHT = 48;
@@ -37,6 +38,7 @@ export function TransactionTable({
   onToggleOne,
   isAllSelected,
   isSomeSelected,
+  paymentType,
 }: TransactionTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -90,6 +92,9 @@ export function TransactionTable({
         <div className="w-[120px] px-4 py-3">Category</div>
         <div className="w-[100px] px-4 py-3">Status</div>
         <div className="w-[50px] px-2 py-3"></div>
+        {paymentType === "recurring" && (
+          <div className="w-[60px] px-2 py-3 text-center">Sub?</div>
+        )}
         <div className="w-[110px] px-2 py-3"></div>
       </div>
 
@@ -120,6 +125,7 @@ export function TransactionTable({
                   }}
                   isSelected={selectedIds.has(transaction.id)}
                   onToggle={() => onToggleOne(transaction.id)}
+                  paymentType={paymentType}
                 />
               );
             })}

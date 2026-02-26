@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { TransactionWithSource } from "@/types/transaction";
+import type { TransactionWithSource, PaymentType } from "@/types/transaction";
 import { TransactionCard } from "./transaction-card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -13,6 +13,7 @@ interface TransactionCardListProps {
   isLoading: boolean;
   selectedIds: Set<string>;
   onToggleOne: (id: string) => void;
+  paymentType?: PaymentType;
 }
 
 const CARD_HEIGHT = 120;
@@ -29,6 +30,7 @@ export function TransactionCardList({
   isLoading,
   selectedIds,
   onToggleOne,
+  paymentType,
 }: TransactionCardListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -86,6 +88,7 @@ export function TransactionCardList({
               }}
               isSelected={selectedIds.has(transaction.id)}
               onToggle={() => onToggleOne(transaction.id)}
+              paymentType={paymentType}
             />
           );
         })}
