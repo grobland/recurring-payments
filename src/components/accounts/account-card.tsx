@@ -1,6 +1,7 @@
 "use client";
 
 import { Building2, CreditCard, TrendingDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ const ACCOUNT_TYPE_LABELS = {
 } as const;
 
 export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
+  const router = useRouter();
   const Icon = ACCOUNT_TYPE_ICONS[account.accountType];
 
   const formattedInterestRate =
@@ -48,8 +50,11 @@ export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
   return (
     <div className="rounded-xl border p-4 hover:bg-muted/50 transition-colors">
       <div className="flex items-start justify-between gap-3">
-        {/* Left: icon + info */}
-        <div className="flex items-start gap-3 min-w-0">
+        {/* Left: icon + info — clickable for navigation */}
+        <button
+          className="flex items-start gap-3 min-w-0 flex-1 text-left cursor-pointer"
+          onClick={() => router.push(`/accounts/${account.id}`)}
+        >
           <div className="mt-0.5 shrink-0 rounded-md bg-muted p-2">
             <Icon className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -89,7 +94,7 @@ export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
               </div>
             )}
           </div>
-        </div>
+        </button>
 
         {/* Right: action menu */}
         <DropdownMenu>
