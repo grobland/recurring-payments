@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Account Detail Pages — Phase 38 Plan 01 complete, ready for Plan 02 (UI components)
+**Current focus:** v3.0 Account Detail Pages — Phase 38 complete (both plans done), ready for Phase 39
 
 ## Current Position
 
-Phase: 38 of 40 (Account Detail Pages) — IN PROGRESS
-Plan: 1 of 2 complete
-Status: Plan 01 complete — data layer (API endpoints + hooks) ready for UI consumption
-Last activity: 2026-02-26 — Phase 38 Plan 01 complete (coverage/spending endpoints + 3 hooks + TransactionFilters extension)
+Phase: 38 of 40 (Account Detail Pages) — COMPLETE
+Plan: 2 of 2 complete
+Status: Phase 38 complete — full account detail page UI with four tabs, cross-tab navigation, spending chart
+Last activity: 2026-02-26 — Phase 38 Plan 02 complete (8 UI components, AccountCard navigation)
 
-Progress: [███████░░░] 33% (v3.0 Phase 38 Plan 01 complete — 1/2 plans)
+Progress: [████████░░] 67% (v3.0 Phase 38 complete — 2/2 plans)
 
 ## Archived Milestones
 
@@ -46,13 +46,19 @@ Progress: [███████░░░] 33% (v3.0 Phase 38 Plan 01 complete �
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 106
-- Total phases: 37 complete, 3 planned (v3.0, Phase 38 in progress)
+- Total plans completed: 107
+- Total phases: 38 complete, 2 planned (v3.0, Phase 39-40 remaining)
 - Total milestones: 7 complete, 1 in progress
 
 ## Accumulated Context
 
 ### Decisions
+
+Recent decisions from Phase 38 Plan 02:
+- AccountTransactionsTab is self-contained (not modifying TransactionBrowser) — avoids breaking global transactions page while supporting initialFilters prop
+- transactionFilters state in AccountDetailPage always contains accountId as base — guaranteed account scoping
+- Coverage empty state check uses account.linkedSourceType (not sources.length) — faster, no extra network request
+- useEffect on initialFilters in AccountTransactionsTab syncs cross-tab navigation without prop drilling
 
 Recent decisions from Phase 38 Plan 01:
 - statements.accountId FK is the authoritative account-to-statement link — use FK not linkedSourceType string for coverage filtering
@@ -93,6 +99,6 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Phase 38 Plan 01 complete — account detail data layer ready for UI
-Resume file: .planning/phases/38-account-detail-pages/38-01-SUMMARY.md
-Resume with: Execute Phase 38 Plan 02 (UI components)
+Stopped at: Phase 38 Plan 02 complete — account detail pages fully implemented
+Resume file: .planning/phases/38-account-detail-pages/38-02-SUMMARY.md
+Resume with: Execute Phase 39 (next phase per roadmap)

@@ -96,7 +96,7 @@
 - [x] **Phase 35: Database Foundation** - financial_accounts table + nullable accountId FK on statements (migration 0011) — completed 2026-02-22
 - [x] **Phase 36: Navigation Restructure** - New sidebar section hierarchy, 308 redirects, active-state fix (completed 2026-02-25)
 - [x] **Phase 37: Account CRUD + List Page** - API routes, hooks, AccountForm, account list grouped by type, source linking (completed 2026-02-26)
-- [ ] **Phase 38: Account Detail Pages** - Per-account page with coverage, transactions, and spending tabs
+- [x] **Phase 38: Account Detail Pages** - Per-account page with coverage, transactions, and spending tabs (completed 2026-02-26)
 - [ ] **Phase 39: Payment Type Selector** - nuqs URL filters, type toggles, combined filters on Payments page
 - [ ] **Phase 40: Static Pages** - Data Schema viewer + Help page with accordion FAQ
 
@@ -202,7 +202,7 @@ Plans:
 | 35. Database Foundation | v3.0 | Complete    | 2026-02-22 | 2026-02-22 |
 | 36. Navigation Restructure | 3/3 | Complete    | 2026-02-25 | - |
 | 37. Account CRUD + List Page | 2/2 | Complete    | 2026-02-26 | - |
-| 38. Account Detail Pages | 1/2 | In Progress|  | - |
+| 38. Account Detail Pages | 2/2 | Complete   | 2026-02-26 | - |
 | 39. Payment Type Selector | v3.0 | 0/TBD | Not started | - |
 | 40. Static Pages | v3.0 | 0/TBD | Not started | - |
 
