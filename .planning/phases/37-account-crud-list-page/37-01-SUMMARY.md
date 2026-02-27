@@ -144,6 +144,21 @@ None beyond the naming collision documented above.
 - API endpoints follow REST conventions and return `{ accounts }` / `{ account }` / `{ message }` shapes
 - Plan 02 should use `useDeleteFinancialAccount` (not `useDeleteAccount`) for the delete mutation
 
+## Self-Check: PASSED
+
+All files verified present. All commits verified in git log.
+
+- FOUND: src/lib/db/schema.ts
+- FOUND: src/lib/db/migrations/0012_redundant_boomerang.sql
+- FOUND: src/lib/validations/account.ts
+- FOUND: src/app/api/accounts/route.ts
+- FOUND: src/app/api/accounts/[id]/route.ts
+- FOUND: src/lib/hooks/use-accounts.ts
+- FOUND commit: 7cbada5 (Task 1)
+- FOUND commit: f2b5f38 (Task 2)
+- FOUND commit: ebbf63f (Task 3)
+- FOUND commit: 3368cbc (metadata)
+
 ---
 *Phase: 37-account-crud-list-page*
 *Completed: 2026-02-26*

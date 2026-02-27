@@ -95,6 +95,12 @@ None - no external service configuration required.
 - Phase 37 (Account CRUD) can proceed — the data Vault nav item pointing to /accounts is in place
 - Phase 40 can add Help and Schema items to the supportItems array
 
+## Self-Check: PASSED
+
+- FOUND: src/components/layout/app-sidebar.tsx
+- FOUND: commit 756b922 (feat — sidebar restructure)
+- FOUND: commit c0fd652 (docs — plan metadata)
+
 ---
 *Phase: 36-navigation-restructure*
 *Completed: 2026-02-25*

@@ -2,6 +2,59 @@
 
 ## Completed Milestones
 
+### v3.0 "Navigation & Account Vault" (2026-02-22 → 2026-02-27)
+
+**Goal:** Restructure the entire navigation into a structured financial hub and introduce account-level management where sources become named accounts with dedicated pages showing coverage, transactions, and spending.
+
+**What shipped:**
+- Database foundation with financial_accounts table, accountTypeEnum (bank_debit, credit_card, loan), and nullable accountId FK on statements
+- Full navigation restructure into 3 sections (fin Vault, payments Portal, Support) with 308 permanent redirects and 13 new route files
+- Complete account CRUD with type-specific fields (credit limit, interest rate, loan term), source linking, and auto-assignment during batch import
+- Account detail pages with 4 tabs (Details edit form, Coverage grid, Transactions browser, Spending chart) and account-scoped API endpoints
+- Payment type selector with nuqs URL persistence, recurring/one-time classification via SQL subquery, and inline subscription checkbox on recurring rows
+- Static support pages (Data Schema with 21-table card grid, Help FAQ with 6-category accordion)
+
+**Phases completed:** 6 (Phases 35-40)
+- Phase 35: Database Foundation (2 plans)
+- Phase 36: Navigation Restructure (3 plans)
+- Phase 37: Account CRUD + List Page (2 plans)
+- Phase 38: Account Detail Pages (2 plans)
+- Phase 39: Payment Type Selector (2 plans)
+- Phase 40: Static Pages (1 plan)
+
+**Stats:**
+- 12 plans, 71 commits
+- 119 files changed (+20,816 / -288 lines)
+- ~47,800 lines TypeScript total
+- 6 days development
+
+**Requirements:** 21/21 complete
+- NAV-01 through NAV-04 (Navigation Restructure)
+- ACCT-01 through ACCT-08 (Account Management)
+- DETAIL-01 through DETAIL-04 (Account Detail Pages)
+- FILTER-01 through FILTER-03 (Payment Type Selector)
+- SCHEMA-01, HELP-01 (Static Pages)
+
+**Key decisions:**
+- financial_accounts (not accounts) to avoid NextAuth table collision
+- Nullable accountId FK — existing statements predate accounts, NOT NULL impossible
+- User-driven source-to-account migration (no automatic backfill)
+- nuqs for URL-persisted filter state without scroll reset (only new npm package in v3.0)
+- isNavItemActive exact match by default, prefix match only for routes with real children
+- Raw SQL subquery for recurringPatterns merchant matching (Drizzle inArray limitation)
+- AccountTransactionsTab self-contained (not modifying TransactionBrowser)
+- Hardcoded SCHEMA_TABLES const array (no live DB introspection for security)
+
+**Tech debt:**
+- Old dead-code route files remain at original locations (308 redirects handle compatibility)
+- zodResolver cast as any in AccountForm (z.coerce.number() TypeScript workaround)
+- Account hooks not exported from barrel index (direct imports work)
+- PaymentTypeSelector absent from AccountTransactionsTab (low severity, not a requirement gap)
+
+**What's next:** `/gsd:new-milestone` for next milestone planning
+
+---
+
 ### v2.2 "Financial Data Vault" (2026-02-19 → 2026-02-21)
 
 **Goal:** Transform the app into a financial data vault where users store, organize, and browse original bank statement PDFs with all data extracted into the database.
@@ -259,5 +312,5 @@
 **Requirements:** 9/9 complete
 
 ---
-*Last updated: 2026-02-21*
+*Last updated: 2026-02-27*
 

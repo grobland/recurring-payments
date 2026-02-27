@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A web application for tracking and managing recurring subscriptions with Stripe-powered billing and a financial data vault. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include batch PDF import with full statement data retention, PDF storage and in-app viewing, a vault for browsing and organizing original bank statements, coverage visualization with historical upload support, a virtualized transaction browser, manual tagging and one-click conversion, AI-powered pattern detection, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, category management, three-tier paid subscriptions (Primary/Enhanced/Advanced), feature gating with upgrade prompts, customer portal for subscription management, and admin tools for trial extensions and webhook monitoring.
+A web application for tracking and managing recurring subscriptions with Stripe-powered billing, a financial data vault, and structured account management. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include batch PDF import with full statement data retention, PDF storage and in-app viewing, a vault for browsing and organizing original bank statements, coverage visualization with historical upload support, financial account management (Bank/Debit, Credit Card, Loan) with per-account detail pages showing coverage, transactions, and spending, a virtualized transaction browser with payment type filtering, manual tagging and one-click conversion, AI-powered pattern detection, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, category management, three-tier paid subscriptions (Primary/Enhanced/Advanced), feature gating with upgrade prompts, customer portal for subscription management, admin tools for trial extensions and webhook monitoring, and static support pages (data schema viewer, help/FAQ).
 
 ## Core Value
 
@@ -10,11 +10,18 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ## Current State
 
-**Version:** v2.2 Financial Data Vault (shipped 2026-02-21)
-**Codebase:** ~48,000+ lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
+**Version:** v3.0 Navigation & Account Vault (shipped 2026-02-27)
+**Codebase:** ~47,800 lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
 **Production URL:** https://recurring-payments.vercel.app
 
 **Current capabilities:**
+- Restructured navigation with 3 sections (fin Vault, payments Portal, Support)
+- Financial account management (Bank/Debit, Credit Card, Loan) with type-specific fields
+- Account detail pages with 4 tabs (Details, Coverage, Transactions, Spending)
+- Source-to-account linking with automatic assignment during batch import
+- Payment type selector with recurring/one-time filtering and nuqs URL persistence
+- Data Schema viewer (21-table card grid) and Help FAQ (6-category accordion)
+- 308 permanent redirects for all moved URLs (bookmark compatibility)
 - Batch PDF import with drag-and-drop and duplicate detection
 - PDF storage in Supabase Storage with non-fatal degradation
 - In-app PDF viewer with page navigation and download
@@ -142,27 +149,22 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - ✓ Non-fatal storage degradation (imports succeed without storage) — v2.2
 - ✓ hasPdf boolean API pattern (storage paths never exposed to client) — v2.2
 
-## Current Milestone: v3.0 Navigation & Account Vault
-
-**Goal:** Restructure the entire navigation into a structured financial hub and introduce account-level management where sources become named accounts with dedicated pages showing coverage, transactions, and spending.
-
-**Target features:**
-- Full sidebar/nav restructure (fin Vault, payments Portal, Support sections)
-- data Vault: account management for Bank/Debit, Credit Cards, Loans (sources migrate to accounts)
-- Account detail pages: edit form, coverage grid, transactions, spending summary
-- Data Schema viewer: read-only system data model page
-- Payment Type Selector: transaction browser with type toggles and filters
-- Help page: static FAQ/documentation
+**v3.0 Navigation & Account Vault:**
+- ✓ Reorganized sidebar with fin Vault, payments Portal, Support sections — v3.0
+- ✓ All existing screens reachable via new menu paths — v3.0
+- ✓ Active nav item highlights correctly for nested sections — v3.0
+- ✓ 308 redirects for moved URLs (bookmark compatibility) — v3.0
+- ✓ Financial account CRUD (Bank/Debit, Credit Card, Loan) with type-specific fields — v3.0
+- ✓ Source-to-account linking with auto-assignment during import — v3.0
+- ✓ Account list grouped by type on data Vault page — v3.0
+- ✓ Account detail pages with coverage, transactions, and spending tabs — v3.0
+- ✓ Payment type selector with recurring/one-time URL-persisted filtering — v3.0
+- ✓ Data Schema viewer with 21-table card grid — v3.0
+- ✓ Help FAQ with 6-category accordion — v3.0
 
 ### Active
 
-- [ ] Complete nav restructure with new section hierarchy
-- [ ] data Vault with account CRUD per type (bank/debit, credit card, loan)
-- [ ] Source-to-account migration and linking
-- [ ] Account detail pages (details, coverage, transactions, spending)
-- [ ] Data Schema viewer
-- [ ] Payment Type Selector with type toggles and filters
-- [ ] Help page (static FAQ)
+(No active milestone — use `/gsd:new-milestone` to start next)
 
 ### Out of Scope
 
@@ -187,10 +189,15 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Bank API integration (Plaid/MX) — compliance burden and cost prohibitive
 - Mobile camera upload — breaks PDF-only processing pipeline
 - OCR re-extraction — AI cost and complexity not justified
+- Multiple sourceType strings per account (junction table) — one-to-one source link sufficient
+- Auto-migrate all sources to accounts — user trust; naming/type must be user-controlled
+- Account merge/deduplicate UI — trust-destroying in financial context
+- Live DB introspection for schema viewer — security risk; static metadata is correct
+- Account balance tracking — requires bank API or manual entry
 
 ## Context
 
-**Codebase state:** v2.2 complete. Full subscription management platform with financial data vault, billing, monetization, and admin tools. All 131 requirements across 7 milestones validated.
+**Codebase state:** v3.0 complete. Full subscription management platform with structured navigation, financial account management, data vault, billing, monetization, and admin tools. All 152 requirements across 8 milestones validated.
 
 **Known issues:**
 - Email delivery requires verified Resend domain (RESEND_FROM_EMAIL)
@@ -198,23 +205,28 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - auth() called twice in import route (minor inefficiency)
 - Analytics FeatureGate wraps BASIC_ANALYTICS (primary tier) — never visibly locks for current users
 - Existing statements with NULL statementDate remain gray in coverage grid until re-import or backfill
+- Old dead-code route files remain at original locations (308 redirects handle compatibility)
 
 **Tech debt:**
-- Hooks not re-exported from central index (use-duplicate-scan, useTrends, useForecast*, useAlerts, useTags, etc.)
+- Hooks not re-exported from central index (use-duplicate-scan, useTrends, useForecast*, useAlerts, useTags, useAccount*, etc.)
 - Logging infrastructure (withLogging, actionLog) created but not adopted by all API routes
 - EvidenceList URL params don't pre-filter transactions (minor UX enhancement)
 - PdfStatusIcon duplicated locally in 4 files (6-line component, intentional)
+- zodResolver cast as any in AccountForm (z.coerce.number() TypeScript workaround)
+- PaymentTypeSelector absent from AccountTransactionsTab (low severity enhancement)
 
-**Env vars needed for v2.2 features:**
+**Env vars needed:**
 - NEXT_PUBLIC_SUPABASE_URL (browser-side storage)
 - NEXT_PUBLIC_SUPABASE_ANON_KEY (browser-side storage)
 - SUPABASE_SERVICE_ROLE_KEY (server-side uploads — no NEXT_PUBLIC_ prefix)
 
-**Database migrations (10 total):**
+**Database migrations (12 total):**
 - 0001-0006: Core schema, analytics MV, patterns, alerts, statements, tags
 - 0007-0008: Webhook events, stripe prices
 - 0009: Stripe price seeding
 - 0010: User role enum for admin RBAC
+- 0011: financial_accounts table, accountTypeEnum, accountId FK on statements
+- 0012: linkedSourceType column on financial_accounts
 
 **Codebase documentation:** See `.planning/codebase/` for detailed architecture, stack, conventions, and concerns analysis.
 
@@ -251,6 +263,15 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | Collapsible not Accordion for vault | Multiple folder cards can be open simultaneously | ✓ Good |
 | Coverage cell three-valued state | pdf/data/missing extends hasPdf boolean pattern | ✓ Good |
 | statementDate as first-of-month UTC | Avoids timezone ambiguity in coverage grid month mapping | ✓ Good |
+| financial_accounts (not accounts) | NextAuth owns accounts table; naming collision is hard constraint | ✓ Good |
+| Nullable accountId FK on statements | Existing statements predate accounts; NOT NULL impossible | ✓ Good |
+| User-driven source-to-account migration | No automatic backfill; user trust in financial context | ✓ Good |
+| nuqs for URL-persisted filters | Shallow updates without scroll reset; only new npm package in v3.0 | ✓ Good |
+| isNavItemActive exact match default | Prevents false activation on parent/sibling routes | ✓ Good |
+| Raw SQL subquery for payment type | Drizzle inArray doesn't support cross-table subqueries | ✓ Good |
+| AccountTransactionsTab self-contained | Avoids breaking global TransactionBrowser while supporting account scoping | ✓ Good |
+| Hardcoded SCHEMA_TABLES const | Static snapshot, no live DB introspection (security) | ✓ Good |
+| 308 permanent redirects | All moved URLs redirect; preserves bookmarks and email links | ✓ Good |
 
 ---
-*Last updated: 2026-02-22 after v3.0 milestone start*
+*Last updated: 2026-02-27 after v3.0 milestone*
