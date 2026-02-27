@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Navigation & Account Vault
 status: unknown
+last_updated: "2026-02-27T00:06:38.549Z"
+progress:
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 11
+  completed_plans: 11
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Navigation & Account Vault
+status: unknown
 last_updated: "2026-02-26T15:40:02.478Z"
 progress:
   total_phases: 4
