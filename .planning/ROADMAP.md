@@ -204,7 +204,7 @@ Plans:
 | 37. Account CRUD + List Page | 2/2 | Complete    | 2026-02-26 | - |
 | 38. Account Detail Pages | 2/2 | Complete    | 2026-02-26 | - |
 | 39. Payment Type Selector | 2/2 | Complete    | 2026-02-27 | - |
-| 40. Static Pages | 1/1 | Complete   | 2026-02-27 | - |
+| 40. Static Pages | 1/1 | Complete    | 2026-02-27 | - |
 
 **Total:** 35 phases (1-35) complete, 5 phases (36-40) planned for v3.0
 
