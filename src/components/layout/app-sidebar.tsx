@@ -23,6 +23,7 @@ import {
   Webhook,
   Archive,
   Database,
+  HelpCircle,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -72,7 +73,8 @@ const paymentsPortalItems = [
 
 const supportItems = [
   { title: "Settings", href: "/settings", icon: Settings },
-  // Help and Schema added by Phase 40
+  { title: "Help", href: "/support/help", icon: HelpCircle },
+  { title: "Data Schema", href: "/support/schema", icon: Database },
 ];
 
 function isNavItemActive(pathname: string, href: string): boolean {
