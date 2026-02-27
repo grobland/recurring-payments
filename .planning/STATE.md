@@ -136,7 +136,7 @@ Recent decisions affecting v3.0 work:
 
 ## Session Continuity
 
-Last session: 2026-02-26
-Stopped at: Phase 39 Plan 02 complete — PaymentTypeSelector UI integration, inline subscription checkbox
-Resume file: .planning/phases/39-payment-type-selector/39-02-SUMMARY.md
-Resume with: Execute Phase 40 (if planned)
+Last session: 2026-02-27
+Stopped at: Phase 40 context gathered
+Resume file: .planning/phases/40-static-pages/40-CONTEXT.md
+Resume with: /gsd:plan-phase 40
