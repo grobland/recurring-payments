@@ -31,16 +31,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Payment Type Selector — Phase 39 Plan 01 complete (infrastructure + API), ready for Plan 02
+**Current focus:** v3.0 Payment Type Selector — Phase 39 COMPLETE (both plans done), ready for Phase 40
 
 ## Current Position
 
-Phase: 39 of 40 (Payment Type Selector) — IN PROGRESS
-Plan: 1 of 2 complete
-Status: Phase 39 Plan 01 complete — nuqs installed, NuqsAdapter wired, PaymentType types + server-side filter implemented
-Last activity: 2026-02-26 — Phase 39 Plan 01 complete (nuqs, toggle-group, API paymentType filter)
+Phase: 39 of 40 (Payment Type Selector) — COMPLETE
+Plan: 2 of 2 complete
+Status: Phase 39 Plan 02 complete — PaymentTypeSelector segmented control, nuqs URL state, inline subscription checkbox shipped
+Last activity: 2026-02-26 — Phase 39 Plan 02 complete (UI integration, subscription checkbox, contextual empty states)
 
-Progress: [█████████░] 75% (v3.0 Phase 39 Plan 01 complete — 1/2 plans)
+Progress: [██████████] 100% (v3.0 Phase 39 complete — 2/2 plans)
 
 ## Archived Milestones
 
@@ -59,13 +59,19 @@ Progress: [█████████░] 75% (v3.0 Phase 39 Plan 01 complete �
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 108
-- Total phases: 38 complete, 2 planned (v3.0, Phase 39-40 remaining; Phase 39 in progress)
+- Total plans completed: 109
+- Total phases: 39 complete, 1 planned (v3.0, Phase 40 remaining)
 - Total milestones: 7 complete, 1 in progress
 
 ## Accumulated Context
 
 ### Decisions
+
+Recent decisions from Phase 39 Plan 02:
+- filterControls() helper renders PaymentTypeSelector + TransactionFilters in a shared closure — avoids repeating JSX across four render branches (loading, error, empty, main)
+- ToggleGroup with variant=outline, spacing=0, border rounded-lg p-0.5 bg-muted/40 wrapper — iOS-style connected pills within shadcn conventions
+- Subscription checkbox is one-way in v1: check triggers useConvertTransaction, uncheck not supported (confirmed subscriptions disabled; use existing UI to unconvert)
+- TransactionCard in recurring mode replaces Convert button with Subscription label + checkbox — avoids competing ml-auto actions
 
 Recent decisions from Phase 39 Plan 01:
 - Raw SQL subquery for recurringPatterns merchant matching (LOWER() case-insensitive) — Drizzle inArray does not support cross-table subqueries cleanly
@@ -118,6 +124,6 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Phase 39 Plan 01 complete — nuqs infrastructure + paymentType API filter
-Resume file: .planning/phases/39-payment-type-selector/39-01-SUMMARY.md
-Resume with: Execute Phase 39 Plan 02 (UI toggle-group segmented control)
+Stopped at: Phase 39 Plan 02 complete — PaymentTypeSelector UI integration, inline subscription checkbox
+Resume file: .planning/phases/39-payment-type-selector/39-02-SUMMARY.md
+Resume with: Execute Phase 40 (if planned)

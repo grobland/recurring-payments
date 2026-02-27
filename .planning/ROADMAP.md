@@ -97,7 +97,7 @@
 - [x] **Phase 36: Navigation Restructure** - New sidebar section hierarchy, 308 redirects, active-state fix (completed 2026-02-25)
 - [x] **Phase 37: Account CRUD + List Page** - API routes, hooks, AccountForm, account list grouped by type, source linking (completed 2026-02-26)
 - [x] **Phase 38: Account Detail Pages** - Per-account page with coverage, transactions, and spending tabs (completed 2026-02-26)
-- [ ] **Phase 39: Payment Type Selector** - nuqs URL filters, type toggles, combined filters on Payments page
+- [x] **Phase 39: Payment Type Selector** - nuqs URL filters, type toggles, combined filters on Payments page (completed 2026-02-27)
 - [ ] **Phase 40: Static Pages** - Data Schema viewer + Help page with accordion FAQ
 
 ## Phase Details
@@ -203,7 +203,7 @@ Plans:
 | 36. Navigation Restructure | 3/3 | Complete    | 2026-02-25 | - |
 | 37. Account CRUD + List Page | 2/2 | Complete    | 2026-02-26 | - |
 | 38. Account Detail Pages | 2/2 | Complete    | 2026-02-26 | - |
-| 39. Payment Type Selector | 1/2 | In Progress|  | - |
+| 39. Payment Type Selector | 2/2 | Complete   | 2026-02-27 | - |
 | 40. Static Pages | v3.0 | 0/TBD | Not started | - |
 
 **Total:** 35 phases (1-35) complete, 5 phases (36-40) planned for v3.0
