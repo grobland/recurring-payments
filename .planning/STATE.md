@@ -44,16 +44,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 Payment Type Selector — Phase 39 COMPLETE (both plans done), ready for Phase 40
+**Current focus:** v3.0 Static Pages — Phase 40 Plan 01 COMPLETE — SCHEMA-01 and HELP-01 shipped. v3.0 milestone COMPLETE.
 
 ## Current Position
 
-Phase: 39 of 40 (Payment Type Selector) — COMPLETE
-Plan: 2 of 2 complete
-Status: Phase 39 Plan 02 complete — PaymentTypeSelector segmented control, nuqs URL state, inline subscription checkbox shipped
-Last activity: 2026-02-26 — Phase 39 Plan 02 complete (UI integration, subscription checkbox, contextual empty states)
+Phase: 40 of 40 (Static Pages) — COMPLETE
+Plan: 1 of 1 complete
+Status: Phase 40 Plan 01 complete — Data Schema page, Help/FAQ page, sidebar nav entries shipped
+Last activity: 2026-02-27 — Phase 40 Plan 01 complete (21-table schema cards, 6-category FAQ accordion, sidebar Support section)
 
-Progress: [██████████] 100% (v3.0 Phase 39 complete — 2/2 plans)
+Progress: [██████████] 100% (v3.0 Phase 40 complete — 1/1 plans)
 
 ## Archived Milestones
 
@@ -72,13 +72,19 @@ Progress: [██████████] 100% (v3.0 Phase 39 complete — 2/2 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 109
-- Total phases: 39 complete, 1 planned (v3.0, Phase 40 remaining)
-- Total milestones: 7 complete, 1 in progress
+- Total plans completed: 110
+- Total phases: 40 complete, 0 remaining (v3.0 milestone COMPLETE)
+- Total milestones: 7 complete, 1 complete (v3.0)
 
 ## Accumulated Context
 
 ### Decisions
+
+Recent decisions from Phase 40 Plan 01:
+- Hardcoded SCHEMA_TABLES const array — static snapshot not auto-generated from Drizzle, no live DB queries on schema page
+- One Accordion per FAQ category (not one global) — creates distinct groupings with independent collapse per section
+- HelpCircle added to lucide-react imports; Database was already imported from prior phases
+- max-w-6xl for schema page (2-column card grid), max-w-3xl for help page (narrow readable text column)
 
 Recent decisions from Phase 39 Plan 02:
 - filterControls() helper renders PaymentTypeSelector + TransactionFilters in a shared closure — avoids repeating JSX across four render branches (loading, error, empty, main)
@@ -137,6 +143,4 @@ Recent decisions affecting v3.0 work:
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Phase 40 context gathered
-Resume file: .planning/phases/40-static-pages/40-CONTEXT.md
-Resume with: /gsd:plan-phase 40
+Stopped at: Completed 40-static-pages/40-01-PLAN.md — v3.0 milestone complete

@@ -40,8 +40,8 @@ Requirements for v3.0 Navigation & Account Vault milestone.
 
 ### Static Pages
 
-- [ ] **SCHEMA-01**: User can view a static read-only representation of the system data model on the Data Schema page
-- [ ] **HELP-01**: User can view static FAQ and documentation on the Help page with accordion sections
+- [x] **SCHEMA-01**: User can view a static read-only representation of the system data model on the Data Schema page
+- [x] **HELP-01**: User can view static FAQ and documentation on the Help page with accordion sections
 
 ## Future Requirements
 
@@ -94,8 +94,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FILTER-01 | Phase 39 | Complete |
 | FILTER-02 | Phase 39 | Complete |
 | FILTER-03 | Phase 39 | Complete |
-| SCHEMA-01 | Phase 40 | Pending |
-| HELP-01 | Phase 40 | Pending |
+| SCHEMA-01 | Phase 40 | Complete |
+| HELP-01 | Phase 40 | Complete |
 
 **Coverage:**
 - v3.0 requirements: 21 total
