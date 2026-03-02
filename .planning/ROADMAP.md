@@ -123,7 +123,10 @@
   1. Existing E2E tests pass with correct v3.0 URLs and zero auth errors from stale `waitForURL` calls
   2. 25-30 Playwright tests cover auth, subscriptions, vault, analytics, billing, accounts, export, overlap, and onboarding flows
   3. Interactive elements have `data-testid` attributes that tests rely on for reliable selectors
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 41-01-PLAN.md -- Fix auth setup, update existing test URLs, add data-testid attributes
+- [ ] 41-02-PLAN.md -- Write auth, vault, analytics, billing, and accounts test specs
+- [ ] 41-03-PLAN.md -- Write export, overlap, and onboarding test specs
 
 ### Phase 42: CSV Export
 **Goal**: Users can download their subscription and transaction data as well-formatted, safe CSV files
@@ -191,7 +194,7 @@
 | 24-30 | v2.1 | 19/19 | Complete | 2026-02-18 |
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
 | 35-40 | v3.0 | 12/12 | Complete | 2026-02-27 |
-| 41. E2E Test Infrastructure | v3.1 | 0/TBD | Not started | - |
+| 41. E2E Test Infrastructure | v3.1 | 0/3 | Planned | - |
 | 42. CSV Export | v3.1 | 0/TBD | Not started | - |
 | 43. Overlap Detection | v3.1 | 0/TBD | Not started | - |
 | 44. Onboarding Hints | v3.1 | 0/TBD | Not started | - |
