@@ -164,7 +164,17 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ### Active
 
-(No active milestone — use `/gsd:new-milestone` to start next)
+**Current Milestone: v3.1 UX & Quality**
+
+**Goal:** Redesign the sidebar for clarity and warmth, add onboarding hints for new users, enable data export, detect subscription overlaps, and establish E2E test coverage with performance optimization.
+
+**Target features:**
+- Sidebar redesign (reorganize items + warm/friendly visual overhaul)
+- Contextual onboarding hints on empty states
+- Data export (subscriptions CSV + transaction history CSV)
+- Subscription overlap detection (same-category flagging)
+- E2E test coverage (~25-30 Playwright tests for all major features)
+- Performance audit (bundle analysis, Lighthouse, optimization)
 
 ### Out of Scope
 
@@ -274,4 +284,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | 308 permanent redirects | All moved URLs redirect; preserves bookmarks and email links | ✓ Good |
 
 ---
-*Last updated: 2026-02-27 after v3.0 milestone*
+*Last updated: 2026-03-02 after v3.1 milestone start*

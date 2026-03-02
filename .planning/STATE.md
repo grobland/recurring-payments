@@ -1,33 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.0
-milestone_name: Navigation & Account Vault
-status: complete
-last_updated: "2026-02-27T15:00:00.000Z"
+milestone: v3.1
+milestone_name: UX & Quality
+status: active
+last_updated: "2026-03-02T00:00:00.000Z"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 12
-  completed_plans: 12
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-27)
+See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.0 milestone complete. Use `/gsd:new-milestone` to start next.
+**Current focus:** v3.1 UX & Quality — defining requirements
 
 ## Current Position
 
-Phase: 40 of 40 (Static Pages) — COMPLETE
-Plan: 1 of 1 complete
-Status: v3.0 Navigation & Account Vault milestone shipped
-Last activity: 2026-02-27 — v3.0 milestone archived
-
-Progress: [██████████] 100% (v3.0 complete — all 8 milestones shipped)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-02 — Milestone v3.1 started
 
 ## Archived Milestones
 
@@ -67,5 +65,5 @@ Progress: [██████████] 100% (v3.0 complete — all 8 milesto
 
 ## Session Continuity
 
-Last session: 2026-02-27
-Stopped at: v3.0 milestone archived — use `/gsd:new-milestone` for next
+Last session: 2026-03-02
+Stopped at: Defining requirements for v3.1 UX & Quality
