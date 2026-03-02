@@ -92,38 +92,38 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SIDE-01 | — | Pending |
-| SIDE-02 | — | Pending |
-| SIDE-03 | — | Pending |
-| SIDE-04 | — | Pending |
-| SIDE-05 | — | Pending |
-| SIDE-06 | — | Pending |
-| ONBRD-01 | — | Pending |
-| ONBRD-02 | — | Pending |
-| ONBRD-03 | — | Pending |
-| ONBRD-04 | — | Pending |
-| ONBRD-05 | — | Pending |
-| ONBRD-06 | — | Pending |
-| EXPRT-01 | — | Pending |
-| EXPRT-02 | — | Pending |
-| EXPRT-03 | — | Pending |
-| EXPRT-04 | — | Pending |
-| OVRLP-01 | — | Pending |
-| OVRLP-02 | — | Pending |
-| OVRLP-03 | — | Pending |
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| TEST-03 | — | Pending |
-| PERF-01 | — | Pending |
-| PERF-02 | — | Pending |
-| PERF-03 | — | Pending |
-| PERF-04 | — | Pending |
+| SIDE-01 | Phase 45 | Pending |
+| SIDE-02 | Phase 45 | Pending |
+| SIDE-03 | Phase 45 | Pending |
+| SIDE-04 | Phase 45 | Pending |
+| SIDE-05 | Phase 45 | Pending |
+| SIDE-06 | Phase 45 | Pending |
+| ONBRD-01 | Phase 44 | Pending |
+| ONBRD-02 | Phase 44 | Pending |
+| ONBRD-03 | Phase 44 | Pending |
+| ONBRD-04 | Phase 44 | Pending |
+| ONBRD-05 | Phase 44 | Pending |
+| ONBRD-06 | Phase 44 | Pending |
+| EXPRT-01 | Phase 42 | Pending |
+| EXPRT-02 | Phase 42 | Pending |
+| EXPRT-03 | Phase 42 | Pending |
+| EXPRT-04 | Phase 42 | Pending |
+| OVRLP-01 | Phase 43 | Pending |
+| OVRLP-02 | Phase 43 | Pending |
+| OVRLP-03 | Phase 43 | Pending |
+| TEST-01 | Phase 41 | Pending |
+| TEST-02 | Phase 41 | Pending |
+| TEST-03 | Phase 41 | Pending |
+| PERF-01 | Phase 46 | Pending |
+| PERF-02 | Phase 46 | Pending |
+| PERF-03 | Phase 46 | Pending |
+| PERF-04 | Phase 46 | Pending |
 
 **Coverage:**
 - v3.1 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26 ⚠️
+- Mapped to phases: 26
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-02*
-*Last updated: 2026-03-02 after initial definition*
+*Last updated: 2026-03-02 after roadmap creation — all 26 requirements mapped*
