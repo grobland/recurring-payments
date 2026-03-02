@@ -1,385 +1,436 @@
 # Stack Research
 
-**Domain:** Navigation restructure, account management, schema viewer, payment type filtering — v3.0
-**Researched:** 2026-02-22
+**Domain:** UX & Quality milestone additions — sidebar redesign, onboarding hints, CSV export, overlap detection, E2E coverage, performance audit
+**Researched:** 2026-03-02
 **Confidence:** HIGH
 
 ---
 
 ## Context: What Exists vs. What Is New
 
-This milestone adds to a mature Next.js 16 + Supabase + Drizzle ORM codebase (~48,000 lines). The existing stack
-(React 19, TanStack Query, shadcn/ui, Zod, React Hook Form, Recharts, Tailwind CSS v4) covers all general-purpose
-needs. This document covers only what is NEW or CHANGED for v3.0 features.
+This milestone (v3.1) adds to a mature ~47,800-line Next.js 16 + Supabase + Drizzle codebase. The full stack
+(React 19, TanStack Query, shadcn/ui, Zod, React Hook Form, Recharts, Tailwind CSS v4, Lucide React, date-fns v4,
+Playwright, nuqs) is already installed and validated through v3.0.
 
-**Existing stack that requires NO additions for v3.0:**
-- shadcn/ui sidebar primitives (Sidebar, SidebarGroup, SidebarMenu, SidebarMenuSub, SidebarMenuSubItem,
-  SidebarMenuSubButton) — all already exported from `src/components/ui/sidebar.tsx` lines 640-720
-- Collapsible primitive — `radix-ui` ^1.4.3 already installed; `src/components/ui/collapsible.tsx` already exists
-  and used in `folder-card.tsx`
-- Drizzle ORM — handles the new `financial_accounts` table migration with the same `pgTable`/`pgEnum` pattern
-- TanStack Query — account CRUD hooks and type-filtered transaction queries follow existing `use-*.ts` patterns
-- React Hook Form + Zod — account forms with discriminated union schemas for type-specific fields
-- Tailwind CSS v4 — all layout and styling for account detail pages, schema viewer, help page
-- Recharts — already installed for any new spending charts on account detail pages
+**Existing stack that requires NO additions for v3.1 features:**
+- shadcn/ui Tooltip, Popover, Card, Badge, Separator — already in `src/components/ui/`; covers onboarding hint UI
+- Tailwind CSS v4 `@theme` block — warm color tokens added directly to `globals.css`; no new styling library needed
+- `date-fns` v4.1.0 — `areIntervalsOverlapping` built-in; covers overlap detection math entirely
+- `@playwright/test` v1.57.0 already configured with auth setup, fixtures, 3 browsers — upgrade to extend coverage
+- `lucide-react` ^0.562.0 — all icons for sidebar redesign come from here
+
+**What the v3.1 features actually need beyond existing stack:**
+
+| Feature | New Dependency? | Rationale |
+|---------|----------------|-----------|
+| Sidebar redesign (visual + IA) | None | Pure CSS token changes in `globals.css` + component refactor |
+| Onboarding hints (contextual) | None | shadcn/ui Tooltip + Popover already installed; `localStorage` for dismiss state |
+| CSV export | **papaparse@^5.5.3** | Server-side CSV serialization; native string joining is error-prone with escaping |
+| Overlap detection | None | `date-fns` `areIntervalsOverlapping` already in codebase |
+| E2E test expansion | Playwright upgrade to **^1.58.2** | Current is 1.57.0; 1.58.x adds stability fixes; POM pattern needs no new packages |
+| Performance audit | **@next/bundle-analyzer@^16.1.6** | Bundle visualization; zero runtime impact (dev-only) |
 
 ---
 
-## Recommended Stack (New Additions)
+## Recommended Stack (New Additions Only)
 
 ### Core Technologies
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| nuqs | ^2.8.8 | URL search param state for payment type filter toggles in the transaction browser | Replaces `useState` + `router.push` boilerplate. Next.js App Router's `useSearchParams` is read-only in client components — writing requires `router.push()` which triggers full navigation and resets the virtualized list scroll position. nuqs provides shallow updates by default, behaves like `useState` but syncs to URL, making filter state persist through reloads and be bookmarkable. 6 kB gzipped. |
+| `papaparse` | ^5.5.3 | Server-side CSV serialization for subscription and transaction export API routes | PapaParse handles all CSV escaping edge cases (commas in names, quotes, special chars, UTF-8 BOM for Excel). Native string joining fails on data like subscription name "Netflix, HD" — the comma breaks the CSV column boundary. PapaParse's `unparse()` function handles this correctly. The `papaparse` package (not `react-papaparse`) runs in Node.js server routes with no browser requirement. Current version 5.5.3, last published 9 months ago, stable. |
+| `@next/bundle-analyzer` | ^16.1.6 | Dev-only bundle visualization — identifies which dependencies are bloating client JS | The Next.js official bundle analyzer wraps webpack-bundle-analyzer and is version-locked to Next.js releases. Version 16.1.6 matches the installed `next@16.1.4`. Set `ANALYZE=true` env var to activate; zero runtime cost otherwise. Outputs three interactive HTML treemaps: client bundle, edge bundle, node bundle. Identifies candidates for `next/dynamic` lazy imports. |
 
-**That's the only new package.** All five v3.0 feature areas are buildable with what's already installed.
+### Supporting Libraries (Already Installed — v3.1 Usage Patterns)
 
-### Supporting Libraries (Already Installed — Usage Patterns for v3.0)
-
-| Library | Installed Version | v3.0 Usage | Notes |
+| Library | Installed Version | v3.1 Usage | Notes |
 |---------|------------------|-----------|-------|
-| `radix-ui` | ^1.4.3 | `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` for collapsible sidebar sections | Already used in `folder-card.tsx`; import from `"radix-ui"` as shown in `collapsible.tsx` line 3 |
-| shadcn/ui sidebar | n/a (generated component) | `SidebarMenuSub`, `SidebarMenuSubItem`, `SidebarMenuSubButton` for nested nav items | All three exported from `sidebar.tsx` lines 640-720; zero setup required |
-| Drizzle ORM | ^0.45.1 | New `financial_accounts` table + `accountTypeEnum` + `accountId` FK on `statements` | 11th migration; `pgEnum` + `pgTable` pattern identical to 8 existing enums |
-| Zod | ^4.3.5 | Discriminated union schemas for bank/credit-card/loan type-specific field sets | `z.discriminatedUnion("accountType", [...])` — same pattern as existing validation schemas |
-| `@tanstack/react-query` | ^5.90.19 | Account CRUD hooks (`use-accounts.ts`), type-filtered transaction queries | Same `useQuery`/`useMutation` pattern as `use-subscriptions.ts`, `use-tags.ts` |
+| `date-fns` | ^4.1.0 | `areIntervalsOverlapping` for subscription overlap detection | Already imported in `src/app/(dashboard)/analytics/page.tsx` and `src/lib/utils/dates.ts`. No new import needed — extend `dates.ts` with overlap helpers. |
+| shadcn/ui `Tooltip` | (installed) | Onboarding hints on hover — "What's this?" callouts near empty states | `src/components/ui/tooltip.tsx` exists. Use `Tooltip` + `TooltipContent` wrapping an info icon next to empty state headings. |
+| shadcn/ui `Popover` | (installed) | Richer onboarding popovers with multi-line content and dismiss button | `src/components/ui/popover.tsx` exists. Use for first-visit contextual tips that need a close button and persist dismissal via `localStorage`. |
+| `tailwindcss` v4 `@theme` | (installed) | Warm sidebar color tokens via CSS custom properties | Add `--sidebar-warm`, `--sidebar-warm-accent` OKLCH values in `globals.css` `:root` block. No package change — pure CSS token additions. |
+| `@playwright/test` | current: ^1.57.0 → update to **^1.58.2** | Expand from 3 test files to ~25-30 covering all major user flows | Version 1.58.2 is the current npm release (verified 2026-03-02). Update is minor — all existing tests remain compatible. POM pattern (page objects in `tests/pages/`) requires no new packages. |
+| `lucide-react` | ^0.562.0 | New sidebar icons for warm redesign (Home, Wallet, PiggyBank, etc.) | All icons sourced from here. No icon library addition needed. |
 
 ### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| `drizzle-kit generate` + `drizzle-kit migrate` | Generate and apply the `financial_accounts` migration | Run after schema.ts additions; this will be migration 0011 |
+| `@next/bundle-analyzer` | Visualize JS bundle composition; find over-weight dependencies | Run with `ANALYZE=true npm run build`. Outputs `/.next/analyze/client.html` — open in browser to inspect treemap. Add `"analyze": "ANALYZE=true next build"` to package.json scripts. |
+| `@lhci/cli` (optional, CI-only) | Lighthouse CI for automated perf regression detection in CI | Version 0.15.1 (current). Install globally or as devDependency. Not required for local audit — Chrome DevTools Lighthouse panel + PageSpeed Insights cover the manual audit. Only add if setting up GitHub Actions perf gates. |
 
 ---
 
 ## Installation
 
 ```bash
-# Only new dependency for v3.0
-npm install nuqs@^2.8.8
+# New runtime dependency (CSV export)
+npm install papaparse@^5.5.3
+npm install -D @types/papaparse@^5.5.2
 
-# After adding financial_accounts table to schema.ts
-npm run db:generate
-npm run db:migrate
+# New dev dependency (bundle analysis)
+npm install -D @next/bundle-analyzer@^16.1.6
+
+# Update Playwright to current version
+npm install -D @playwright/test@^1.58.2
+
+# Optional: Lighthouse CI (only if adding CI perf gates)
+npm install -D @lhci/cli@^0.15.1
 ```
 
-No other installs required for any v3.0 feature.
+Add to `package.json` scripts:
+```json
+{
+  "analyze": "ANALYZE=true next build"
+}
+```
 
 ---
 
 ## Feature-by-Feature Stack Decisions
 
-### 1. Multi-Level Sidebar Navigation
+### 1. Sidebar Redesign (Warm/Friendly Visual + IA Reorganization)
 
-**Approach:** Compose existing primitives — no new library needed.
+**Approach:** CSS token changes in `globals.css` + component-level Tailwind class updates. Zero new packages.
 
-The current `app-sidebar.tsx` uses flat `SidebarGroup` + `SidebarMenu` lists (one "Menu" group, one "Support" group,
-one conditional "Admin" group). The v3.0 restructure introduces collapsible section headers with sub-items, using
-primitives already installed and verified present in the codebase.
+The current sidebar uses `--sidebar: oklch(0.985 0 0)` (near-white, neutral). A warm redesign overrides
+the sidebar-specific CSS custom properties in `globals.css`:
 
-**Pattern — collapsible section with SidebarMenuSub children:**
-
-```typescript
-// src/components/layout/app-sidebar.tsx
-// Import already-present primitives
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"; // already exists
-
-import {
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
-} from "@/components/ui/sidebar"; // already exported, lines 640-720
-
-// Official shadcn/ui collapsible section pattern:
-<Collapsible defaultOpen className="group/collapsible">
-  <SidebarGroup>
-    <SidebarGroupLabel asChild>
-      <CollapsibleTrigger>
-        Data Vault
-        <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-      </CollapsibleTrigger>
-    </SidebarGroupLabel>
-    <CollapsibleContent>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/vault"}>
-              <Link href="/vault">
-                <Archive className="size-4" />
-                <span>Vault</span>
-              </Link>
-            </SidebarMenuButton>
-            <SidebarMenuSub>
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton asChild isActive={pathname.startsWith("/accounts")}>
-                  <Link href="/accounts">Accounts</Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton asChild isActive={pathname === "/sources"}>
-                  <Link href="/sources">Sources</Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            </SidebarMenuSub>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </CollapsibleContent>
-  </SidebarGroup>
-</Collapsible>
+```css
+/* globals.css — override sidebar tokens for warm palette */
+:root {
+  /* Warm amber sidebar — replace current near-white */
+  --sidebar: oklch(0.97 0.015 60);           /* warm off-white with amber tint */
+  --sidebar-foreground: oklch(0.2 0.02 60);  /* warm dark text */
+  --sidebar-accent: oklch(0.92 0.03 60);     /* warm hover background */
+  --sidebar-accent-foreground: oklch(0.15 0.02 60);
+  --sidebar-primary: oklch(0.55 0.14 55);    /* amber active item indicator */
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.88 0.02 60);     /* warm divider */
+}
+.dark {
+  --sidebar: oklch(0.18 0.02 60);            /* warm dark sidebar */
+  --sidebar-foreground: oklch(0.88 0.01 60);
+  --sidebar-accent: oklch(0.25 0.03 60);
+  --sidebar-primary: oklch(0.65 0.14 55);
+}
 ```
 
-**Active state strategy:**
-- Section-level: `pathname.startsWith("/vault")` keeps the collapsible open when on any vault sub-page
-- Item-level: `pathname === "/accounts"` for exact leaf matches
+The shadcn/ui sidebar primitives already consume these tokens via `bg-sidebar`, `text-sidebar-foreground`,
+`bg-sidebar-accent` etc. Only token values change — no className changes in sidebar.tsx needed for color.
+IA reorganization (renaming nav items to friendlier labels, icon swaps) is pure JSX edits in `app-sidebar.tsx`.
 
-**Why not a third-party nav library:** All primitives are already present. The v3.0 restructure is a
-reorganization of existing items into collapsible groups — not a complex routing change.
+**Why no third-party theming library:** The codebase already uses Tailwind v4 `@theme` + CSS custom properties
+as the design token system. Adding a library like `styled-components` or `@emotion/react` for one sidebar
+redesign would contradict the established pattern and add significant bundle weight.
 
 ---
 
-### 2. Account Management (bank/debit, credit card, loan)
+### 2. Contextual Onboarding Hints
 
-**Approach:** New `financial_accounts` Drizzle table + `accountTypeEnum` + discriminated union Zod schema
-+ standard React Hook Form pattern.
+**Approach:** Compose existing shadcn/ui Tooltip + Popover + a thin `useOnboardingHints` hook using
+`localStorage`. No tour library needed.
 
-**Schema additions to `src/lib/db/schema.ts`:**
+**Why no tour library (react-joyride, Onborda, Intro.js):**
+The v3.1 requirement is "contextual onboarding hints on empty states" — not a full guided tour with step
+sequencing. Onborda and react-joyride are designed for step-by-step product tours that highlight elements
+in sequence. For static hints attached to empty states (e.g., "Upload your first bank statement here"),
+composing existing primitives is simpler, smaller, and more maintainable:
 
 ```typescript
-export const accountTypeEnum = pgEnum("account_type", [
-  "bank_debit",
-  "credit_card",
-  "loan",
-]);
+// src/lib/hooks/use-onboarding-hint.ts
+export function useOnboardingHint(key: string) {
+  const [dismissed, setDismissed] = React.useState(() => {
+    if (typeof window === "undefined") return true; // SSR safe
+    return localStorage.getItem(`hint:${key}`) === "dismissed";
+  });
 
-export const financialAccounts = pgTable(
-  "financial_accounts",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+  const dismiss = React.useCallback(() => {
+    localStorage.setItem(`hint:${key}`, "dismissed");
+    setDismissed(true);
+  }, [key]);
 
-    // Core fields shared by all account types
-    name: varchar("name", { length: 100 }).notNull(),       // "Chase Sapphire", "Wells Fargo Checking"
-    accountType: accountTypeEnum("account_type").notNull(),
-    institution: varchar("institution", { length: 100 }),    // "Chase", "Wells Fargo" (optional)
-    currency: varchar("currency", { length: 3 }).default("USD").notNull(),
-    isActive: boolean("is_active").default(true).notNull(),
-    notes: text("notes"),
+  return { dismissed, dismiss };
+}
+```
 
-    // Credit card specific (null for bank_debit and loan)
-    creditLimit: decimal("credit_limit", { precision: 12, scale: 2 }),
-    statementClosingDay: integer("statement_closing_day"),  // 1-31
+Then in empty-state components:
+```tsx
+// Extend existing EmptyState with optional onboarding hint
+<EmptyState
+  icon={Upload}
+  title="No statements yet"
+  description="Import a bank PDF to get started"
+  hint={{
+    key: "vault-first-upload",
+    content: "Tip: Import PDFs from any bank. We'll extract all transactions automatically."
+  }}
+/>
+```
 
-    // Loan specific (null for bank_debit and credit_card)
-    originalBalance: decimal("original_balance", { precision: 12, scale: 2 }),
-    interestRate: decimal("interest_rate", { precision: 5, scale: 4 }), // 0.0499 = 4.99%
-    loanTermMonths: integer("loan_term_months"),
+A `HintBadge` component wraps `Tooltip` for hover hints and `Popover` for richer dismissable hints.
+Both primitives are already installed and tested in the codebase.
 
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+**If a full tour is needed in a future milestone:** Add `onborda` (shadcn-compatible, Framer Motion-based,
+Next.js-first) — not react-joyride which requires Tailwind class override conflicts.
+
+---
+
+### 3. CSV Export (Subscriptions + Transactions)
+
+**Approach:** Server-side API routes + `papaparse` for serialization. No client-side CSV library.
+
+Two new API routes:
+- `GET /api/export/subscriptions` → `subscriptions.csv`
+- `GET /api/export/transactions` → `transactions.csv`
+
+Both return `Response` with `Content-Type: text/csv` and `Content-Disposition: attachment; filename="..."`.
+The client triggers download via `<a href="/api/export/subscriptions" download>` or `window.location.href`.
+
+**Why papaparse over native string join:**
+CSV escaping is deceptively tricky. Subscription names like `Netflix, Premium` (comma), `Hulu "Live"` (quotes),
+or international descriptions with diacritics all break naive `array.join(",")` approaches. PapaParse's
+`unparse()` handles all RFC 4180 edge cases:
+
+```typescript
+// src/app/api/export/subscriptions/route.ts
+import Papa from "papaparse";
+
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) return new Response("Unauthorized", { status: 401 });
+
+  const rows = await db.query.subscriptions.findMany({
+    where: eq(subscriptions.userId, session.user.id),
+    columns: {
+      name: true, amount: true, currency: true, billingCycle: true,
+      nextRenewalDate: true, status: true, notes: true,
+    },
+    with: { category: { columns: { name: true } } },
+  });
+
+  const csv = Papa.unparse(
+    rows.map((r) => ({
+      Name: r.name,
+      Amount: r.amount,
+      Currency: r.currency,
+      "Billing Cycle": r.billingCycle,
+      "Next Renewal": r.nextRenewalDate,
+      Status: r.status,
+      Category: r.category?.name ?? "",
+      Notes: r.notes ?? "",
+    })),
+    { header: true, newline: "\r\n" }  // RFC 4180 line endings for Excel
+  );
+
+  return new Response(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": 'attachment; filename="subscriptions.csv"',
+    },
+  });
+}
+```
+
+**Why not `react-papaparse`:** That package is browser-only and adds unnecessary React wrappers. The plain
+`papaparse` package works in both Node.js (API routes) and browser without extra setup.
+
+**Why server-side over client-side generation:** The subscriptions and transactions data lives on the server
+(Supabase). Fetching it client-side to re-serialize it into CSV adds a round trip. Server-side generation
+also enforces auth at the API boundary and keeps data access patterns consistent.
+
+---
+
+### 4. Subscription Overlap Detection
+
+**Approach:** Pure computation using `date-fns` `areIntervalsOverlapping` — already installed and imported
+in the codebase. No new package needed.
+
+Overlap means: two active subscriptions in the same category whose billing windows overlap within a rolling
+30-day window. The detection runs as a background Drizzle query + interval computation:
+
+```typescript
+// src/lib/utils/overlap-detection.ts
+import { areIntervalsOverlapping, addDays } from "date-fns";
+
+export interface OverlapCandidate {
+  subscriptionA: { id: string; name: string; nextRenewalDate: Date };
+  subscriptionB: { id: string; name: string; nextRenewalDate: Date };
+  categoryName: string;
+}
+
+export function detectOverlaps(
+  subscriptions: Array<{
+    id: string;
+    name: string;
+    nextRenewalDate: Date;
+    billingCycle: "monthly" | "annual" | "weekly";
+    categoryId: string;
+    categoryName: string;
+  }>
+): OverlapCandidate[] {
+  const overlaps: OverlapCandidate[] = [];
+  const activeByCategory = Map.groupBy(subscriptions, (s) => s.categoryId);
+
+  for (const [, group] of activeByCategory) {
+    if (group.length < 2) continue;
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const a = group[i], b = group[j];
+        const windowDays = 30;
+        const intervalA = { start: a.nextRenewalDate, end: addDays(a.nextRenewalDate, windowDays) };
+        const intervalB = { start: b.nextRenewalDate, end: addDays(b.nextRenewalDate, windowDays) };
+        if (areIntervalsOverlapping(intervalA, intervalB)) {
+          overlaps.push({ subscriptionA: a, subscriptionB: b, categoryName: a.categoryName });
+        }
+      }
+    }
+  }
+  return overlaps;
+}
+```
+
+The UI surface is a dismissible alert card on the subscriptions list page — uses existing shadcn/ui `Alert`
+(if added) or `Card` + `Badge` (already installed). No new UI library component needed.
+
+**Why not a separate overlap library:** `date-fns` `areIntervalsOverlapping` is purpose-built for this
+calculation. The algorithm above is O(n²) within each category, which is acceptable since users typically
+have 2-10 subscriptions per category. The library overhead of adding a dedicated scheduling/overlap package
+is not justified.
+
+---
+
+### 5. E2E Test Coverage Expansion (~25-30 Playwright Tests)
+
+**Approach:** Upgrade Playwright to v1.58.2, adopt Page Object Model (POM) pattern for new tests.
+No new packages beyond the version update.
+
+**Current state:** 3 spec files (`subscriptions.spec.ts`, `pdf-import.spec.ts`, `email-reminders.spec.ts`),
+auth setup via `tests/auth.setup.ts`, fixture file at `tests/fixtures/`.
+
+**Expansion approach:**
+
+```
+tests/
+├── auth.setup.ts          (existing — unchanged)
+├── fixtures/
+│   └── index.ts           (existing — extend with page objects)
+├── pages/                 (NEW — Page Object Model classes)
+│   ├── dashboard.page.ts
+│   ├── subscriptions.page.ts
+│   ├── vault.page.ts
+│   ├── transactions.page.ts
+│   └── settings.page.ts
+└── e2e/
+    ├── subscriptions.spec.ts   (existing)
+    ├── pdf-import.spec.ts      (existing)
+    ├── email-reminders.spec.ts (existing)
+    ├── dashboard.spec.ts       (NEW)
+    ├── analytics.spec.ts       (NEW)
+    ├── vault.spec.ts           (NEW)
+    ├── accounts.spec.ts        (NEW)
+    ├── transactions.spec.ts    (NEW)
+    ├── export.spec.ts          (NEW)
+    ├── overlap.spec.ts         (NEW)
+    ├── billing.spec.ts         (NEW)
+    └── settings.spec.ts        (NEW)
+```
+
+Page Object Model pattern (no new package — built into Playwright fixtures):
+
+```typescript
+// tests/pages/subscriptions.page.ts
+import { type Page } from "@playwright/test";
+
+export class SubscriptionsPage {
+  readonly page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
+
+  async goto() {
+    await this.page.goto("/payments/subscriptions");
+  }
+
+  async createSubscription(data: { name: string; amount: string }) {
+    await this.page.goto("/payments/subscriptions/new");
+    await this.page.getByLabel("Name").fill(data.name);
+    await this.page.getByLabel("Amount").fill(data.amount);
+    await this.page.getByRole("button", { name: "Create Subscription" }).click();
+  }
+}
+
+// tests/fixtures/index.ts — extend with page objects
+import { test as base } from "@playwright/test";
+import { SubscriptionsPage } from "../pages/subscriptions.page";
+
+export const test = base.extend<{
+  subscriptionsPage: SubscriptionsPage;
+}>({
+  subscriptionsPage: async ({ page }, use) => {
+    await use(new SubscriptionsPage(page));
   },
-  (table) => [
-    index("financial_accounts_user_id_idx").on(table.userId),
-    index("financial_accounts_type_idx").on(table.accountType),
-  ]
+});
+```
+
+**Why upgrade to v1.58.2:** Current installed is v1.57.0. Version 1.58.2 is the latest stable (verified
+2026-03-02 via `npm show @playwright/test version`). The upgrade is minor and backward-compatible. Staying
+on 1.57.0 is also fine — this is a quality-of-life update, not a blocker.
+
+**Why not `playwright-test-coverage`:** Code coverage for Playwright requires Istanbul instrumentation of
+the Next.js build, which significantly slows test runs and adds setup complexity. Coverage metrics are not
+required by the v3.1 scope — the goal is coverage of user flows, not line coverage percentages.
+
+---
+
+### 6. Performance Audit + Optimization
+
+**Approach:** `@next/bundle-analyzer` for bundle visualization. Lighthouse (browser-native or PageSpeed
+Insights) for runtime perf. `next/dynamic` for identified heavy imports. No runtime library additions.
+
+**Audit workflow:**
+
+```bash
+# Step 1: Bundle analysis
+ANALYZE=true npm run build
+# Opens /.next/analyze/client.html — treemap of all client JS
+
+# Step 2: Lighthouse (browser)
+# Open Chrome DevTools → Lighthouse tab → run on deployed or local build
+
+# Step 3: Targeted optimization based on findings
+```
+
+**Expected optimization candidates (based on current dependencies):**
+
+| Suspect | Size Estimate | Optimization |
+|---------|--------------|--------------|
+| `recharts` | ~250 kB | Already used on multiple pages; dynamic import on analytics pages if not already code-split by route |
+| `react-pdf` | ~400 kB | Already has two-file worker split; verify `next/dynamic({ ssr: false })` is applied |
+| `openai` SDK | ~100 kB | Server-only import; verify it doesn't leak to client bundle |
+| PDF import flow | varies | `next/dynamic` for `BatchImportWizard` component — only needed on `/vault/load` |
+
+**`next/dynamic` pattern (no new package — built into Next.js):**
+
+```typescript
+// For heavy components only loaded on specific routes
+import dynamic from "next/dynamic";
+
+const BatchImportWizard = dynamic(
+  () => import("@/components/vault/batch-import-wizard"),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> }
 );
 ```
 
-**Why a single table with nullable type-specific columns instead of separate tables:**
-The three types share ~80% of their fields. Separate tables would multiply the API routes, hooks, and page
-components by three for just 3-5 unique fields per type. A single table with a discriminated Zod union
-gives type safety without that overhead.
+**Why `@next/bundle-analyzer` over `webpack-bundle-analyzer` directly:** The `@next/bundle-analyzer`
+wrapper handles Next.js's multi-bundle output (client + edge + node) and is version-matched to the installed
+Next.js version. It generates all three treemaps with one command vs manual webpack configuration.
 
-**Discriminated union Zod schema:**
-
-```typescript
-// src/lib/validations/financial-account.ts
-const baseSchema = z.object({
-  name: z.string().min(1).max(100),
-  institution: z.string().max(100).optional(),
-  currency: z.string().length(3),
-  notes: z.string().max(500).optional(),
-});
-
-const bankDebitSchema = baseSchema.extend({
-  accountType: z.literal("bank_debit"),
-});
-
-const creditCardSchema = baseSchema.extend({
-  accountType: z.literal("credit_card"),
-  creditLimit: z.number().positive().optional(),
-  statementClosingDay: z.number().int().min(1).max(31).optional(),
-});
-
-const loanSchema = baseSchema.extend({
-  accountType: z.literal("loan"),
-  originalBalance: z.number().positive().optional(),
-  interestRate: z.number().min(0).max(1).optional(),  // decimal form: 0.0499
-  loanTermMonths: z.number().int().positive().optional(),
-});
-
-export const financialAccountSchema = z.discriminatedUnion("accountType", [
-  bankDebitSchema,
-  creditCardSchema,
-  loanSchema,
-]);
-```
-
----
-
-### 3. Source-to-Account Migration (Data Linking)
-
-**Approach:** Additive nullable FK `accountId` on `statements` table. No data backfill. No data loss.
-
-```typescript
-// Addition to statements table in schema.ts
-accountId: uuid("account_id").references(() => financialAccounts.id, {
-  onDelete: "set null",  // Deleting account does not delete statement history
-}),
-```
-
-Existing `statements.sourceType` (the user-entered string like "Chase Sapphire") remains unchanged.
-The new `accountId` is the entity FK. Both coexist:
-- `sourceType` — display label, populated at import time
-- `accountId` — nullable entity link; populated when user assigns a statement to an account
-
-**Migration path for existing data:** No backfill script needed. Users link existing `sourceType` strings
-to `financialAccounts` records via the account detail UI. New imports pick the account from the combobox
-(which displays account names from `financial_accounts`) and populate both `sourceType` and `accountId`.
-
----
-
-### 4. Data Schema Viewer (Read-Only)
-
-**Approach:** Static React Server Component page — no external library.
-
-**Why no diagramming library (Mermaid.js, React Flow):**
-- The requirement is "read-only system data model page" — documentation, not an interactive ER diagram
-- Mermaid.js adds ~200 kB; React Flow adds ~100 kB for what is a reference page
-- shadcn/ui Table + Card components render a clear, styled schema reference server-side with zero JS
-
-**Implementation:**
-
-```typescript
-// src/lib/schema-docs/tables.ts — static build-time data, not runtime introspection
-export interface ColumnDoc {
-  name: string;
-  type: string;
-  nullable: boolean;
-  notes?: string;
-}
-
-export interface TableDoc {
-  name: string;
-  description: string;
-  columns: ColumnDoc[];
-}
-
-export const SCHEMA_DOCS: TableDoc[] = [
-  {
-    name: "financial_accounts",
-    description: "Named financial accounts (bank, credit card, loan) owned by users",
-    columns: [
-      { name: "id", type: "uuid", nullable: false, notes: "Primary key" },
-      { name: "account_type", type: "enum(bank_debit|credit_card|loan)", nullable: false },
-      // ...
-    ],
-  },
-  // all 15+ tables documented here
-];
-
-// src/app/(dashboard)/schema/page.tsx — React Server Component (zero client JS)
-import { SCHEMA_DOCS } from "@/lib/schema-docs/tables";
-
-export default function SchemaPage() {
-  return (
-    <div className="space-y-8">
-      {SCHEMA_DOCS.map((table) => (
-        <section key={table.name} id={table.name}>
-          <h2>{table.name}</h2>
-          <p>{table.description}</p>
-          <Table>{/* shadcn/ui Table */}</Table>
-        </section>
-      ))}
-    </div>
-  );
-}
-```
-
-**If an interactive ER diagram is explicitly requested later:** Use `reactflow` (MIT, React 18+, maintained).
-But the current scope is static documentation — a server component loads instantly and needs no JS bundle.
-
----
-
-### 5. Payment Type Filtering (Transaction Browser)
-
-**Approach:** nuqs for URL-persisted filter toggles + existing transaction query pattern.
-
-The transaction browser currently accepts `tagStatus`, `dateFrom`, `dateTo`, `search`, `sourceType` as URL params
-(confirmed in `src/app/api/transactions/route.ts` lines 19-25). Payment type filtering extends this pattern.
-
-**Why nuqs over native `useSearchParams` + `router.push`:**
-- `useSearchParams` in client components is read-only — writing requires `router.push()` which triggers a full
-  navigation and resets the virtualized list scroll position (TransactionBrowser uses `@tanstack/react-virtual`)
-- nuqs provides shallow updates by default: URL updates without triggering server re-render or scroll reset
-- Type-safe `useQueryState` behaves like `useState` but syncs to URL — no boilerplate
-- Filter state persists through reloads and is bookmarkable/shareable with colleagues
-- 6 kB gzipped — negligible
-
-**Amount sign convention check required:** Before building the client-side toggle, verify whether imported
-transactions use signed amounts (positive = debit, negative = credit/refund) or always-positive amounts.
-This determines whether filtering is client-side (sign inference) or requires a schema addition.
-
-**Option A — Amount sign convention is signed (positive = debit, negative = credit):**
-No schema migration needed. Filter is client-side inference:
-
-```typescript
-// src/lib/hooks/use-payment-type-filter.ts
-import { useQueryState, parseAsStringEnum } from "nuqs";
-
-const PAYMENT_TYPES = ["all", "debit", "credit"] as const;
-type PaymentType = (typeof PAYMENT_TYPES)[number];
-
-export function usePaymentTypeFilter() {
-  return useQueryState(
-    "paymentType",
-    parseAsStringEnum([...PAYMENT_TYPES]).withDefault("all")
-  );
-}
-```
-
-Then in the transaction query: pass `paymentType` to the API which adds
-`gt(transactions.amount, "0")` or `lt(transactions.amount, "0")` to the filter conditions.
-
-**Option B — Amounts are always positive (direction lost at import):**
-Add `transactionType pgEnum("debit" | "credit")` to transactions table, populated at AI extraction time.
-This is a larger change — verify the data before committing to this path.
-
-**nuqs setup in Next.js App Router:**
-
-```typescript
-// src/app/providers.tsx — add NuqsAdapter (required for Next.js App Router)
-import { NuqsAdapter } from "nuqs/adapters/next/app";
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <NuqsAdapter>
-      <SessionProvider>
-        <QueryClientProvider client={queryClient}>
-          {children}
-        </QueryClientProvider>
-      </SessionProvider>
-    </NuqsAdapter>
-  );
-}
-```
+**Why not `@lhci/cli` for this milestone:** Lighthouse CI is valuable for preventing performance regressions
+in CI pipelines. However, setting up CI perf gates is infrastructure work outside the v3.1 scope. The
+manual audit (bundle analyzer + browser Lighthouse) provides the same diagnostic information for a one-time
+audit. Recommend adding `@lhci/cli` in a future DevOps milestone.
 
 ---
 
@@ -387,13 +438,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 | Recommended | Alternative | Why Not |
 |-------------|-------------|---------|
-| nuqs for URL filter state | `useState` + `router.push` | Full navigation on every toggle resets virtualized list scroll; no type safety; no bookmarkability |
-| nuqs for URL filter state | `useSearchParams` (read-only) | Cannot update search params in client components without router.push; same scroll reset problem |
-| Static RSC schema page | Mermaid.js | ~200 kB bundle for a static reference page; no interactive requirement in scope |
-| Static RSC schema page | React Flow / @xyflow/react | ~100 kB bundle; overkill for read-only documentation |
-| Single `financial_accounts` table | Separate tables per type | 3x the API routes and hooks for 3-5 unique fields per type; no benefit |
-| Additive `accountId` FK on statements | Replace `sourceType` string with account FK | Destructive — breaks existing vault/coverage queries; `sourceType` is user-visible display label, `accountId` is entity FK — they serve different purposes |
-| `SidebarMenuSub` + `Collapsible` | Third-party nav library | All primitives already installed; library adds bundle with no benefit for a structural reorganization |
+| `papaparse` (Node.js) | Native `array.map().join(",")` | Breaks on subscription names with commas, quotes, or special characters — RFC 4180 compliance requires quoting logic |
+| `papaparse` (Node.js) | `react-papaparse` | Browser-only wrapper; API routes run in Node.js; unnecessary React dependency for server code |
+| `papaparse` (Node.js) | `fast-csv` | Streaming-focused; adds complexity for simple batch export of <10k rows; papaparse simpler API |
+| CSS token changes for sidebar | External theming library | Tailwind v4 `@theme` CSS custom properties IS the design token system; no new library needed |
+| shadcn Tooltip + Popover for hints | `react-joyride` | Tour library overkill for static empty-state hints; adds ~50 kB for step sequencing we don't need |
+| shadcn Tooltip + Popover for hints | `onborda` | Same overkill concern; onborda is for guided product tours, not contextual empty-state tips |
+| `date-fns` `areIntervalsOverlapping` | Custom interval logic | `date-fns` v4 already installed and used in codebase; reimplementing overlap detection adds risk |
+| POM pattern via Playwright fixtures | `playwright-bdd` (BDD cucumber) | BDD syntax adds overhead; team is TypeScript-native; Playwright fixtures + TypeScript POM is cleaner |
+| `@next/bundle-analyzer` | `source-map-explorer` | `@next/bundle-analyzer` is Next.js-aware (handles multi-bundle output); `source-map-explorer` requires manual source map setup |
 
 ---
 
@@ -401,39 +454,41 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| `mermaid` or `@mermaid-js/mermaid-react` | 200 kB+ for a static reference page; no interactive requirement | shadcn/ui Table + Card components as RSC |
-| `reactflow` / `@xyflow/react` | Overkill for read-only schema display | Build only if interactive ER diagram is explicitly required in a future milestone |
-| Separate `bank_accounts`, `credit_cards`, `loans` tables | 3x schema + API surface for minimal field variation | Single `financial_accounts` table with discriminated Zod union |
-| `@radix-ui/react-collapsible` (separate package) | Already available via `radix-ui` ^1.4.3 meta-package | Import from `"radix-ui"` as in existing `collapsible.tsx` line 3 |
-| Any new chart library for account detail pages | Recharts ^3.7.0 already installed | Reuse Recharts components from `src/components/dashboard/` for spending summaries |
-| `nuqs` v1.x | v1.x was designed for Next.js 13; v2.x required for Next.js 14+ App Router | `nuqs@^2.8.8` only |
+| `react-joyride` or `onborda` | Product tour libraries for step-sequenced guided tours — scope is contextual hints on empty states only | shadcn/ui `Tooltip` + `Popover` + `useOnboardingHint` hook |
+| `react-papaparse` | Browser-only wrapper around papaparse; CSV export is server-side | Plain `papaparse` package runs in both Node.js and browser |
+| `styled-components` or CSS-in-JS | Adds second styling system conflicting with established Tailwind v4 token approach | Tailwind CSS custom properties in `globals.css` |
+| `lighthouse` npm package | Heavy CLI tool (13MB+); better to use browser DevTools panel for manual audit | `@lhci/cli` only if CI gates are needed; browser Lighthouse for one-time audit |
+| `@playwright/test` v2.x | Does not exist yet as of 2026-03-02; verify before upgrading | Stay on ^1.58.2 |
+| `playwright-test-coverage` | Requires Istanbul instrumentation; slows builds; line coverage not required by v3.1 scope | Focus on user-flow coverage, not line coverage |
+| Any chart library additions | Recharts ^3.7.0 already installed | Reuse existing `BarChart`, `AreaChart` components |
+| `date-fns-tz` | Timezone handling not required for overlap detection (comparing renewal dates, not UTC times) | Plain `date-fns` v4 |
 
 ---
 
 ## Stack Patterns by Variant
 
-**If transaction amounts are signed (positive=debit, negative=credit/refund):**
-- No schema migration needed for payment type filtering
-- API adds `gt(transactions.amount, "0")` / `lt(transactions.amount, "0")` condition based on `paymentType` param
-- Client uses `usePaymentTypeFilter()` hook with nuqs
+**If CSV export needs streaming (large transaction history > 50k rows):**
+- Use `papaparse` streaming mode: `Papa.unparse(stream, { chunk: ... })`
+- Or switch to `fast-csv` with Node.js `Readable` streams and `StreamingResponse`
+- Not needed for typical user data volumes (< 5k transactions)
 
-**If transaction amounts are always positive (direction lost at import):**
-- Add `transactionType pgEnum("debit" | "credit")` column to transactions table
-- Populate at PDF extraction time in `src/lib/openai/pdf-parser.ts`
-- This is migration 0012 if financial_accounts is 0011
-- Verify the existing data in the transactions table before choosing this path
+**If onboarding hints need user-level persistence (not just device-level):**
+- Store dismissed hint keys in `users.preferences` JSONB column (already in schema)
+- Change `localStorage` to a PATCH to `/api/user/preferences` — same pattern as existing theme preference
+- Default to `localStorage` first; add server persistence only if reset-on-device is reported as an issue
 
-**If account detail pages need spending charts:**
-- Recharts ^3.7.0 already installed — reuse `AreaChart` or `BarChart` from `src/components/dashboard/`
-- API endpoint: `GET /api/accounts/[id]/spending?period=...` — standard TanStack Query hook
+**If bundle analysis reveals `recharts` is the top offender:**
+- Apply `next/dynamic({ ssr: false })` to analytics and forecast pages
+- Recharts renders client-side anyway (SVG requires DOM); disabling SSR has no SEO impact on dashboard pages
 
-**If the schema viewer needs anchor links between related tables:**
-- Native HTML `id` attributes on each `<section>` + `href="#table-name"` links — no library needed
-- RSC renders to static HTML; anchor navigation is free
+**If performance audit reveals LCP issues with the sidebar:**
+- Move `AppSidebar` to a Server Component layout (partially possible — the user menu needs `useSession`)
+- Split into `SidebarShell` (RSC) + `UserMenu` (client component) — reduces client JS for sidebar
 
-**If nuqs causes conflicts with existing URL params in the transaction browser:**
-- nuqs coexists with other URL params — it only manages the keys you tell it to (`paymentType`)
-- Existing `tagStatus`, `dateFrom`, `dateTo`, `search`, `sourceType` params are unaffected
+**If Playwright tests need database seeding for consistent test data:**
+- Use existing `npm run db:seed` script extended with test fixtures
+- Or add a `beforeAll` in test fixtures that calls API routes to create predictable data
+- Avoid direct DB access from tests (bypasses auth logic being tested)
 
 ---
 
@@ -441,27 +496,32 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 | Package | Version | Compatible With | Notes |
 |---------|---------|-----------------|-------|
-| nuqs | ^2.8.8 | Next.js 14+, React 18+ | v2.x required for Next.js 14+ App Router; verified current via `npm view nuqs version` |
-| nuqs | ^2.8.8 | `@tanstack/react-query` ^5.90.19 | No conflict — nuqs manages URL state, React Query manages server state independently |
-| `radix-ui` Collapsible | ^1.4.3 (installed) | Next.js 16, React 19 | Verified compatible — already used in `folder-card.tsx` with no issues |
-| Drizzle ORM `pgEnum` | ^0.45.1 (installed) | PostgreSQL (Supabase) | `accountTypeEnum` follows identical pattern to 8 existing enums in schema.ts |
-| Zod discriminated union | ^4.3.5 (installed) | React Hook Form ^7.71.1 via `@hookform/resolvers` ^5.2.2 | Standard pattern — same resolver integration as existing subscription form schemas |
+| `papaparse` | ^5.5.3 | Node.js 18+, Next.js 16 API routes | Pure JS, no native dependencies; works identically in Node.js and browser |
+| `@types/papaparse` | ^5.5.2 | TypeScript ^5 | Community types; verified version on npm 2026-03-02 |
+| `@next/bundle-analyzer` | ^16.1.6 | `next@16.1.4` | Version-locked to Next.js; 16.1.6 matches 16.1.4 minor (safe range) |
+| `@playwright/test` | ^1.58.2 | Next.js 16, Node.js 18+ | All existing 3 spec files and auth setup are compatible with 1.58.x |
+| `date-fns` | ^4.1.0 (existing) | React 19, TypeScript 5 | `areIntervalsOverlapping` confirmed in v4 API; already used in analytics page |
 
 ---
 
 ## Sources
 
-- shadcn/ui sidebar docs — https://ui.shadcn.com/docs/components/sidebar — `SidebarMenuSub`, `Collapsible` pattern, `SidebarGroupAction` (HIGH confidence — official docs)
-- nuqs official site — https://nuqs.dev/ — type-safe URL params, RSC support, 6 kB size, `NuqsAdapter` requirement (HIGH confidence — official docs)
-- nuqs version — `npm view nuqs version` → 2.8.8 — verified 2026-02-22 (HIGH confidence)
-- Next.js `useSearchParams` docs — https://nextjs.org/docs/app/api-reference/functions/use-search-params — read-only limitation in client components confirmed (HIGH confidence — official docs)
-- Codebase: `src/components/ui/sidebar.tsx` lines 640-720 — `SidebarMenuSub`, `SidebarMenuSubItem`, `SidebarMenuSubButton` exports verified (HIGH confidence)
-- Codebase: `src/components/ui/collapsible.tsx` — `Collapsible` from `"radix-ui"` already used (HIGH confidence)
-- Codebase: `src/app/api/transactions/route.ts` lines 19-25 — existing URL filter param pattern (HIGH confidence)
-- Codebase: `src/lib/db/schema.ts` — full schema analyzed; no `transactionType` or `accountType` fields exist (HIGH confidence)
-- `package.json` — all existing dependency versions confirmed exact (HIGH confidence)
+- `npm show papaparse version` → 5.5.3, verified 2026-03-02 (HIGH confidence)
+- `npm show @types/papaparse version` → 5.5.2, verified 2026-03-02 (HIGH confidence)
+- `npm show @next/bundle-analyzer version` → 16.1.6, verified 2026-03-02 (HIGH confidence)
+- `npm show @playwright/test version` → 1.58.2, verified 2026-03-02 (HIGH confidence)
+- `npm show date-fns version` → 4.1.0, verified 2026-03-02 (HIGH confidence)
+- Next.js official bundle analyzer docs — https://nextjs.org/docs/app/guides/package-bundling — ANALYZE env var pattern (HIGH confidence — official docs)
+- PapaParse official site — https://www.papaparse.com/ — `unparse()` API, RFC 4180 compliance, Node.js support (HIGH confidence — official docs)
+- date-fns `areIntervalsOverlapping` — https://date-fns.org/v2.22.1/docs/areIntervalsOverlapping — overlap detection API (HIGH confidence — official docs + codebase usage confirmed)
+- Playwright fixtures/POM docs — https://playwright.dev/docs/test-fixtures — fixture extension pattern (HIGH confidence — official docs)
+- Playwright BrowserStack best practices — https://www.browserstack.com/guide/playwright-best-practices — POM pattern guidance (MEDIUM confidence — verified against official docs)
+- Codebase: `src/components/ui/tooltip.tsx`, `src/components/ui/popover.tsx` — both shadcn components confirmed installed (HIGH confidence)
+- Codebase: `src/app/globals.css` — `--sidebar-*` CSS custom properties confirmed; OKLCH color system in use (HIGH confidence)
+- Codebase: `src/lib/utils/dates.ts` — `isWithinInterval` from date-fns already in use; `areIntervalsOverlapping` is same family of functions (HIGH confidence)
+- Codebase: `package.json` — all installed versions confirmed exact (HIGH confidence)
 
 ---
 
-*Stack research for: v3.0 Navigation & Account Vault — subscription manager*
-*Researched: 2026-02-22*
+*Stack research for: v3.1 UX & Quality — subscription manager*
+*Researched: 2026-03-02*

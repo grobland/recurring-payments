@@ -1,34 +1,28 @@
 # Feature Research
 
-**Domain:** Financial Data Vault — document storage, dual-view browsing, in-app PDF viewing, historical upload
-**Researched:** 2026-02-19
-**Confidence:** HIGH (core vault patterns, Supabase storage), MEDIUM (PDF viewer specifics, competitor UX)
+**Domain:** Subscription Manager v3.1 — UX & Quality (sidebar redesign, onboarding hints, CSV export, overlap detection, E2E testing, performance audit)
+**Researched:** 2026-03-02
+**Confidence:** HIGH (codebase-verified for existing infra) / MEDIUM (UX patterns from multi-source research)
 
 ---
 
-## Context: What Already Exists
+## Context: What Is Already Built
 
-Before mapping features, it is essential to understand existing infrastructure so the roadmap does not rebuild what is already there.
+This milestone adds to a mature v3.0 app (~47,800 lines TypeScript). The six feature areas target UX polish,
+data portability, smart flagging, test coverage, and performance. All six are either net-new or significant
+extensions of thin stubs. Existing infrastructure that can be reused is noted inline.
 
-### Already Built (Do Not Re-Build)
-- `statements` table with `pdfStoragePath` (nullable — the vault fills this in)
-- `pdfHash` (SHA-256) for duplicate detection on upload
-- `sourceType` grouping (the "file cabinet" dimension already has a data model)
-- `statementDate` for chronological ordering (the "timeline" dimension already has a data model)
-- `/sources` page — accordion list of sources with statement counts and coverage stats
-- `/statements/[id]` page — transaction table for a given statement, re-import wizard
-- `source-dashboard`, `source-list`, `source-row`, `statement-list`, `statement-detail` components
-- Batch upload UI with drag-and-drop, progress, sequential processing (`import/batch/page.tsx`)
-- Duplicate statement detection (hash-based) already wired in
-- `coverage-gap-warning` and `incomplete-batch-banner` components (existing gap detection UI)
-- `account-combobox.tsx` for source-name autocomplete
-
-### What the Vault Adds
-The vault is fundamentally four things on top of this foundation:
-1. **Persist the actual PDF file** in Supabase Storage (currently `pdfStoragePath` is nullable — files were never stored)
-2. **Let users view the PDF in-app** (currently there is no viewer — only extracted data is shown)
-3. **Refactor or extend the sources/statements UI** into a dual-view vault interface (file cabinet + timeline)
-4. **Historical upload flow** — guide users through uploading 12–24 months of backfill statements
+| Already exists | Relevant to |
+|----------------|-------------|
+| `app-sidebar.tsx` — 3-section sidebar, shadcn/ui `Sidebar` primitives, 11 nav items | Sidebar redesign |
+| `/onboarding/page.tsx` — 4-step full-page wizard, `onboardingCompleted` flag on `users` | Onboarding hints |
+| `/api/subscriptions/export/route.ts` — full CSV via `objectsToCSV` + `createCSVResponse` | CSV export (subscriptions) |
+| `src/lib/utils/csv.ts` — `objectsToCSV` + `createCSVResponse` helpers | CSV export (transactions) |
+| `/api/user/export/route.ts` — full JSON data portability dump | CSV export reference |
+| `/api/subscriptions/duplicates/route.ts` — pairwise similarity scan (score ≥ 70) | Overlap detection (different signal) |
+| `tests/e2e/subscriptions.spec.ts` — 6 CRUD tests with `auth.setup.ts` auth state | E2E expansion |
+| `playwright.config.ts` — multi-browser, parallel, auth setup pattern in place | E2E expansion |
+| `next.config.ts` — Sentry configured, `serverExternalPackages` set, no bundle analyzer | Performance audit |
 
 ---
 
@@ -36,135 +30,132 @@ The vault is fundamentally four things on top of this foundation:
 
 ### Table Stakes (Users Expect These)
 
-Features users assume exist in a "vault." Missing these means the vault does not feel like a vault.
+Features users assume exist. Missing these makes v3.1 feel unpolished or incomplete.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **PDF storage — original file kept permanently** | "Vault" implies permanence. If the file disappears after extraction, it is not a vault. | LOW | Schema already has `pdfStoragePath`. Need Supabase Storage bucket, RLS policy, and upload wiring in existing import flow. |
-| **In-app PDF viewer** — open original statement without downloading | Users want to verify AI extraction against source. Leaving the app to view a file feels broken. | MEDIUM | Use `react-pdf` (wojtekmaj, 2M weekly downloads, wraps PDF.js). Must use `dynamic(() => import(...), { ssr: false })` — PDF.js requires browser APIs. Open in Dialog or Sheet component. |
-| **Download PDF** — save original to local disk | Users expect local backup capability. Baseline expectation for any document storage product. | LOW | Supabase signed URL with `Content-Disposition: attachment`, or `<a href={signedUrl} download>`. Signed URL expiry: 60 seconds for download, 3600 seconds for viewing. |
-| **File cabinet view** — statements grouped by source | Source grouping is already the established mental model from the existing `/sources` page. The vault must preserve this navigation pattern. | MEDIUM | Accordion by `sourceType`. Each group shows statement cards sorted by `statementDate DESC`. Extends existing `source-list` component. |
-| **Timeline view** — all statements in chronological order | Second navigation paradigm: "what did I upload when" vs "what source is this from." Standard in all document management tools. | MEDIUM | Flat list or month-grouped list of statement cards, sorted by `statementDate DESC`. Shared `StatementCard` component with file cabinet view. |
-| **View toggle** — switch between file cabinet and timeline | Users switch mental models depending on task (finding by bank vs. finding by date). | LOW | Two-button toggle using shadcn `Tabs` or a toggle button group. Persist preference in `localStorage`. |
-| **Statement metadata on card** — filename, date, source, file size, upload date | Users need to identify which statement they are looking at before opening it. | LOW | Already partially in `statement-detail.tsx`. Extend to card display in vault views. |
-| **"No file stored" indicator** | Some statements exist without a stored PDF (imported before vault was built). Users must understand this gap. | LOW | Badge or icon showing "No file stored" on cards where `pdfStoragePath IS NULL`. |
-| **Empty state + upload CTA** | When vault is empty, users need clear direction. | LOW | Illustration or icon plus "Upload your first statement" button linking to batch upload flow. |
+| Sidebar labels in plain English | Navigation labels like "subs Dash", "doc Vault", "subs Selector" are internal shorthand; users expect "Dashboard", "Upload", "Transactions" — cryptic labels create hesitation at every click | LOW | Pure text change in `app-sidebar.tsx`; 11 strings to update; zero routing impact |
+| Sidebar visual accent on active item | Every SaaS sidebar (Linear, Notion, Vercel) uses color or weight to show which page is current; the current sidebar uses the shadcn default grey which fails to communicate location | LOW | Override `--sidebar-accent` / `--sidebar-accent-foreground` CSS tokens in `globals.css`; no component code changes |
+| Friendly hover and active states | Users expect micro-feedback on hover; flat clickable items without feedback feel broken | LOW | Same CSS token approach; `--sidebar-primary` token controls hover intent |
+| Empty-state guidance on zero-data screens | Every mainstream SaaS (Airtable, Linear, Notion) shows contextual "get started" prompts when a list is empty; a bare empty table with no direction is a dead end that triggers abandonment | MEDIUM | Identify 3-5 screens with generic empty states (subscriptions list, vault, transactions); replace with `<EmptyState>` components containing icon + description + primary CTA |
+| Export subscriptions to CSV | Users who pay for a financial tool expect to own their data; CSV is the universal format for spreadsheet portability | LOW | API route already exists at `/api/subscriptions/export`; only missing a trigger button in the subscriptions list toolbar or Settings page |
+| Export transactions to CSV | Same data-ownership expectation for statement line items the user uploaded | MEDIUM | No transactions export API route exists; needs new `/api/transactions/export/route.ts`; the keyset-paginated query in `transactions/route.ts` needs a full-fetch variant for export; reuse `objectsToCSV` + `createCSVResponse` |
+| Overlap/redundancy flag for subscriptions | Users paying for multiple services in the same spend category (3 streaming, 2 cloud storage) want a nudge to review; this is the core "save money" value prop of subscription trackers | MEDIUM | Distinct from duplicate detection; overlap = same category, different service, both active; new `/api/subscriptions/overlaps` endpoint + dismissable banner on subscriptions page |
 
 ### Differentiators (Competitive Advantage)
 
-Features that set this vault apart from generic document management tools. Not required for launch but highly valued.
+Features that set the product apart from generic subscription trackers.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Coverage visualization** — month-grid showing which months have stored PDFs | Users know at a glance which months are "vaulted" vs data-only vs missing. No competitor in the personal finance space offers this for bank statements. | MEDIUM | 12-month grid per source. Green = PDF stored, Yellow = extracted-only (no file), Gray = no data. Extends existing `coverage-gap-warning` component. |
-| **Historical upload wizard** — guided flow for uploading 12–24 months of backfill statements | No competitor guides users through systematic backfill. Most apps accept one file at a time. A wizard with calendar coverage visualization changes the value proposition. | HIGH | Show coverage calendar (months covered vs gaps). Drag-and-drop multiple files per source. Uses existing `batch-uploader.tsx`. Coverage gap detection reuses `coverage-gap-warning`. |
-| **Dual-view with persistent preference** — vault remembers last-used view | Eliminates friction for power users who always prefer one view. Small UX polish that feels professional. | LOW | `localStorage` key `vault_view_preference`. Restore on page load. |
-| **Statement-to-subscription linkage** — from vault, see which subscriptions came from each statement | Closes the loop: users can verify extraction by comparing PDF to extracted subscriptions. | MEDIUM | Statement detail already shows transactions. Add "X subscriptions extracted" count and navigation link. `subscriptions.importAuditId` already tracks provenance. |
-| **Upload deduplication messaging** — if user tries to upload a statement already in vault, clear "Already uploaded" feedback | Users uploading 24 months of history will inevitably try to upload the same statement twice. Clear messaging prevents confusion. | LOW | Already implemented via `pdfHash` unique constraint. Vault UI just needs to surface the duplicate message clearly, not silently drop the upload. |
-| **Signed URL PDF viewer** — PDF served via time-limited Supabase signed URL | Financial documents are sensitive. Time-limited URLs (1-hour expiry) prevent indefinite exposure of financial records. | LOW | `supabase.storage.from('statements').createSignedUrl(path, 3600)`. Regenerate on viewer open. |
+| Contextual inline onboarding hints | Most trackers show a one-time modal tour that users skip; inline hints that appear on first visit to each section and dismiss individually feel less intrusive, are more likely to be read, and teach users at the moment of need | MEDIUM | localStorage-based dismiss state (no migration needed); shadcn `Alert` component with icon + message + X button; 3-5 screens targeted |
+| Overlap detection with combined cost | Showing "3 streaming services totalling $47/mo — review?" is more actionable than a generic warning; connects directly to the app's value proposition of revealing hidden spending | MEDIUM | Category-group query: count active subscriptions per category, sum `normalizedMonthlyAmount`, surface only categories with count ≥ 2; dismissable banner persists dismiss via localStorage keyed to subscription ID hash |
+| E2E test suite covering all major flows | A billing and financial data app needs regression protection; 25-30 Playwright tests covering auth, subscriptions, vault, analytics, billing, reminders, export, and accounts gives production confidence that regressions in critical flows get caught before users do | HIGH | 25-30 tests is ambitious but achievable across ~10 spec files; each spec is independent, creates its own data; existing auth setup (`auth.setup.ts`) reused throughout |
+| Performance audit with actionable report | Next.js apps accumulate client component weight without noticing; react-pdf + recharts + shadcn + lucide-react add measurable JS weight; an audit with concrete findings (bundle treemap + Lighthouse baseline) produces a prioritized fix list | MEDIUM | `@next/bundle-analyzer` gives treemap; Lighthouse CLI gives Core Web Vitals baseline; primary wins expected: dynamic import for react-pdf, `optimizePackageImports` for lucide-react, potential dynamic import for recharts |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-Features that seem natural to request but create significant problems for this milestone.
+Features that seem good but create problems or add complexity without proportionate value.
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **OCR re-extraction on demand** — "re-run AI on this PDF" button in vault | Users want to improve extracted data when AI made mistakes | Triggers fresh OpenAI API calls (cost); creates duplicate transactions; conflict resolution between old and new extractions is non-trivial | The existing `reimport-wizard` in `statement-detail.tsx` already handles this. Use that. |
-| **Custom folder organization** — let users create folders ("Tax 2024", "Business") | Feels natural from file-system mental model | Two navigation hierarchies (source × folder) conflict. For bank statements, source type is the correct natural grouping. Custom folders add management overhead with low payoff. | The file cabinet view (grouped by source type) IS the folder metaphor. Sufficient for this domain. |
-| **PDF annotation** — highlight transactions, add notes in the PDF | Power users want to mark up statements | Requires a commercial PDF viewer SDK (PSPDFKit, Nutrient) at $400–1200/month, or complex custom canvas overlay. ROI extremely low for a subscription manager. | Store notes as a `notes` text field on the `statements` row. Covers 95% of the use case at 2% of the complexity. |
-| **Automatic bank statement download** — connect to bank API | Users love automation | Bank APIs (Plaid, MX) require financial institution partnerships, OAuth flows, and $50–500/month API costs at scale. Compliance burden is substantial. | Manual PDF upload. Consider as a v3+ milestone only after vault is established. |
-| **PDF editing** — redact, merge, split PDFs in-app | Redact account numbers before "vaulting" | Server-side PDF processing libraries add significant complexity. Solves a rare problem. | Show a note: "Consider redacting sensitive data before uploading." Do not build editing. |
-| **Shared vault access** — share statements with accountant | Tax season use case | Multi-tenancy, access control, expiring share links, and audit logs are each non-trivial. Current auth model is single-user only. | Use the download button to share files externally. |
-| **Mobile camera upload** — photograph paper statement | Some users receive paper statements | Mobile images require a different AI processing pipeline (not PDF-based), different file handling, and much lower extraction accuracy. Breaks the PDF-only assumption. | Keep PDF-only. Messaging: "Use your phone's built-in scanner app to create a PDF." |
-| **Full-text search across PDF contents** | Users want to search for a merchant name across all statements | Requires indexing PDF text in a search engine (Elasticsearch, Typesense). Storage is relatively small in early months but infrastructure cost and complexity are high. | The extracted `transactions` table is already searchable. For v1, the vault is a browser, not a search engine. |
+| Full product tour with overlay | "Show me everything" is a common new-user ask | Tour libraries (Shepherd.js, Intro.js) add 30-60KB JS, go stale when UI changes, and research shows <20% completion rate; forces users through content they don't need yet | Contextual inline hints on empty states: appear when the user actually encounters a blank screen, use existing shadcn Alert, zero new dependency |
+| Auto-dismiss overlap warnings after N days | "Don't nag me" is a valid user concern | Suppressing money-saving warnings on a timer undermines the core value prop; users forget they dismissed it after subscriptions change | Allow manual dismiss per warning; re-surface automatically when the set of flagged subscriptions changes (localStorage key includes a hash of IDs) |
+| Overlap detection based on provider name matching | "Netflix and Netflix Premium are the same" | Provider name matching is fragile (names change, abbreviate, vary by bank statement format) and requires a taxonomy that doesn't exist | Category-based grouping is durable: same category slug + active status = potential overlap; user assigned the category, so they understand why it flagged |
+| Bulk CSV import to add subscriptions | Users want to populate from spreadsheet | Breaks the PDF-centric mental model; creates data quality problems (wrong frequencies, missing dates, normalization edge cases); high support burden for a low-frequency task | Keep PDF import as primary path; manual add for one-offs; this is explicitly out of scope in PROJECT.md |
+| PDF export of subscription report | "I want a printable report" | Server-side PDF generation requires puppeteer or react-pdf/renderer; adds meaningful complexity and cold-start latency for a low-frequency use case | CSV is sufficient for portability; browsers can print HTML pages natively |
+| E2E tests for every API endpoint | "100% test coverage" instinct | API-level testing belongs in unit/integration tests (Vitest already in place); Playwright E2E at API granularity produces slow, fragile tests that don't validate the actual user experience | Playwright covers user-visible flows; Vitest covers business logic; keep concerns separate |
+| Lighthouse score target of 100 | Aspirational metric | react-pdf, recharts, and shadcn make 100 unrealistic without removing features; premature optimization risk | Target 85+ Performance, 95+ Accessibility, 95+ Best Practices; track regressions per PR, not absolute score |
+| Persistent sidebar collapse state synced to server | User preference feature | Requires DB column or API call on every toggle; localStorage accomplishes the same thing with zero overhead for a single-user app | Use shadcn sidebar's built-in `useSidebar()` hook which already persists collapse state via cookies |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[PDF Storage in Supabase]
-    └──required for──> [In-App PDF Viewer]
-    └──required for──> [Download PDF]
-    └──required for──> [Coverage Visualization] (differentiates "PDF stored" from "data only")
-    └──required for──> [Delete PDF]
+Sidebar redesign (IA rename)
+    └──no deps──> standalone text change in app-sidebar.tsx
 
-[Statement Card Component]
-    └──shared by──> [File Cabinet View]
-    └──shared by──> [Timeline View]
+Sidebar redesign (visual warmth)
+    └──no deps──> CSS variable overrides in globals.css
+    └──enhances──> IA rename (both in same file, do together)
 
-[File Cabinet View]
-    └──extends──> [Existing /sources page accordion (source-list.tsx)]
-    └──requires──> [Statement Card Component]
+Onboarding hints (contextual inline)
+    └──decision required──> localStorage vs DB dismiss state
+                       └──localStorage (recommended)──> no schema change, zero migration
+                       └──DB (alternative)──> new dismissedHints jsonb column on users + migration
+    └──requires──> identifying which screens have inadequate empty states
 
-[Timeline View]
-    └──requires──> [Statement Card Component]
-    └──parallel with──> [File Cabinet View]
+CSV export: subscriptions (button)
+    └──API already exists──> /api/subscriptions/export (GET)
+    └──needs only──> ExportButton UI component wired to that route
 
-[View Toggle]
-    └──requires──> [File Cabinet View] + [Timeline View]
+CSV export: transactions
+    └──requires──> new /api/transactions/export/route.ts
+    └──leverages patterns from──> /api/transactions/route.ts (query structure)
+    └──reuses──> src/lib/utils/csv.ts (objectsToCSV, createCSVResponse)
+    └──needs──> ExportButton in transactions page header
 
-[Historical Upload Wizard]
-    └──requires──> [PDF Storage in Supabase]
-    └──enhances──> [Coverage Visualization] (wizard fills gaps shown in coverage view)
-    └──uses existing──> [Batch upload infrastructure (batch-uploader.tsx)]
-    └──uses existing──> [Duplicate detection via pdfHash]
-    └──uses existing──> [account-combobox.tsx for source selection]
+Overlap detection
+    └──distinct from──> /api/subscriptions/duplicates (similarity score ≥70)
+    └──requires──> new /api/subscriptions/overlaps endpoint (category-group query)
+    └──needs──> dismissable banner UI on /payments/subscriptions page
+    └──dismiss state stored in──> localStorage (consistent with hints approach)
 
-[Coverage Visualization]
-    └──extends existing──> [coverage-gap-warning component]
-    └──uses existing──> [statementDate on statements table]
-    └──depends on──> [PDF Storage] (to distinguish "PDF stored" from "data only")
+E2E tests (25-30)
+    └──requires stable selectors──> data-testid attributes on interactive elements where ARIA roles ambiguous
+    └──reuses──> tests/auth.setup.ts (existing auth state setup)
+    └──each spec is independent──> no cross-spec data dependencies
+    └──PDF import spec stays skipped──> AI cost in CI is prohibitive
 
-[Statement-to-Subscription Linkage]
-    └──uses existing──> [importAuditId on subscriptions table]
-    └──uses existing──> [statement-detail.tsx transaction table]
-
-[Delete PDF]
-    └──requires──> [PDF Storage in Supabase]
-    └──must NOT delete──> [statements row, transactions] (extracted data persists after file deletion)
+Performance audit
+    └──requires install──> @next/bundle-analyzer (dev dependency)
+    └──findings drive──> dynamic import splits, optimizePackageImports config
+    └──no blocking dep on other v3.1 features──> can run in parallel with any phase
+    └──audit first──> then implement findings as a follow-on sub-phase
 ```
 
 ### Dependency Notes
 
-- **PDF Storage is the keystone feature.** Every vault-specific feature depends on it. It must be the first task of the vault milestone.
-- **File Cabinet and Timeline share a `StatementCard` component.** Build one card, use it in both layouts. Do not build two separate implementations.
-- **Historical upload wizard uses existing batch infrastructure.** The `batch-uploader.tsx`, `file-queue.tsx`, and `file-item.tsx` components are already built. The wizard adds navigation scaffolding and coverage visualization, not a new upload engine.
-- **Coverage visualization extends existing gap detection.** `coverage-gap-warning` and `incomplete-batch-banner` already exist. The vault adds a positive visualization (what IS covered) to complement the existing negative (what is MISSING).
+- **Sidebar redesign is two independent changes that happen to touch the same file.** IA rename is pure text; visual warmth is pure CSS. Both can land in one commit. Neither depends on any other v3.1 feature.
+- **Onboarding hints should use localStorage.** Cross-device sync for a hint banner is low value. DB-persisted dismiss state adds a migration and an API call per dismiss action. localStorage keyed to `gsd:hints:v1:{sectionSlug}` is adequate.
+- **Transactions CSV export is the only net-new API route in v3.1.** The subscriptions export API already exists. Transactions export needs a full-fetch variant of the keyset-paginated query — safe for up to ~10k rows (~5MB in memory); no streaming needed for v3.1.
+- **Overlap detection must not modify the existing duplicate detection.** The duplicate scan (`/api/subscriptions/duplicates`) uses similarity scoring and is exposed via the Duplicates page. Overlap detection is a separate, simpler query (group by categoryId, count ≥ 2) that surfaces in the subscriptions list. Keep them separate.
+- **E2E test authoring is the highest-effort item in v3.1.** 25-30 tests is ~3-5x the current coverage. Recommend writing tests feature-by-feature as each feature ships, not as a standalone "write all tests" phase at the end.
+- **Performance audit produces two artifacts:** (1) bundle treemap image from `@next/bundle-analyzer`, (2) Lighthouse report JSON. The fix list is derived from these, not predetermined.
 
 ---
 
-## MVP Definition
+## MVP Definition for v3.1
 
-### Launch With (v1 — Vault Core)
+### Launch With (v3.1 complete)
 
-Minimum viable vault — what makes it a vault instead of just an import history list.
+Minimum set for the milestone to be considered shipped. Every item is required.
 
-- [ ] **PDF storage** — upload PDF to Supabase Storage private bucket, store path in `pdfStoragePath` — *without this, nothing else works*
-- [ ] **In-app PDF viewer** — Dialog or Sheet with `react-pdf` (dynamic import, no SSR) — *without this, "vault" is meaningless*
-- [ ] **Download PDF** — signed URL download link on each statement card — *baseline user expectation*
-- [ ] **File cabinet view** — existing `/sources` accordion extended with statement cards showing "View PDF" and "Download" actions — *natural extension of what already exists*
-- [ ] **Timeline view** — chronological list of all statements across all sources — *the second navigation mode that makes dual-view meaningful*
-- [ ] **View toggle** — switch between file cabinet and timeline, preference saved to `localStorage` — *low effort, high UX polish*
-- [ ] **"No file stored" indicator** — badge on cards where `pdfStoragePath IS NULL` — *data integrity: existing imports did not store files*
-- [ ] **Empty state + upload CTA** — shown when vault has no statements — *required for new users who land on vault before uploading*
+- [ ] Sidebar IA rename — plain English labels for all 11 nav items
+- [ ] Sidebar visual warmth — accent color on active item, hover state polish, app logo color
+- [ ] Onboarding hints on 3+ screens — subscriptions empty state, vault empty state, transactions empty state (inline dismissable `Alert`)
+- [ ] Export subscriptions CSV — `ExportButton` wired to existing `/api/subscriptions/export`
+- [ ] Export transactions CSV — new `/api/transactions/export` route + `ExportButton` in transactions page
+- [ ] Overlap detection — `/api/subscriptions/overlaps` endpoint + dismissable banner on subscriptions page
+- [ ] E2E coverage — 25-30 tests covering all major flows (see spec file breakdown below)
+- [ ] Performance audit report — bundle treemap + Lighthouse baseline + prioritized findings list
+- [ ] Performance fixes implemented — at minimum: `optimizePackageImports` for lucide-react, dynamic import for react-pdf viewer
 
-### Add After Validation (v1.x)
+### Add After Validation (v3.2+)
 
-Features to add once core vault is live and users are uploading statements:
+Add once v3.1 is stable and in use.
 
-- [ ] **Coverage visualization** — month-grid heatmap per source showing PDF stored / data only / missing — *trigger: users ask "which months am I missing?"*
-- [ ] **Historical upload wizard** — guided backfill flow with coverage calendar — *trigger: vault is live and users want to fill gaps systematically*
-- [ ] **Delete PDF** — remove stored file while keeping extracted data — *trigger: GDPR requests, storage cost awareness; add before significant storage accumulates*
-- [ ] **Statement notes** — text field on statement for user annotations — *trigger: users ask for annotation capability; far simpler than PDF annotation*
+- [ ] Overlap detection with combined cost breakdown per category ("$47/mo across 3 services")
+- [ ] E2E tests in CI via GitHub Actions workflow
+- [ ] Lighthouse regression gating on PR (requires stable baseline)
+- [ ] Onboarding hint for billing/upgrade path (contextual prompt when user hits a feature gate)
 
-### Future Consideration (v2+)
+### Future Consideration (v4+)
 
-Features to defer until vault is established and usage patterns emerge:
-
-- [ ] **Statement-to-subscription deep linkage** — "X subscriptions from this statement" with navigation — *defer: useful but not blocking vault experience*
-- [ ] **Batch date auto-detection** — parse statement dates from filenames and PDF content — *defer: adds AI API cost and complexity; manual date assignment acceptable for v1*
-- [ ] **Statement search** — search by filename, source, date range across vault — *defer: small vault size makes this unnecessary early; extracted transactions are already searchable*
+- [ ] Full onboarding checklist with progress tracking — requires more infra, higher activation potential
+- [ ] WCAG 2.1 AA accessibility audit pass
+- [ ] Cross-device hint dismissal via DB — only if analytics show meaningful cross-device usage
 
 ---
 
@@ -172,129 +163,176 @@ Features to defer until vault is established and usage patterns emerge:
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| PDF storage in Supabase | HIGH | LOW | P1 |
-| In-app PDF viewer | HIGH | MEDIUM | P1 |
-| Download PDF | HIGH | LOW | P1 |
-| File cabinet view (extends existing) | HIGH | LOW | P1 |
-| Timeline view | HIGH | MEDIUM | P1 |
-| View toggle | MEDIUM | LOW | P1 |
-| "No file stored" indicator | HIGH | LOW | P1 |
-| Empty state + upload CTA | MEDIUM | LOW | P1 |
-| Coverage visualization | HIGH | MEDIUM | P2 |
-| Historical upload wizard | HIGH | HIGH | P2 |
-| Delete PDF | MEDIUM | MEDIUM | P2 |
-| Statement notes | LOW | LOW | P2 |
-| Statement-to-subscription linkage | MEDIUM | LOW | P3 |
-| Batch date auto-detection | MEDIUM | HIGH | P3 |
-| Statement search | LOW | MEDIUM | P3 |
-
-**Priority key:**
-- P1: Must have for vault launch (all table stakes)
-- P2: Should have — add in first iteration after vault is live
-- P3: Nice to have — future milestone
+| Sidebar IA rename (labels) | HIGH — navigation clarity is table stakes | LOW — text-only change | P1 |
+| Sidebar visual warmth | MEDIUM — perceived quality signal | LOW — CSS variables | P1 |
+| Onboarding hints (3 screens) | HIGH — reduces new-user abandonment | MEDIUM — per-screen components + dismiss logic | P1 |
+| Export subscriptions CSV (button) | HIGH — data ownership expectation | LOW — API exists, wire UI only | P1 |
+| Export transactions CSV | MEDIUM — power users; most care about subscriptions first | MEDIUM — new API route | P1 |
+| Overlap detection banner | HIGH — core save-money value prop | MEDIUM — new API + UI component | P1 |
+| E2E test suite (25-30 tests) | HIGH — billing app regression protection | HIGH — substantial authoring | P1 |
+| Performance audit (report) | MEDIUM — technical health | LOW — install tool, run reports | P1 |
+| Dynamic import for react-pdf | MEDIUM — JS bundle reduction | LOW — 3-line code change | P1 |
+| `optimizePackageImports` for lucide-react | LOW-MEDIUM — icon tree-shaking | LOW — 1 line in next.config.ts | P1 |
+| Overlap cost breakdown per category | MEDIUM — actionability improvement | LOW — add sum to existing query | P2 |
+| Sidebar collapse persistence | LOW — already works via shadcn cookie | N/A — already implemented | P3 |
+| Hint re-surface after N days | LOW — edge case | LOW | P3 |
 
 ---
 
 ## Competitor Feature Analysis
 
-No direct competitors combine a subscription manager with a statement vault. References from adjacent markets:
-
-| Feature | Dext Vault | FutureVault | SmartVault | Our Approach |
-|---------|------------|-------------|------------|--------------|
-| PDF storage | Yes | Yes | Yes | Supabase Storage private bucket, user-scoped RLS |
-| In-app viewer | Yes (embedded) | Yes | Yes (iframe) | `react-pdf` modal — no external iframe dependency |
-| File organization | Folder hierarchy | Smart folders + AI | Folder hierarchy | Dual-view: source-grouped (file cabinet) + chronological (timeline). Simpler than folders, appropriate for bank statements. |
-| Coverage visualization | No | No | No | Differentiator: 12-month grid per source |
-| Historical upload wizard | No | No | No | Differentiator: guided backfill with coverage view |
-| Search | Full-text | AI semantic | Keyword | v1: none; transactions already searchable in existing UI |
-| Download | Yes | Yes | Yes | Signed URL with `Content-Disposition: attachment` |
-| Annotation | Yes | Yes | Yes (iframe) | Out of scope — notes field only |
-| Sharing | Yes | Yes | Yes | Out of scope — no multi-tenancy |
-
-**Key insight from competitor research:** All competitors default to a folder hierarchy. This app's source-type grouping (by bank/card name) is simpler and more appropriate for bank statements, where users think "my Chase account" not "my Q1 2024 folder." The timeline view is additive and does not conflict with the source-based mental model.
+| Feature | Rocket Money | Copilot Money | Our Approach |
+|---------|-------------|---------------|--------------|
+| Sidebar / navigation labels | Mobile tab bar; no sidebar | Clean icon + label sidebar | Rename to match Copilot-level clarity; context-appropriate labels not jargon |
+| Onboarding | Multi-step forced modal tour | Contextual in-app hints + progress bar | Inline contextual hints on empty states — no tour library, no forced progression |
+| CSV export | Subscriptions only (paid tier) | Transactions + subscriptions (paid) | Both in v3.1; no tier-gate added |
+| Overlap detection | "Recurring" category view; no explicit overlap alert | No explicit overlap flag | Category-group banner: unique because we own the category taxonomy |
+| E2E / test coverage | Not externally visible | Not externally visible | 25-30 Playwright tests as internal quality gate |
+| Performance | React Native app (no web bundle concern) | Native iOS/Android | Next.js App Router + Server Components gives structural advantage; audit to confirm and address gaps |
 
 ---
 
-## Implementation Notes by Feature
+## Phase-Specific Notes for Roadmap
 
-### PDF Storage (Supabase Storage)
+### Sidebar Redesign
 
-- **Bucket name:** `statements` — private bucket (NOT public)
-- **Path convention:** `{userId}/{statementId}.pdf` — user-scoped, no collision risk
-- **File size:** Supabase Free tier caps at 50MB per file. Bank statements are typically 100KB–5MB. Non-issue.
-- **Upload method:** Client-side direct upload using signed upload URL from Supabase JS client. Avoids Next.js 1MB server action body size limit. Generate signed upload URL on server, execute upload from browser.
-- **RLS policy:** User can only read/write objects where path starts with their `userId`. Standard pattern from Supabase docs.
-- **Upload trigger:** Wired into existing batch import flow. When PDF is processed, immediately upload to storage and update `pdfStoragePath`.
+**Two sub-tasks, one atomic commit.** The IA rename (11 label strings) and visual warmth (CSS token overrides) both touch `app-sidebar.tsx` and `globals.css`. Do them together.
 
-### In-App PDF Viewer
+Specific label rename recommendations based on existing routes:
 
-- **Library:** `react-pdf` by wojtekmaj — **not** `@react-pdf/renderer` (that generates PDFs, not displays them)
-  - Weekly downloads: 2M (react-pdf) vs 1.4M (@react-pdf/renderer)
-  - Wraps Mozilla's PDF.js
-  - Next.js App Router compatible via `dynamic(() => import('./PdfViewerInner'), { ssr: false })`
-- **Worker configuration:**
-  ```
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'npm:pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-  ).toString()
-  ```
-- **UX pattern:** Open in a shadcn `Dialog` or `Sheet` (slide-over). Do not navigate away — users want to compare PDF to the transaction list on the same page.
-- **Signed URL:** Generate on viewer open via `createSignedUrl(path, 3600)` (1-hour expiry). Regenerate if user keeps viewer open longer.
-- **Fallback:** If PDF fails to load, show a "Download original file" link so users are never blocked.
+| Current label | Recommended label | Route |
+|---------------|------------------|-------|
+| doc Vault | Statement Vault | /vault |
+| doc Load | Upload Statements | /vault/load |
+| Sources | Statement Sources | /sources |
+| data Vault | Account Vault | /accounts |
+| subs Dash | Dashboard | /payments/dashboard |
+| Analytics | Spending Analytics | /payments/analytics |
+| subs Forecast | Forecast | /payments/forecast |
+| subs Master List | Subscriptions | /payments/subscriptions |
+| subs Selector | Transactions | /payments/transactions |
+| subs Suggestions | Suggestions | /payments/suggestions |
+| Reminders | Reminders | /payments/reminders |
 
-### File Cabinet View
+CSS tokens to override: `--sidebar-accent`, `--sidebar-accent-foreground`, `--sidebar-primary`, `--sidebar-primary-foreground`, `--sidebar-border`. Add a warm tint (amber-adjacent or indigo) to the primary/accent tokens for the active state. The `SidebarMenuButton[isActive=true]` uses `bg-sidebar-accent text-sidebar-accent-foreground` via shadcn internals.
 
-- Extends the existing `source-list.tsx` accordion component
-- Each accordion item (source) expands to show `StatementCard` components
-- `StatementCard` shows: filename, statement date (or "Date unknown"), file size, upload date, "View PDF" button, "Download" button, "No file" badge if `pdfStoragePath IS NULL`
-- Sort: Newest statement first within each source group
-- "Upload more statements" link within each accordion item (routes to batch upload pre-filtered to that source)
+### Onboarding Hints
 
-### Timeline View
+**localStorage dismiss pattern:**
+```typescript
+const HINT_KEY = (section: string) => `gsd:hints:v1:${section}`;
+const isDismissed = (section: string) =>
+  typeof window !== 'undefined' && localStorage.getItem(HINT_KEY(section)) === 'true';
+const dismiss = (section: string) =>
+  localStorage.setItem(HINT_KEY(section), 'true');
+```
 
-- Flat list or month-grouped list of statement cards
-- Same `StatementCard` component as file cabinet view
-- Month separators: "January 2024", "February 2024", etc.
-- Sources differentiated by a label/badge on the card (not accordion grouping)
-- Sort: Newest statement at top
+**Target screens** (in priority order):
+1. Subscriptions list when `subscriptions.length === 0` — "Add your first subscription manually or import from a bank statement PDF."
+2. Vault when no statements exist — "Upload a bank statement PDF to start building your vault."
+3. Transactions when no transactions exist — "Import a bank statement to see transactions here."
+4. Dashboard when no subscriptions — "Your dashboard will show analytics once you've added subscriptions."
+5. Suggestions when no suggestions — "Suggestions appear when AI detects recurring patterns in your imported statements."
 
-### Historical Upload Wizard
+Each hint uses a shadcn `Alert` with icon, two-line description, a primary action CTA button, and a dismiss `X` in the top-right corner.
 
-The wizard is UX scaffolding around existing infrastructure — not a new upload engine.
+### CSV Export
 
-- **Step 1:** Select source using existing `account-combobox.tsx`
-- **Step 2:** Show coverage calendar for that source (which months have PDF stored, which are data-only, which have no data)
-- **Step 3:** Drag-and-drop batch upload for missing months using existing `batch-uploader.tsx`
-- **Step 4:** Confirm processing and see updated coverage
-- All processing goes through the existing batch import pipeline
+**Subscriptions (LOW effort):** Add a single `ExportButton` component to the subscriptions list page toolbar. `onClick` calls `fetch('/api/subscriptions/export')` and triggers a browser download via `URL.createObjectURL`. The API route is complete.
 
-### Delete PDF
+**Transactions (MEDIUM effort):** Create `/api/transactions/export/route.ts` that:
+- Fetches ALL transactions for the user (no pagination — full fetch)
+- Columns: date, description, amount, currency, sourceType, accountId, tagStatus, subscriptionName (if converted)
+- Reuses `objectsToCSV` + `createCSVResponse` from `src/lib/utils/csv.ts`
+- Returns `text/csv` with `Content-Disposition: attachment; filename="transactions-YYYY-MM-DD.csv"`
+- Add `ExportButton` to transactions page header, consistent with subscriptions approach
 
-- Sets `pdfStoragePath = null` in the `statements` table
-- Deletes the object from Supabase Storage via `supabase.storage.from('statements').remove([path])`
-- Does NOT delete the `statements` row or any `transactions` rows — extracted data persists
-- Requires a confirmation dialog with clear messaging: "This deletes the original PDF. Your extracted transaction data will be preserved."
+### Overlap Detection
+
+**New API endpoint:** `GET /api/subscriptions/overlaps`
+
+Query logic:
+```sql
+SELECT category_id, category_name, COUNT(*) as count,
+       SUM(normalized_monthly_amount) as total_monthly
+FROM subscriptions
+JOIN categories ON subscriptions.category_id = categories.id
+WHERE user_id = $1 AND status = 'active' AND deleted_at IS NULL AND merged_at IS NULL
+GROUP BY category_id, category_name
+HAVING COUNT(*) >= 2
+ORDER BY total_monthly DESC
+```
+
+**UI pattern:** Dismissable `Alert` banner at top of `/payments/subscriptions` page (above the subscription table). Shows "You have N services in [Category] totalling $X/mo — review?" with a "View" button (scrolls to or filters by that category) and a dismiss button. Dismiss stored as `localStorage.setItem('gsd:overlaps:v1:dismissed', JSON.stringify({hash, dismissedAt}))` where hash is derived from the sorted overlap subscription IDs — auto-re-surfaces when subscriptions change.
+
+### E2E Test Expansion
+
+**Current state:** 3 spec files, ~8 effective tests (6 CRUD, email reminder shell, PDF import skipped).
+
+**Target structure for 25-30 tests:**
+
+| Spec file | Suggested tests | Focus |
+|-----------|-----------------|-------|
+| `subscriptions.spec.ts` | 6 (existing) | CRUD, validation, special chars, nav |
+| `auth.spec.ts` | 3 (new) | Login, logout, register validation |
+| `vault.spec.ts` | 4 (new) | Vault page renders, view toggle, empty state |
+| `analytics.spec.ts` | 3 (new) | Analytics, forecast, trends page render and data visibility |
+| `billing.spec.ts` | 3 (new) | Pricing page, billing status display, portal link |
+| `reminders.spec.ts` | 2 (new) | Reminders page renders, cron endpoint accessible |
+| `export.spec.ts` | 2 (new) | Subscriptions CSV download triggers, transactions CSV download triggers |
+| `overlap.spec.ts` | 2 (new) | Overlap banner appears, dismiss works |
+| `onboarding.spec.ts` | 2 (new) | Hint appears on empty state, dismiss persists |
+| `accounts.spec.ts` | 3 (new) | Account CRUD, detail page tabs render |
+
+Total: ~30 tests. PDF import spec remains skipped (OpenAI API cost in CI).
+
+**Key selectors principle:** Add `data-testid` attributes to interactive elements that don't have unambiguous ARIA roles (action menus, export buttons, dismiss buttons). Avoid positional selectors like `locator('button').last()` which are fragile.
+
+### Performance Audit
+
+**Install:** `npm install --save-dev @next/bundle-analyzer`
+
+**Add to `package.json`:**
+```json
+"analyze": "ANALYZE=true npm run build"
+```
+
+**Add to `next.config.ts`:**
+```typescript
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+```
+
+**Expected findings (HIGH confidence from codebase inspection):**
+
+1. `react-pdf` loads eagerly — the PDF viewer component in vault should use `next/dynamic` with `ssr: false`. The current two-file split (noted in PROJECT.md key decisions) is correct architecturally but may still include `react-pdf` in the initial bundle if the outer component isn't dynamically imported.
+2. `lucide-react` imports all icons by default — add `optimizePackageImports: ['lucide-react']` to `next.config.ts` experimental options. One line, measurable reduction.
+3. `recharts` on analytics/forecast pages — candidate for dynamic import; only needed on pages that render charts.
+4. Sentry browser bundle size — check if `@sentry/nextjs` is contributing meaningfully to client bundle; the `tunnelRoute` is already configured which is good practice.
+
+**Realistic Lighthouse targets for this app:**
+- Performance: 80+ (react-pdf and recharts make 95+ unrealistic without removing features)
+- Accessibility: 95+
+- Best Practices: 95+
+- SEO: 85+ (auth-gated pages score lower on SEO by design)
 
 ---
 
 ## Sources
 
-- Codebase analysis: `src/lib/db/schema.ts` (statements table, pdfStoragePath), `src/components/sources/` (existing source/statement UI), `src/components/batch/` (existing upload infrastructure)
-- [Supabase Storage — Serving assets / signed URLs](https://supabase.com/docs/guides/storage/serving/downloads) — HIGH confidence
-- [Supabase Storage — Resumable uploads and file size limits](https://supabase.com/docs/guides/storage/uploads/resumable-uploads) — HIGH confidence
-- [Supabase Storage — Access control and RLS](https://supabase.com/docs/guides/storage/security/access-control) — HIGH confidence
-- [react-pdf npm package](https://www.npmjs.com/package/react-pdf) — 2M weekly downloads, wojtekmaj — HIGH confidence
-- [react-pdf Next.js App Router starter](https://github.com/react-pdf-dev/starter-rp-nextjs-app-router-js) — MEDIUM confidence (official starter repo, SSR:false pattern confirmed)
-- [Best React PDF Viewer Libraries 2025](https://blog.react-pdf.dev/top-6-pdf-viewers-for-reactjs-developers-in-2025) — MEDIUM confidence
-- [FutureVault — AI-Powered Digital Vaults for Financial Services](https://www.futurevault.com/) — MEDIUM confidence (competitor reference)
-- [SmartVault — Document Management](https://www.smartvault.com/) — MEDIUM confidence (competitor reference)
-- [Dext Vault — Secure Electronic Document Management](https://dext.com/en/business/product/dext-vault) — MEDIUM confidence (competitor reference)
-- [Fintech UX in 2026: what users expect](https://www.stan.vision/journal/fintech-ux-in-2026-what-users-expect-from-modern-financial-products) — MEDIUM confidence
-- [Bulk Import UX — Smart Interface Design Patterns](https://smart-interface-design-patterns.com/articles/bulk-ux/) — MEDIUM confidence
-- [Accordion UI Design Best Practices 2025](https://lollypop.design/blog/2025/december/accordion-ui-design/) — LOW confidence (general UX pattern, not domain-specific)
+- Codebase analysis: `src/components/layout/app-sidebar.tsx`, `src/app/(dashboard)/onboarding/page.tsx`, `src/app/api/subscriptions/export/route.ts`, `src/app/api/subscriptions/duplicates/route.ts`, `src/lib/utils/csv.ts`, `tests/e2e/subscriptions.spec.ts`, `playwright.config.ts`, `next.config.ts`, `.planning/PROJECT.md`
+- [Playwright Best Practices](https://playwright.dev/docs/best-practices) — official docs; selector strategy and test isolation (HIGH confidence)
+- [Improving Playwright Test Coverage](https://www.alphabin.co/blog/playwright-test-coverage) — strategic focus over 100% coverage (MEDIUM confidence)
+- [End-to-End Testing Your SaaS with Playwright](https://makerkit.dev/blog/tutorials/playwright-testing) — SaaS flow patterns (MEDIUM confidence)
+- [Next.js Production Checklist](https://nextjs.org/docs/app/guides/production-checklist) — official Next.js performance guidance (HIGH confidence)
+- [Next.js Performance Optimization 2025](https://pagepro.co/blog/nextjs-performance-optimization-in-9-steps/) — bundle analysis and Core Web Vitals (MEDIUM confidence)
+- [Empty State UX in SaaS Applications](https://userpilot.com/blog/empty-state-saas/) — contextual onboarding from empty states (MEDIUM confidence)
+- [Progressive Onboarding: Contextual Help](https://userpilot.com/blog/progressive-onboarding/) — inline hints vs. modal tours (MEDIUM confidence)
+- [SaaS Data Portability Best Practices](https://www.binadox.com/blog/saas-data-portability-planning-your-exit-strategy-before-you-need-it/) — CSV/JSON export standards (MEDIUM confidence)
+- [Best Sidebar Menu Design Examples 2025](https://www.navbar.gallery/blog/best-side-bar-navigation-menu-design-examples) — sidebar IA and visual patterns (LOW-MEDIUM confidence)
 
 ---
 
-*Feature research for: Financial Data Vault (bank statement document storage and browsing)*
-*Researched: 2026-02-19*
+*Feature research for: Subscription Manager v3.1 UX & Quality milestone*
+*Researched: 2026-03-02*
