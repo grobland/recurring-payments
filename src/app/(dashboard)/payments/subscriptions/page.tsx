@@ -449,7 +449,7 @@ export default function SubscriptionsPage() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" data-testid="subscription-actions-menu">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -471,7 +471,7 @@ export default function SubscriptionsPage() {
                                     View Details
                                   </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
+                                <DropdownMenuItem asChild data-testid="subscription-edit-menu-item">
                                   <Link
                                     href={`/payments/subscriptions/${subscription.id}/edit`}
                                   >
@@ -482,6 +482,7 @@ export default function SubscriptionsPage() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   className="text-destructive focus:text-destructive"
+                                  data-testid="subscription-delete-menu-item"
                                   onClick={() =>
                                     handleDelete(subscription.id, subscription.name)
                                   }

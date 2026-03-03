@@ -254,6 +254,7 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
+                  data-testid="user-menu-trigger"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
@@ -324,6 +325,7 @@ export function AppSidebar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer"
+                  data-testid="user-menu-logout"
                   onClick={() => signOut({ callbackUrl: "/login" })}
                 >
                   Log out

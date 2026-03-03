@@ -12,7 +12,7 @@ import path from "path";
 test.describe("PDF Import Flow", () => {
   test.skip("can upload bank statement and process import flow", async ({ page }) => {
     // Navigate to import page
-    await page.goto("/import");
+    await page.goto("/vault/load");
 
     // Verify upload page loaded
     await expect(page.getByText("Upload Documents")).toBeVisible();
@@ -86,7 +86,7 @@ test.describe("PDF Import Flow", () => {
   });
 
   test.skip("can remove uploaded files before processing", async ({ page }) => {
-    await page.goto("/import");
+    await page.goto("/vault/load");
 
     // Upload test fixture
     const filePath = path.join(
@@ -111,7 +111,7 @@ test.describe("PDF Import Flow", () => {
   });
 
   test.skip("shows upload area with drag and drop hint", async ({ page }) => {
-    await page.goto("/import");
+    await page.goto("/vault/load");
 
     // Verify upload instructions
     await expect(

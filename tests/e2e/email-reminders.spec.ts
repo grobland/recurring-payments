@@ -15,7 +15,7 @@ test.describe("Email Reminders", () => {
     const uniqueName = `Reminder Test ${Date.now()}`;
 
     // Navigate to new subscription page
-    await page.goto("/subscriptions/new");
+    await page.goto("/payments/subscriptions/new");
     await expect(page.getByText("Add New Subscription")).toBeVisible();
 
     // Fill in the form
@@ -64,7 +64,7 @@ test.describe("Email Reminders", () => {
 
     // Verify subscription created
     await expect(page.getByText("Subscription created successfully")).toBeVisible();
-    await page.waitForURL("/subscriptions");
+    await page.waitForURL("**/payments/subscriptions");
 
     // Verify subscription appears in list
     await expect(page.getByText(uniqueName)).toBeVisible();

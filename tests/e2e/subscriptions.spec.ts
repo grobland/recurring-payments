@@ -1,9 +1,17 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Subscription CRUD", () => {
+  test.beforeEach(async ({ page }) => {
+    page.on("console", (msg) => {
+      if (msg.type() === "error" || msg.type() === "warning") {
+        console.log(`[BROWSER ${msg.type().toUpperCase()}]`, msg.text());
+      }
+    });
+  });
+
   test("can add a new subscription", async ({ page }) => {
     // Navigate to the new subscription page
-    await page.goto("/subscriptions/new");
+    await page.goto("/payments/subscriptions/new");
 
     // Verify the form loaded - "Add New Subscription" is a div, not a heading
     await expect(page.getByText("Add New Subscription")).toBeVisible();
@@ -35,14 +43,14 @@ test.describe("Subscription CRUD", () => {
     await expect(page.getByText("Subscription created successfully")).toBeVisible();
 
     // Verify redirect to subscriptions list
-    await page.waitForURL("/subscriptions");
+    await page.waitForURL("**/payments/subscriptions");
 
     // Verify the subscription appears in the list
     await expect(page.getByText(uniqueName)).toBeVisible();
   });
 
   test("shows validation error for empty name", async ({ page }) => {
-    await page.goto("/subscriptions/new");
+    await page.goto("/payments/subscriptions/new");
 
     // Fill only the amount, leave name empty
     await page.getByLabel("Amount").fill("10.00");
@@ -54,11 +62,11 @@ test.describe("Subscription CRUD", () => {
     await expect(page.getByText("Name is required")).toBeVisible();
 
     // Verify we're still on the new subscription page
-    await expect(page).toHaveURL(/\/subscriptions\/new/);
+    await expect(page).toHaveURL(/\/payments\/subscriptions\/new/);
   });
 
   test("shows validation error for invalid amount", async ({ page }) => {
-    await page.goto("/subscriptions/new");
+    await page.goto("/payments/subscriptions/new");
 
     // Fill name but set amount to 0
     await page.getByLabel("Name").fill("Test Invalid Amount");
@@ -80,7 +88,7 @@ test.describe("Subscription CRUD", () => {
 
   test("can edit an existing subscription", async ({ page }) => {
     // First, create a subscription
-    await page.goto("/subscriptions/new");
+    await page.goto("/payments/subscriptions/new");
     const uniqueName = `Edit Test ${Date.now()}`;
 
     await page.getByLabel("Name").fill(uniqueName);
@@ -94,18 +102,18 @@ test.describe("Subscription CRUD", () => {
 
     await page.getByRole("button", { name: "Create Subscription" }).click();
     await createResponsePromise;
-    await page.waitForURL("/subscriptions");
+    await page.waitForURL("**/payments/subscriptions");
 
     // Now edit the subscription
-    // Find the subscription row and click the actions menu (MoreHorizontal button)
+    // Find the subscription row and click the actions menu using data-testid
     const subscriptionRow = page.locator("tr", { has: page.getByText(uniqueName) });
-    await subscriptionRow.locator('button').last().click();
+    await subscriptionRow.getByTestId("subscription-actions-menu").click();
 
     // Click Edit from the dropdown
     await page.getByRole("menuitem", { name: "Edit" }).click();
 
     // Wait for edit page to load
-    await expect(page).toHaveURL(/\/subscriptions\/[^/]+\/edit/);
+    await expect(page).toHaveURL(/\/payments\/subscriptions\/[^/]+\/edit/);
 
     // Change the amount
     const newAmount = "19.99";
@@ -126,11 +134,11 @@ test.describe("Subscription CRUD", () => {
     await expect(page.getByText("Subscription updated successfully")).toBeVisible();
 
     // Verify we're redirected to detail page or subscription list
-    await page.waitForURL(/\/subscriptions/);
+    await page.waitForURL(/\/payments\/subscriptions/);
 
     // Navigate to subscriptions list to verify the change
-    if (!page.url().endsWith("/subscriptions")) {
-      await page.goto("/subscriptions");
+    if (!page.url().includes("/payments/subscriptions") || page.url().includes("/edit")) {
+      await page.goto("/payments/subscriptions");
     }
 
     // Verify the new amount appears
@@ -140,7 +148,7 @@ test.describe("Subscription CRUD", () => {
 
   test("can delete a subscription", async ({ page }) => {
     // First, create a subscription to delete
-    await page.goto("/subscriptions/new");
+    await page.goto("/payments/subscriptions/new");
     const uniqueName = `Delete Test ${Date.now()}`;
 
     await page.getByLabel("Name").fill(uniqueName);
@@ -154,14 +162,14 @@ test.describe("Subscription CRUD", () => {
 
     await page.getByRole("button", { name: "Create Subscription" }).click();
     await createResponsePromise;
-    await page.waitForURL("/subscriptions");
+    await page.waitForURL("**/payments/subscriptions");
 
     // Verify subscription exists
     await expect(page.getByText(uniqueName)).toBeVisible();
 
-    // Find the subscription row and click the actions menu (MoreHorizontal button)
+    // Find the subscription row and click the actions menu using data-testid
     const subscriptionRow = page.locator("tr", { has: page.getByText(uniqueName) });
-    await subscriptionRow.locator('button').last().click();
+    await subscriptionRow.getByTestId("subscription-actions-menu").click();
 
     // Wait for DELETE API response
     const deleteResponsePromise = page.waitForResponse((response) =>
@@ -181,7 +189,7 @@ test.describe("Subscription CRUD", () => {
   });
 
   test("handles special characters in subscription name", async ({ page }) => {
-    await page.goto("/subscriptions/new");
+    await page.goto("/payments/subscriptions/new");
 
     // Use a name with special characters and unicode
     const specialName = "Netflix™ Premium HD 🎬";
@@ -201,7 +209,7 @@ test.describe("Subscription CRUD", () => {
     // Verify toast notification
     await expect(page.getByText("Subscription created successfully")).toBeVisible();
 
-    await page.waitForURL("/subscriptions");
+    await page.waitForURL("**/payments/subscriptions");
 
     // Verify the subscription with special characters displays correctly (use first() in case duplicates exist from previous runs)
     await expect(page.getByText(specialName).first()).toBeVisible();
@@ -209,12 +217,12 @@ test.describe("Subscription CRUD", () => {
 
   test("can navigate to subscription list from dashboard", async ({ page }) => {
     // Start at dashboard
-    await page.goto("/dashboard");
+    await page.goto("/payments/dashboard");
 
     // Click on subscriptions link in the sidebar (use exact match to avoid "Subscriptions Manager" logo)
     await page.getByRole("link", { name: "Subscriptions", exact: true }).click();
 
     // Verify we're on subscriptions page
-    await expect(page).toHaveURL("/subscriptions");
+    await expect(page).toHaveURL(/\/payments\/subscriptions/);
   });
 });
