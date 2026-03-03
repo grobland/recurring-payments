@@ -14,7 +14,10 @@ import {
   ExternalLink,
   Filter,
   FileUp,
+  Download,
+  Loader2,
 } from "lucide-react";
+import { format } from "date-fns";
 
 import { DashboardHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -105,6 +108,32 @@ export default function SubscriptionsPage() {
       ? subscriptions.filter((sub) => sub.needsUpdate)
       : subscriptions;
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch("/api/subscriptions/export");
+      if (!res.ok) {
+        throw new Error("Export failed");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `subscriptions-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("CSV downloaded");
+    } catch {
+      toast.error("Export failed. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleDelete = async (id: string, name: string) => {
     try {
       await deleteMutation.mutateAsync(id);
@@ -146,12 +175,27 @@ export default function SubscriptionsPage() {
               Manage all your recurring payments
             </p>
           </div>
-          <Button asChild className="h-11">
-            <Link href="/subscriptions/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Subscription
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              disabled={isExporting || displayedSubscriptions.length === 0}
+              data-testid="export-csv-button"
+            >
+              {isExporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              Export CSV
+            </Button>
+            <Button asChild className="h-11">
+              <Link href="/subscriptions/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Subscription
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Summary Cards */}

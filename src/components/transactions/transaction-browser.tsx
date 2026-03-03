@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { AlertCircle, RefreshCw, FileX2 } from "lucide-react";
+import { AlertCircle, RefreshCw, FileX2, Download, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { toast } from "sonner";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
 import { useTransactions } from "@/lib/hooks/use-transactions";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
@@ -152,6 +154,55 @@ export function TransactionBrowser() {
     setSelectedIds(new Set());
   }, []);
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (debouncedFilters.sourceType) {
+        params.set("sourceType", debouncedFilters.sourceType);
+      }
+      if (debouncedFilters.tagStatus && debouncedFilters.tagStatus !== "all") {
+        params.set("tagStatus", debouncedFilters.tagStatus);
+      }
+      if (debouncedFilters.dateFrom) {
+        params.set("dateFrom", debouncedFilters.dateFrom);
+      }
+      if (debouncedFilters.dateTo) {
+        params.set("dateTo", debouncedFilters.dateTo);
+      }
+      if (debouncedFilters.search) {
+        params.set("search", debouncedFilters.search);
+      }
+      if (debouncedFilters.accountId) {
+        params.set("accountId", debouncedFilters.accountId);
+      }
+      if (debouncedFilters.paymentType) {
+        params.set("paymentType", debouncedFilters.paymentType);
+      }
+      const url = `/api/transactions/export${params.toString() ? `?${params.toString()}` : ""}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error("Export failed");
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `transactions-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+      toast.success("CSV downloaded");
+    } catch {
+      toast.error("Export failed. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [debouncedFilters]);
+
   // Extract unique source types from loaded transactions
   const uniqueSourceTypes = useMemo(() => {
     const sources = new Set<string>();
@@ -176,7 +227,22 @@ export function TransactionBrowser() {
   // Shared filter controls — PaymentTypeSelector above TransactionFilters (FILTER-01)
   const filterControls = (sourceTypes: string[]) => (
     <div className="flex flex-col gap-2 mb-2">
-      <PaymentTypeSelector value={paymentType} onChange={setPaymentType} />
+      <div className="flex items-center justify-between">
+        <PaymentTypeSelector value={paymentType} onChange={setPaymentType} />
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          disabled={isExporting || allTransactions.length === 0}
+          data-testid="export-csv-button"
+        >
+          {isExporting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          Export CSV
+        </Button>
+      </div>
       <TransactionFilters
         filters={filters}
         onFiltersChange={setFilters}
