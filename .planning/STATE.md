@@ -2,6 +2,19 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: UX & Performance
+status: unknown
+last_updated: "2026-03-03T23:22:55.866Z"
+progress:
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 14
+  completed_plans: 14
+---
+
+---
+gsd_state_version: 1.0
+milestone: v3.2
+milestone_name: UX & Performance
 status: in_progress
 last_updated: "2026-03-03"
 progress:

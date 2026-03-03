@@ -192,7 +192,7 @@ Plans:
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
 | 35-40 | v3.0 | 12/12 | Complete | 2026-02-27 |
 | 41-42 | v3.1 | 5/5 | Complete | 2026-03-03 |
-| 43. Overlap Detection | 2/2 | Complete   | 2026-03-03 | - |
+| 43. Overlap Detection | 2/2 | Complete    | 2026-03-03 | - |
 | 44. Onboarding Hints | v3.2 | 0/TBD | Not started | - |
 | 45. Sidebar Redesign | v3.2 | 0/TBD | Not started | - |
 | 46. Performance Audit | v3.2 | 0/TBD | Not started | - |
