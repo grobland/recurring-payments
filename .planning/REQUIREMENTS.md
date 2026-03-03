@@ -15,11 +15,11 @@ Requirements for v3.2 UX & Performance milestone. Carried forward from v3.1 defe
 
 ### Onboarding Hints
 
-- [ ] **ONBRD-01**: User sees contextual hint with action CTA on empty subscriptions list
-- [ ] **ONBRD-02**: User sees contextual hint with action CTA on empty vault
-- [ ] **ONBRD-03**: User sees contextual hint with action CTA on empty transactions page
-- [ ] **ONBRD-04**: User sees contextual hint with action CTA on empty dashboard
-- [ ] **ONBRD-05**: User sees contextual hint with action CTA on empty suggestions page
+- [x] **ONBRD-01**: User sees contextual hint with action CTA on empty subscriptions list
+- [x] **ONBRD-02**: User sees contextual hint with action CTA on empty vault
+- [x] **ONBRD-03**: User sees contextual hint with action CTA on empty transactions page
+- [x] **ONBRD-04**: User sees contextual hint with action CTA on empty dashboard
+- [x] **ONBRD-05**: User sees contextual hint with action CTA on empty suggestions page
 - [x] **ONBRD-06**: User can dismiss hints individually and dismissal persists across page refresh
 
 ### Sidebar Redesign
@@ -81,11 +81,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OVRLP-01 | Phase 43 | Complete |
 | OVRLP-02 | Phase 43 | Complete |
 | OVRLP-03 | Phase 43 | Complete |
-| ONBRD-01 | Phase 44 | Pending |
-| ONBRD-02 | Phase 44 | Pending |
-| ONBRD-03 | Phase 44 | Pending |
-| ONBRD-04 | Phase 44 | Pending |
-| ONBRD-05 | Phase 44 | Pending |
+| ONBRD-01 | Phase 44 | Complete |
+| ONBRD-02 | Phase 44 | Complete |
+| ONBRD-03 | Phase 44 | Complete |
+| ONBRD-04 | Phase 44 | Complete |
+| ONBRD-05 | Phase 44 | Complete |
 | ONBRD-06 | Phase 44 | Complete |
 | SIDE-01 | Phase 45 | Pending |
 | SIDE-02 | Phase 45 | Pending |

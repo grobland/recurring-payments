@@ -36,11 +36,11 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 ## Current Position
 
 Phase: 44 of 46 (Onboarding Hints)
-Plan: 1 of 2 complete
-Status: In progress
-Last activity: 2026-03-03 — Completed 44-01 (hint dismissal hook + DismissibleEmptyState component)
+Plan: 2 of 2 complete
+Status: Complete
+Last activity: 2026-03-03 — Completed 44-02 (dismissible hints wired into all 5 pages)
 
-Progress: [░░░░░░░░░░] 0% (0/4 phases)
+Progress: [██████████] 100% (2/2 plans in phase)
 
 ## Archived Milestones
 
@@ -71,6 +71,7 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases)
 | 43-overlap-detection | 01 | 2m 6s | 2 | 3 |
 | 43-overlap-detection | 02 | 4m | 2 | 3 |
 | 44-onboarding-hints | 01 | 3m 20s | 2 | 4 |
+| 44-onboarding-hints | 02 | 8m | 2 | 5 |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases)
 - [Phase 43-overlap-detection]: localStorage schema uses Record<categoryId, groupSignature> under 'overlap_dismissals' key
 - [Phase 43-overlap-detection]: Group signature computed as sorted(subscriptionIds).join(',') for stable re-surface detection
 - [Phase 44-onboarding-hints]: useHintDismissals uses simpler Record<pageId, boolean> vs overlap hook's Record<categoryId, signature> — no re-surface logic, dismissal is permanent
+- [Phase 44-onboarding-hints]: Subscriptions page uses DismissibleEmptyState (shared component), vault/transactions/suggestions/dashboard use useHintDismissals directly (custom layouts)
+- [Phase 44-onboarding-hints]: Dashboard uses banner approach (not per-widget empty state) since it's multi-widget and never truly empty
+- [Phase 44-onboarding-hints]: Filtered empty states on subscriptions and transactions are deliberately non-dismissible
 
 ### Blockers/Concerns
 
@@ -92,6 +96,6 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases)
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Completed 44-onboarding-hints-01-PLAN.md
-Resume file: .planning/phases/44-onboarding-hints/44-01-SUMMARY.md
-Resume: Phase 44 plan 1 complete — run `/gsd:execute-phase` for plan 02
+Stopped at: Completed 44-onboarding-hints-02-PLAN.md
+Resume file: .planning/phases/44-onboarding-hints/44-02-SUMMARY.md
+Resume: Phase 44 complete — all 2 plans done. Run `/gsd:execute-phase` for phase 45.
