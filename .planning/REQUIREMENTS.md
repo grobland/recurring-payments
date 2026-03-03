@@ -10,8 +10,8 @@ Requirements for v3.2 UX & Performance milestone. Carried forward from v3.1 defe
 ### Overlap Detection
 
 - [x] **OVRLP-01**: User sees inline badge on subscription rows that are part of a same-category overlap group
-- [ ] **OVRLP-02**: User can dismiss overlap badges per group
-- [ ] **OVRLP-03**: Dismissed badges re-surface automatically when the subscription set changes
+- [x] **OVRLP-02**: User can dismiss overlap badges per group
+- [x] **OVRLP-03**: Dismissed badges re-surface automatically when the subscription set changes
 
 ### Onboarding Hints
 
@@ -79,8 +79,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | OVRLP-01 | Phase 43 | Complete |
-| OVRLP-02 | Phase 43 | Pending |
-| OVRLP-03 | Phase 43 | Pending |
+| OVRLP-02 | Phase 43 | Complete |
+| OVRLP-03 | Phase 43 | Complete |
 | ONBRD-01 | Phase 44 | Pending |
 | ONBRD-02 | Phase 44 | Pending |
 | ONBRD-03 | Phase 44 | Pending |
