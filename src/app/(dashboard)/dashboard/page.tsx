@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Plus,
   ArrowRight,
+  X,
 } from "lucide-react";
 
 import { DashboardHeader } from "@/components/layout";
@@ -23,6 +24,7 @@ import { YearOverYearChart } from "@/components/charts/year-over-year-chart";
 import { CategoryTrendsChart } from "@/components/charts/category-trends-chart";
 import { PatternSuggestionsCard } from "@/components/dashboard/pattern-suggestions-card";
 import { useSubscriptions, useUserStatus, useDelayedLoading } from "@/lib/hooks";
+import { useHintDismissals } from "@/lib/hooks/use-hint-dismissals";
 import { useTrends } from "@/lib/hooks/use-analytics";
 import { formatCurrency } from "@/lib/utils/currency";
 import { getDaysUntil } from "@/lib/utils/dates";
@@ -45,6 +47,8 @@ export default function DashboardPage() {
       month: getMonth(now) + 1, // date-fns months are 0-indexed
     };
   });
+
+  const { isDismissed: isHintDismissed, dismiss: dismissHint } = useHintDismissals();
 
   const subscriptions = data?.subscriptions ?? [];
 
@@ -108,6 +112,31 @@ export default function DashboardPage() {
                 <Link href="/settings/billing">Upgrade</Link>
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Onboarding Hint Banner */}
+        {subscriptions.length === 0 && !showSkeleton && !error && !isHintDismissed("dashboard") && (
+          <div className="relative rounded-lg border border-dashed p-4 text-center">
+            <button
+              onClick={() => dismissHint("dashboard")}
+              className="absolute right-2 top-2 rounded-sm p-1 text-muted-foreground/60 hover:text-muted-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Dismiss hint"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <h3 className="text-sm font-medium">
+              Add subscriptions to see your spending overview
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Track your recurring payments and visualize where your money goes each month.
+            </p>
+            <Button asChild size="sm" className="mt-3">
+              <Link href="/payments/subscriptions/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add your first subscription
+              </Link>
+            </Button>
           </div>
         )}
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Sparkles, FileUp, RefreshCw } from "lucide-react";
+import { Sparkles, FileUp, RefreshCw, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +13,7 @@ import { SuggestionCard } from "@/components/suggestions/suggestion-card";
 import { BulkActionsBar } from "@/components/suggestions/bulk-actions-bar";
 
 import { usePatternSuggestions } from "@/lib/hooks/use-pattern-suggestions";
+import { useHintDismissals } from "@/lib/hooks/use-hint-dismissals";
 import { useAcceptPattern } from "@/lib/hooks/use-accept-pattern";
 import { useDismissPattern } from "@/lib/hooks/use-dismiss-pattern";
 import { useBulkAcceptPatterns, useBulkDismissPatterns } from "@/lib/hooks/use-bulk-patterns";
@@ -36,6 +37,8 @@ export default function SuggestionsPage() {
   // Mutations - bulk actions
   const bulkAccept = useBulkAcceptPatterns();
   const bulkDismiss = useBulkDismissPatterns();
+
+  const { isDismissed: isHintDismissed, dismiss: dismissHint } = useHintDismissals();
 
   // Clear selection when data changes (prevents stale selections)
   useEffect(() => {
@@ -127,21 +130,34 @@ export default function SuggestionsPage() {
   if (suggestions.length === 0) {
     return (
       <div className="container mx-auto py-6">
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="rounded-full bg-muted p-3 mb-4">
-            <Sparkles className="size-6 text-muted-foreground" />
-          </div>
-          <h2 className="text-lg font-semibold">No suggestions yet</h2>
-          <p className="text-muted-foreground mt-1 mb-4 max-w-sm">
-            Import more statements to detect recurring patterns and subscription suggestions.
+        {isHintDismissed("suggestions") ? (
+          <p className="py-12 text-center text-sm text-muted-foreground">
+            No suggestions yet
           </p>
-          <Button asChild>
-            <Link href="/import">
-              <FileUp className="size-4 mr-2" />
-              Import Statements
-            </Link>
-          </Button>
-        </div>
+        ) : (
+          <div className="relative flex flex-col items-center justify-center py-12 text-center">
+            <button
+              onClick={() => dismissHint("suggestions")}
+              className="absolute right-2 top-2 rounded-sm p-1 text-muted-foreground/60 hover:text-muted-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Dismiss hint"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="rounded-full bg-muted p-3 mb-4">
+              <Sparkles className="size-6 text-muted-foreground" />
+            </div>
+            <h2 className="text-lg font-semibold">No suggestions yet</h2>
+            <p className="text-muted-foreground mt-1 mb-4 max-w-sm">
+              Import more statements to detect recurring patterns and subscription suggestions.
+            </p>
+            <Button asChild>
+              <Link href="/import">
+                <FileUp className="size-4 mr-2" />
+                Import Statements
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
