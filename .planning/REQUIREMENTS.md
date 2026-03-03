@@ -78,31 +78,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OVRLP-01 | TBD | Pending |
-| OVRLP-02 | TBD | Pending |
-| OVRLP-03 | TBD | Pending |
-| ONBRD-01 | TBD | Pending |
-| ONBRD-02 | TBD | Pending |
-| ONBRD-03 | TBD | Pending |
-| ONBRD-04 | TBD | Pending |
-| ONBRD-05 | TBD | Pending |
-| ONBRD-06 | TBD | Pending |
-| SIDE-01 | TBD | Pending |
-| SIDE-02 | TBD | Pending |
-| SIDE-03 | TBD | Pending |
-| SIDE-04 | TBD | Pending |
-| SIDE-05 | TBD | Pending |
-| SIDE-06 | TBD | Pending |
-| PERF-01 | TBD | Pending |
-| PERF-02 | TBD | Pending |
-| PERF-03 | TBD | Pending |
-| PERF-04 | TBD | Pending |
+| OVRLP-01 | Phase 43 | Pending |
+| OVRLP-02 | Phase 43 | Pending |
+| OVRLP-03 | Phase 43 | Pending |
+| ONBRD-01 | Phase 44 | Pending |
+| ONBRD-02 | Phase 44 | Pending |
+| ONBRD-03 | Phase 44 | Pending |
+| ONBRD-04 | Phase 44 | Pending |
+| ONBRD-05 | Phase 44 | Pending |
+| ONBRD-06 | Phase 44 | Pending |
+| SIDE-01 | Phase 45 | Pending |
+| SIDE-02 | Phase 45 | Pending |
+| SIDE-03 | Phase 45 | Pending |
+| SIDE-04 | Phase 45 | Pending |
+| SIDE-05 | Phase 45 | Pending |
+| SIDE-06 | Phase 45 | Pending |
+| PERF-01 | Phase 46 | Pending |
+| PERF-02 | Phase 46 | Pending |
+| PERF-03 | Phase 46 | Pending |
+| PERF-04 | Phase 46 | Pending |
 
 **Coverage:**
 - v3.2 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19 (awaiting roadmap)
+- Mapped to phases: 19
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-03 after initial definition*
+*Last updated: 2026-03-03 — traceability updated after roadmap creation*
