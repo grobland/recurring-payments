@@ -81,3 +81,6 @@ export {
 // Overlap detection hooks
 export { useOverlapGroups } from "./use-overlap-groups";
 export { useOverlapDismissals } from "./use-overlap-dismissals";
+
+// Onboarding hint hooks
+export { useHintDismissals } from "./use-hint-dismissals";
