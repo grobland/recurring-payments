@@ -9,8 +9,7 @@ test.describe("CSV Export", () => {
     });
   });
 
-  test.skip("subscription CSV export triggers download", async ({ page }) => {
-    // Phase 42: EXPRT-01 — un-skip when export button ships
+  test("subscription CSV export triggers download", async ({ page }) => {
     await page.goto("/payments/subscriptions");
     await expect(page.locator("table")).toBeVisible();
 
@@ -21,8 +20,7 @@ test.describe("CSV Export", () => {
     expect(download.suggestedFilename()).toMatch(/subscriptions.*\.csv/i);
   });
 
-  test.skip("export response has CSV content type", async ({ page }) => {
-    // Phase 42: EXPRT-01 — un-skip when export API ships
+  test("export response has CSV content type", async ({ page }) => {
     await page.goto("/payments/subscriptions");
 
     const responsePromise = page.waitForResponse(r =>
@@ -34,8 +32,7 @@ test.describe("CSV Export", () => {
     expect(response.headers()["content-type"]).toContain("text/csv");
   });
 
-  test.skip("transaction CSV export triggers download", async ({ page }) => {
-    // Phase 42: EXPRT-02 — un-skip when transaction export ships
+  test("transaction CSV export triggers download", async ({ page }) => {
     await page.goto("/payments/transactions");
 
     const downloadPromise = page.waitForEvent("download");
