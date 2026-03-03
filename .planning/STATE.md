@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: UX & Quality
 status: unknown
+last_updated: "2026-03-03T09:11:35.297Z"
+progress:
+  total_phases: 8
+  completed_phases: 8
+  total_plans: 17
+  completed_plans: 17
+---
+
+---
+gsd_state_version: 1.0
+milestone: v3.1
+milestone_name: UX & Quality
+status: unknown
 last_updated: "2026-03-03T09:04:58.034Z"
 progress:
   total_phases: 8
@@ -49,11 +62,11 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 ## Current Position
 
 Phase: 42 of 46 (CSV Export)
-Plan: 42-01 complete — formula injection sanitization and UTF-8 BOM in csv.ts
-Status: In progress
-Last activity: 2026-03-03 — Plan 42-01 complete: CSV security patch with 21 unit tests
+Plan: 42-02 complete — transaction export API, export buttons on subscriptions and transactions pages, E2E tests un-skipped
+Status: Phase 42 complete
+Last activity: 2026-03-03 — Plan 42-02 complete: full CSV export feature shipped (EXPRT-01, EXPRT-02)
 
-Progress: [▒░░░░░░░░░] 17% (1/6 phases, 1/2 plans in Phase 42)
+Progress: [▒░░░░░░░░░] 17% (1/6 phases, 2/2 plans in Phase 42 complete)
 
 ## Archived Milestones
 
@@ -110,6 +123,7 @@ Progress: [▒░░░░░░░░░] 17% (1/6 phases, 1/2 plans in Phase 4
 - [Phase 42-01]: Test file placed in tests/unit/ (not src/lib/utils/) to match vitest config include pattern
 - [Phase 42-01]: BOM tests use arrayBuffer() not response.text() — TextDecoder strips BOM on read by default
 - [Phase 42-01]: BOM added only in createCSVResponse (transport level), not objectsToCSV (data level) — prevents double-BOM
+- [Phase 42-02]: debouncedFilters.paymentType is undefined (not 'all') when no type selected — check truthy, not \!== 'all'
 
 ### Blockers/Concerns
 
@@ -124,5 +138,5 @@ Progress: [▒░░░░░░░░░] 17% (1/6 phases, 1/2 plans in Phase 4
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Completed 42-csv-export/42-01-PLAN.md
-Resume file: .planning/phases/42-csv-export/42-01-SUMMARY.md
+Stopped at: Completed 42-csv-export/42-02-PLAN.md
+Resume file: .planning/phases/42-csv-export/42-02-SUMMARY.md

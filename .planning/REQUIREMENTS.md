@@ -27,8 +27,8 @@ Requirements for v3.1 UX & Quality milestone. Each maps to roadmap phases.
 
 ### Data Export
 
-- [ ] **EXPRT-01**: User can download active subscriptions as CSV from subscriptions page
-- [ ] **EXPRT-02**: User can download transaction history as CSV from transactions page
+- [x] **EXPRT-01**: User can download active subscriptions as CSV from subscriptions page
+- [x] **EXPRT-02**: User can download transaction history as CSV from transactions page
 - [x] **EXPRT-03**: CSV export sanitizes formula injection characters (CWE-1236 prevention)
 - [x] **EXPRT-04**: CSV files include UTF-8 BOM for correct Excel rendering of international characters
 
@@ -104,8 +104,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ONBRD-04 | Phase 44 | Pending |
 | ONBRD-05 | Phase 44 | Pending |
 | ONBRD-06 | Phase 44 | Pending |
-| EXPRT-01 | Phase 42 | Pending |
-| EXPRT-02 | Phase 42 | Pending |
+| EXPRT-01 | Phase 42 | Complete |
+| EXPRT-02 | Phase 42 | Complete |
 | EXPRT-03 | Phase 42 | Complete |
 | EXPRT-04 | Phase 42 | Complete |
 | OVRLP-01 | Phase 43 | Pending |
