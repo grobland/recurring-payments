@@ -128,18 +128,28 @@ describe("escapeCSVValue existing behavior (preserved after sanitization)", () =
 });
 
 describe("UTF-8 BOM in createCSVResponse (EXPRT-04)", () => {
-  it("response body starts with UTF-8 BOM character \\uFEFF", async () => {
+  it("response body starts with UTF-8 BOM bytes (EF BB BF) in raw bytes", async () => {
+    // response.text() strips the BOM via TextDecoder — verify BOM via arrayBuffer instead
     const csv = "Name,Amount\nNetflix,15.99";
     const response = createCSVResponse(csv, "test.csv");
-    const text = await response.text();
-    expect(text.startsWith("\uFEFF")).toBe(true);
+    const buffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    // UTF-8 BOM is the byte sequence EF BB BF
+    expect(bytes[0]).toBe(0xef);
+    expect(bytes[1]).toBe(0xbb);
+    expect(bytes[2]).toBe(0xbf);
   });
 
-  it("CSV content follows the BOM immediately", async () => {
+  it("CSV content follows the BOM in the raw byte stream", async () => {
     const csv = "a,b\n1,2";
     const response = createCSVResponse(csv, "test.csv");
-    const text = await response.text();
-    expect(text).toBe("\uFEFFa,b\n1,2");
+    const buffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    // First 3 bytes should be BOM (EF BB BF), then ASCII 'a' (0x61)
+    expect(bytes[0]).toBe(0xef);
+    expect(bytes[1]).toBe(0xbb);
+    expect(bytes[2]).toBe(0xbf);
+    expect(bytes[3]).toBe(0x61); // 'a'
   });
 
   it("Content-Type header is text/csv; charset=utf-8", () => {
