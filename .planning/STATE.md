@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: UX & Quality
 status: unknown
+last_updated: "2026-03-03T09:04:58.034Z"
+progress:
+  total_phases: 8
+  completed_phases: 7
+  total_plans: 17
+  completed_plans: 16
+---
+
+---
+gsd_state_version: 1.0
+milestone: v3.1
+milestone_name: UX & Quality
+status: unknown
 last_updated: "2026-03-03T00:37:48.584Z"
 progress:
   total_phases: 7
@@ -31,16 +44,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** v3.1 UX & Quality — Phase 41: E2E Test Infrastructure
+**Current focus:** v3.1 UX & Quality — Phase 42: CSV Export
 
 ## Current Position
 
-Phase: 41 of 46 (E2E Test Infrastructure)
-Plan: 41-03 complete — Phase 41 all plans done
+Phase: 42 of 46 (CSV Export)
+Plan: 42-01 complete — formula injection sanitization and UTF-8 BOM in csv.ts
 Status: In progress
-Last activity: 2026-03-03 — Plan 41-03 complete: export, overlap, and onboarding E2E specs created
+Last activity: 2026-03-03 — Plan 42-01 complete: CSV security patch with 21 unit tests
 
-Progress: [░░░░░░░░░░] 0% (0/6 phases, 3/3 plans in Phase 41)
+Progress: [▒░░░░░░░░░] 17% (1/6 phases, 1/2 plans in Phase 42)
 
 ## Archived Milestones
 
@@ -94,6 +107,9 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases, 3/3 plans in Phase 41
 - [Phase 41]: Updated playwright.config.ts to port 3002 — ports 3000/3001 occupied by document-vault app on this machine
 - [Phase 41]: Use getByRole('heading') not locator('main') for page-load assertions — dashboard layout has 2 main elements (Playwright strict mode)
 - [Phase 41]: Auth test override: test.use({ storageState: { cookies:[], origins:[] } }) for unauthenticated tests in same suite
+- [Phase 42-01]: Test file placed in tests/unit/ (not src/lib/utils/) to match vitest config include pattern
+- [Phase 42-01]: BOM tests use arrayBuffer() not response.text() — TextDecoder strips BOM on read by default
+- [Phase 42-01]: BOM added only in createCSVResponse (transport level), not objectsToCSV (data level) — prevents double-BOM
 
 ### Blockers/Concerns
 
@@ -108,5 +124,5 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases, 3/3 plans in Phase 41
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Phase 42 context gathered
-Resume file: .planning/phases/42-csv-export/42-CONTEXT.md
+Stopped at: Completed 42-csv-export/42-01-PLAN.md
+Resume file: .planning/phases/42-csv-export/42-01-SUMMARY.md
