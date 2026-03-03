@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: UX & Performance
 status: unknown
-last_updated: "2026-03-03T23:22:55.866Z"
+last_updated: "2026-03-03T23:53:07.982Z"
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 7
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 16
+  completed_plans: 15
 ---
 
 ---
@@ -35,10 +35,10 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 
 ## Current Position
 
-Phase: 43 of 46 (Overlap Detection)
-Plan: 2 of 2 complete
-Status: Phase complete
-Last activity: 2026-03-03 — Completed 43-02 (dismissal hook + page wiring)
+Phase: 44 of 46 (Onboarding Hints)
+Plan: 1 of 2 complete
+Status: In progress
+Last activity: 2026-03-03 — Completed 44-01 (hint dismissal hook + DismissibleEmptyState component)
 
 Progress: [░░░░░░░░░░] 0% (0/4 phases)
 
@@ -70,6 +70,7 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases)
 |-------|------|----------|-------|-------|
 | 43-overlap-detection | 01 | 2m 6s | 2 | 3 |
 | 43-overlap-detection | 02 | 4m | 2 | 3 |
+| 44-onboarding-hints | 01 | 3m 20s | 2 | 4 |
 
 ## Accumulated Context
 
@@ -79,6 +80,7 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases)
 - [Phase 43-overlap-detection]: Test file placed in tests/unit/ (not src/lib/hooks/) to match vitest config discovery pattern
 - [Phase 43-overlap-detection]: localStorage schema uses Record<categoryId, groupSignature> under 'overlap_dismissals' key
 - [Phase 43-overlap-detection]: Group signature computed as sorted(subscriptionIds).join(',') for stable re-surface detection
+- [Phase 44-onboarding-hints]: useHintDismissals uses simpler Record<pageId, boolean> vs overlap hook's Record<categoryId, signature> — no re-surface logic, dismissal is permanent
 
 ### Blockers/Concerns
 
@@ -90,6 +92,6 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases)
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Completed 43-overlap-detection-02-PLAN.md
-Resume file: .planning/phases/43-overlap-detection/43-02-SUMMARY.md
-Resume: Phase 43 complete — run `/gsd:execute-phase` for next phase
+Stopped at: Completed 44-onboarding-hints-01-PLAN.md
+Resume file: .planning/phases/44-onboarding-hints/44-01-SUMMARY.md
+Resume: Phase 44 plan 1 complete — run `/gsd:execute-phase` for plan 02

@@ -20,7 +20,7 @@ Requirements for v3.2 UX & Performance milestone. Carried forward from v3.1 defe
 - [ ] **ONBRD-03**: User sees contextual hint with action CTA on empty transactions page
 - [ ] **ONBRD-04**: User sees contextual hint with action CTA on empty dashboard
 - [ ] **ONBRD-05**: User sees contextual hint with action CTA on empty suggestions page
-- [ ] **ONBRD-06**: User can dismiss hints individually and dismissal persists across page refresh
+- [x] **ONBRD-06**: User can dismiss hints individually and dismissal persists across page refresh
 
 ### Sidebar Redesign
 
@@ -86,7 +86,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ONBRD-03 | Phase 44 | Pending |
 | ONBRD-04 | Phase 44 | Pending |
 | ONBRD-05 | Phase 44 | Pending |
-| ONBRD-06 | Phase 44 | Pending |
+| ONBRD-06 | Phase 44 | Complete |
 | SIDE-01 | Phase 45 | Pending |
 | SIDE-02 | Phase 45 | Pending |
 | SIDE-03 | Phase 45 | Pending |
