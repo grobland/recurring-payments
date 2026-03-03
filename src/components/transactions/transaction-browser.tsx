@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { AlertCircle, RefreshCw, FileX2, Download, Loader2 } from "lucide-react";
+import { AlertCircle, RefreshCw, FileX2, Download, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
 import { useTransactions } from "@/lib/hooks/use-transactions";
+import { useHintDismissals } from "@/lib/hooks/use-hint-dismissals";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTags } from "@/lib/hooks/use-tags";
@@ -39,6 +40,8 @@ export function TransactionBrowser() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const selectedIdsRef = useRef(selectedIds);
   const isMobile = useIsMobile();
+
+  const { isDismissed: isHintDismissed, dismiss: dismissHint } = useHintDismissals();
 
   // Payment type filter — URL-persisted via nuqs (FILTER-02)
   // Default is "all"; selecting "all" removes the param from the URL for a clean URL state
@@ -292,21 +295,15 @@ export function TransactionBrowser() {
     return (
       <div className="flex flex-col h-full">
         {filterControls(uniqueSourceTypes)}
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
-          <FileX2 className="h-12 w-12 text-muted-foreground" />
-          <div>
-            <h3 className="text-lg font-semibold">
-              {hasActiveFilters
-                ? EMPTY_MESSAGES[paymentType]
-                : "No transactions found"}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              {hasActiveFilters
-                ? "Try adjusting your filter criteria or clearing filters."
-                : "Import some bank statements to see transactions here."}
-            </p>
-          </div>
-          {hasActiveFilters && (
+        {hasActiveFilters ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
+            <FileX2 className="h-12 w-12 text-muted-foreground" />
+            <div>
+              <h3 className="text-lg font-semibold">{EMPTY_MESSAGES[paymentType]}</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Try adjusting your filter criteria or clearing filters.
+              </p>
+            </div>
             <Button
               onClick={() => {
                 setFilters({});
@@ -317,8 +314,31 @@ export function TransactionBrowser() {
             >
               Clear filters
             </Button>
-          )}
-        </div>
+          </div>
+        ) : isHintDismissed("transactions") ? (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="py-12 text-center text-sm text-muted-foreground">
+              No transactions yet
+            </p>
+          </div>
+        ) : (
+          <div className="relative flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
+            <button
+              onClick={() => dismissHint("transactions")}
+              className="absolute right-2 top-2 rounded-sm p-1 text-muted-foreground/60 hover:text-muted-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Dismiss hint"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <FileX2 className="h-12 w-12 text-muted-foreground" />
+            <div>
+              <h3 className="text-lg font-semibold">No transactions found</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Import some bank statements to see transactions here.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

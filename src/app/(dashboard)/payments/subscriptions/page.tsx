@@ -59,7 +59,7 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate, getDaysUntil } from "@/lib/utils/dates";
 import { isRetryableError } from "@/lib/utils/errors";
 import { ServiceUnavailable } from "@/components/shared/service-unavailable";
-import { EmptyState } from "@/components/shared/empty-state";
+import { DismissibleEmptyState } from "@/components/shared/dismissible-empty-state";
 import { DuplicateScanSection } from "@/components/subscriptions/duplicate-scan-results";
 import { toast } from "sonner";
 
@@ -346,7 +346,9 @@ export default function SubscriptionsPage() {
               </p>
             </div>
           ) : (
-            <EmptyState
+            <DismissibleEmptyState
+              pageId="subscriptions"
+              dismissedText="No subscriptions yet"
               icon={CreditCard}
               title="No subscriptions yet"
               description="Add your first subscription to start tracking your recurring payments, or import them from a bank statement."
