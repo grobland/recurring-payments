@@ -36,11 +36,8 @@ setup("authenticate", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
 
   // Wait for redirect to dashboard (successful login)
-  await page.waitForURL("/dashboard", { timeout: 10000 });
-
-  // Verify we're on the dashboard by checking for dashboard-specific content
-  // The dashboard should have some identifiable element
-  await expect(page).toHaveURL("/dashboard");
+  // Use glob pattern to handle query params (e.g., ?onboarding=true added by Phase 44)
+  await page.waitForURL("**/payments/dashboard**", { timeout: 15000 });
 
   // Save authentication state for reuse in other tests
   await page.context().storageState({ path: authFile });

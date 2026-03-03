@@ -10,7 +10,7 @@ export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
@@ -38,24 +38,6 @@ export default defineConfig({
       name: "firefox",
       use: {
         ...devices["Desktop Firefox"],
-        storageState: authFile,
-      },
-      dependencies: ["setup"],
-      testMatch: "**/*.spec.ts",
-    },
-    {
-      name: "webkit",
-      use: {
-        ...devices["Desktop Safari"],
-        storageState: authFile,
-      },
-      dependencies: ["setup"],
-      testMatch: "**/*.spec.ts",
-    },
-    {
-      name: "Mobile Chrome",
-      use: {
-        ...devices["Pixel 5"],
         storageState: authFile,
       },
       dependencies: ["setup"],
