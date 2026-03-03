@@ -137,7 +137,9 @@
   2. User can click an export button on the transactions page and receive a CSV file of transaction history
   3. CSV files open correctly in Excel for international users (UTF-8 BOM present, special characters preserved)
   4. CSV cells with leading `=`, `+`, `-`, or `@` characters are sanitized so they do not execute as formulas in Excel
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 42-01-PLAN.md -- TDD: CSV formula injection sanitization and UTF-8 BOM
+- [ ] 42-02-PLAN.md -- Transaction export API, export buttons on both pages, un-skip E2E tests
 
 ### Phase 43: Overlap Detection
 **Goal**: Users can see which subscriptions may be redundant and dismiss warnings per overlap group
@@ -195,7 +197,7 @@
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
 | 35-40 | v3.0 | 12/12 | Complete | 2026-02-27 |
 | 41. E2E Test Infrastructure | 3/3 | Complete    | 2026-03-03 | - |
-| 42. CSV Export | v3.1 | 0/TBD | Not started | - |
+| 42. CSV Export | v3.1 | 0/2 | Not started | - |
 | 43. Overlap Detection | v3.1 | 0/TBD | Not started | - |
 | 44. Onboarding Hints | v3.1 | 0/TBD | Not started | - |
 | 45. Sidebar Redesign | v3.1 | 0/TBD | Not started | - |
