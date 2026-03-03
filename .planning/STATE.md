@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.1
-milestone_name: Test & Export
-status: complete
+milestone: v3.2
+milestone_name: UX & Performance
+status: defining_requirements
 last_updated: "2026-03-03"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -18,13 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-03)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Planning next milestone
+**Current focus:** Defining requirements for v3.2
 
 ## Current Position
 
-Phase: Milestone v3.1 complete
-Status: All phases archived, ready for next milestone
-Last activity: 2026-03-03 — v3.1 Test & Export shipped
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-03 — Milestone v3.2 started
 
 ## Archived Milestones
 
@@ -66,5 +67,5 @@ Last activity: 2026-03-03 — v3.1 Test & Export shipped
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Milestone v3.1 complete
-Resume: /gsd:new-milestone for next milestone planning
+Stopped at: Milestone v3.2 defining requirements
+Resume: Complete requirements and roadmap definition

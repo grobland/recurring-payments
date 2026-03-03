@@ -175,7 +175,15 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ### Active
 
-(No active milestone — run `/gsd:new-milestone` to plan next)
+## Current Milestone: v3.2 UX & Performance
+
+**Goal:** Complete deferred UX improvements and performance optimization — overlap detection, onboarding hints, sidebar redesign, and bundle/Lighthouse audit.
+
+**Target features:**
+- Overlap Detection — surface same-category subscription redundancies with dismissible badges
+- Onboarding Hints — contextual empty-state guidance with persistent dismissal
+- Sidebar Redesign — plain English labels, warm visual design, logical grouping
+- Performance Audit — bundle treemap, Lighthouse baseline, dynamic imports
 
 ### Out of Scope
 
@@ -290,4 +298,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | BOM at transport level only | createCSVResponse adds BOM, objectsToCSV does not (prevents double-BOM) | ✓ Good |
 
 ---
-*Last updated: 2026-03-03 after v3.1 milestone*
+*Last updated: 2026-03-03 after v3.2 milestone started*
