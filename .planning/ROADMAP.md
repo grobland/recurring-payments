@@ -130,10 +130,11 @@
   1. User sees a badge on each subscription row that belongs to a same-category overlap group (e.g., two streaming services both in "Entertainment")
   2. User can dismiss an overlap badge for a given group and the badge disappears immediately
   3. When subscriptions change (new addition, deletion, or category change), previously dismissed overlap badges re-surface automatically if the overlap condition is still valid
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 43-01: TBD
+- [ ] 43-01-PLAN.md — Detection logic (useOverlapGroups hook + OverlapBadge component)
+- [ ] 43-02-PLAN.md — Dismissal storage (useOverlapDismissals hook) + wire into subscriptions page
 
 ### Phase 44: Onboarding Hints
 **Goal**: New users encounter contextual guidance on every empty-data screen, with dismissal that persists so returning users are not interrupted
@@ -191,7 +192,7 @@ Plans:
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
 | 35-40 | v3.0 | 12/12 | Complete | 2026-02-27 |
 | 41-42 | v3.1 | 5/5 | Complete | 2026-03-03 |
-| 43. Overlap Detection | v3.2 | 0/TBD | Not started | - |
+| 43. Overlap Detection | v3.2 | 0/2 | In progress | - |
 | 44. Onboarding Hints | v3.2 | 0/TBD | Not started | - |
 | 45. Sidebar Redesign | v3.2 | 0/TBD | Not started | - |
 | 46. Performance Audit | v3.2 | 0/TBD | Not started | - |
@@ -199,4 +200,4 @@ Plans:
 **Total:** 42 phases complete (115 plans) + 4 phases in v3.2
 
 ---
-*Last updated: 2026-03-03 — v3.2 roadmap created*
+*Last updated: 2026-03-03 — Phase 43 planned (2 plans)*
