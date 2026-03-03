@@ -106,7 +106,7 @@
 
 **Milestone Goal:** Redesign the sidebar for clarity and warmth, add onboarding hints for new users, enable data export, detect subscription overlaps, and establish E2E test coverage with performance optimization.
 
-- [ ] **Phase 41: E2E Test Infrastructure** - Fix broken v3.0 auth setup and establish regression baseline with 25-30 Playwright tests covering all major flows
+- [x] **Phase 41: E2E Test Infrastructure** - Fix broken v3.0 auth setup and establish regression baseline with 25-30 Playwright tests covering all major flows (completed 2026-03-03)
 - [ ] **Phase 42: CSV Export** - Add export buttons for subscriptions and transactions with security-hardened CSV output
 - [ ] **Phase 43: Overlap Detection** - Detect and surface same-category subscription redundancies with per-group dismissal
 - [ ] **Phase 44: Onboarding Hints** - Add contextual empty-state hints with persistent dismissal across all key zero-data screens
@@ -194,7 +194,7 @@
 | 24-30 | v2.1 | 19/19 | Complete | 2026-02-18 |
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
 | 35-40 | v3.0 | 12/12 | Complete | 2026-02-27 |
-| 41. E2E Test Infrastructure | 2/3 | In Progress|  | - |
+| 41. E2E Test Infrastructure | 3/3 | Complete   | 2026-03-03 | - |
 | 42. CSV Export | v3.1 | 0/TBD | Not started | - |
 | 43. Overlap Detection | v3.1 | 0/TBD | Not started | - |
 | 44. Onboarding Hints | v3.1 | 0/TBD | Not started | - |

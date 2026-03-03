@@ -2,6 +2,19 @@
 gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: UX & Quality
+status: unknown
+last_updated: "2026-03-03T00:32:04.875Z"
+progress:
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 15
+  completed_plans: 15
+---
+
+---
+gsd_state_version: 1.0
+milestone: v3.1
+milestone_name: UX & Quality
 status: active
 last_updated: "2026-03-03T00:11:00.000Z"
 progress:
@@ -78,6 +91,9 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases, 3/3 plans in Phase 41
 - Onboarding hints fourth (Phase 44): additive EmptyState extension; most useful once subscriptions, overlap warnings, and export are in place
 - Sidebar redesign fifth (Phase 45): touches every dashboard page; E2E coverage from Phase 41 makes regressions detectable
 - Performance last (Phase 46): requires complete stable production build for accurate baseline
+- [Phase 41]: Updated playwright.config.ts to port 3002 — ports 3000/3001 occupied by document-vault app on this machine
+- [Phase 41]: Use getByRole('heading') not locator('main') for page-load assertions — dashboard layout has 2 main elements (Playwright strict mode)
+- [Phase 41]: Auth test override: test.use({ storageState: { cookies:[], origins:[] } }) for unauthenticated tests in same suite
 
 ### Blockers/Concerns
 
