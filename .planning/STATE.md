@@ -108,4 +108,5 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases, 3/3 plans in Phase 41
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Completed 41-03-PLAN.md — export, overlap, and onboarding E2E spec files created (9 tests: 6 skipped for Phase 42/43, 3 active)
+Stopped at: Phase 42 context gathered
+Resume file: .planning/phases/42-csv-export/42-CONTEXT.md
