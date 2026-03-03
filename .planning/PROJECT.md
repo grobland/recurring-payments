@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A web application for tracking and managing recurring subscriptions with Stripe-powered billing, a financial data vault, and structured account management. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include batch PDF import with full statement data retention, PDF storage and in-app viewing, a vault for browsing and organizing original bank statements, coverage visualization with historical upload support, financial account management (Bank/Debit, Credit Card, Loan) with per-account detail pages showing coverage, transactions, and spending, a virtualized transaction browser with payment type filtering, manual tagging and one-click conversion, AI-powered pattern detection, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, category management, three-tier paid subscriptions (Primary/Enhanced/Advanced), feature gating with upgrade prompts, customer portal for subscription management, admin tools for trial extensions and webhook monitoring, and static support pages (data schema viewer, help/FAQ).
+A web application for tracking and managing recurring subscriptions with Stripe-powered billing, a financial data vault, and structured account management. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include batch PDF import with full statement data retention, PDF storage and in-app viewing, a vault for browsing and organizing original bank statements, coverage visualization with historical upload support, financial account management (Bank/Debit, Credit Card, Loan) with per-account detail pages showing coverage, transactions, and spending, a virtualized transaction browser with payment type filtering, manual tagging and one-click conversion, AI-powered pattern detection, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, category management, CSV data export with formula injection protection, three-tier paid subscriptions (Primary/Enhanced/Advanced), feature gating with upgrade prompts, customer portal for subscription management, admin tools for trial extensions and webhook monitoring, static support pages (data schema viewer, help/FAQ), and E2E test coverage with 23 Playwright tests.
 
 ## Core Value
 
@@ -10,8 +10,8 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ## Current State
 
-**Version:** v3.0 Navigation & Account Vault (shipped 2026-02-27)
-**Codebase:** ~47,800 lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
+**Version:** v3.1 Test & Export (shipped 2026-03-03)
+**Codebase:** ~48,100 lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
 **Production URL:** https://recurring-payments.vercel.app
 
 **Current capabilities:**
@@ -43,6 +43,7 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Anomaly alerts (price increases, missed renewals)
 - Notification bell UI with weekly digest emails
 - Email reminders before renewals
+- CSV export for subscriptions and transactions with formula injection protection (CWE-1236) and UTF-8 BOM
 - Three-tier billing (Primary/Enhanced/Advanced) with Stripe Checkout
 - Feature gating with upgrade prompts for locked features
 - Stripe customer portal for subscription management (tier switching, billing)
@@ -54,6 +55,7 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Production-ready error tracking (Sentry)
 - Mobile-responsive design with polished UX
 - Structured logging and health monitoring
+- 23 Playwright E2E tests covering auth, subscriptions, vault, analytics, billing, accounts, export, and onboarding
 
 ## Requirements
 
@@ -162,19 +164,18 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - ✓ Data Schema viewer with 21-table card grid — v3.0
 - ✓ Help FAQ with 6-category accordion — v3.0
 
+**v3.1 Test & Export:**
+- ✓ E2E tests updated with correct v3.0 URLs and pass cleanly — v3.1
+- ✓ 23 Playwright tests cover all major user flows (auth, subscriptions, vault, analytics, billing, accounts, export, onboarding) — v3.1
+- ✓ Interactive elements use data-testid attributes for reliable test selectors — v3.1
+- ✓ User can download active subscriptions as CSV from subscriptions page — v3.1
+- ✓ User can download transaction history as CSV from transactions page — v3.1
+- ✓ CSV export sanitizes formula injection characters (CWE-1236 prevention) — v3.1
+- ✓ CSV files include UTF-8 BOM for correct Excel rendering of international characters — v3.1
+
 ### Active
 
-**Current Milestone: v3.1 UX & Quality**
-
-**Goal:** Redesign the sidebar for clarity and warmth, add onboarding hints for new users, enable data export, detect subscription overlaps, and establish E2E test coverage with performance optimization.
-
-**Target features:**
-- Sidebar redesign (reorganize items + warm/friendly visual overhaul)
-- Contextual onboarding hints on empty states
-- Data export (subscriptions CSV + transaction history CSV)
-- Subscription overlap detection (same-category flagging)
-- E2E test coverage (~25-30 Playwright tests for all major features)
-- Performance audit (bundle analysis, Lighthouse, optimization)
+(No active milestone — run `/gsd:new-milestone` to plan next)
 
 ### Out of Scope
 
@@ -207,7 +208,7 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ## Context
 
-**Codebase state:** v3.0 complete. Full subscription management platform with structured navigation, financial account management, data vault, billing, monetization, and admin tools. All 152 requirements across 8 milestones validated.
+**Codebase state:** v3.1 complete. Full subscription management platform with structured navigation, financial account management, data vault, billing, monetization, admin tools, CSV export with security hardening, and E2E test coverage. All 159 requirements across 9 milestones validated.
 
 **Known issues:**
 - Email delivery requires verified Resend domain (RESEND_FROM_EMAIL)
@@ -282,6 +283,11 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | AccountTransactionsTab self-contained | Avoids breaking global TransactionBrowser while supporting account scoping | ✓ Good |
 | Hardcoded SCHEMA_TABLES const | Static snapshot, no live DB introspection (security) | ✓ Good |
 | 308 permanent redirects | All moved URLs redirect; preserves bookmarks and email links | ✓ Good |
+| waitForURL glob patterns | **/route** survives future query param additions | ✓ Good |
+| data-testid kebab-case naming | Stable selectors for E2E tests (component-action format) | ✓ Good |
+| Chromium+Firefox only in Playwright | Webkit/Mobile Chrome add no value for Next.js app | ✓ Good |
+| Formula injection tab-prefix | CWE-1236 prevention inside escapeCSVValue (private function) | ✓ Good |
+| BOM at transport level only | createCSVResponse adds BOM, objectsToCSV does not (prevents double-BOM) | ✓ Good |
 
 ---
-*Last updated: 2026-03-02 after v3.1 milestone start*
+*Last updated: 2026-03-03 after v3.1 milestone*

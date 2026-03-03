@@ -10,7 +10,7 @@
 - ✅ **v2.1 Billing & Monetization** — Phases 24-30 (shipped 2026-02-18)
 - ✅ **v2.2 Financial Data Vault** — Phases 31-34 (shipped 2026-02-21)
 - ✅ **v3.0 Navigation & Account Vault** — Phases 35-40 (shipped 2026-02-27)
-- 🚧 **v3.1 UX & Quality** — Phases 41-46 (in progress)
+- ✅ **v3.1 Test & Export** — Phases 41-42 (shipped 2026-03-03)
 
 ## Phases
 
@@ -102,87 +102,20 @@
 
 </details>
 
-### 🚧 v3.1 UX & Quality (In Progress)
+<details>
+<summary>✅ v3.1 Test & Export (Phases 41-42) — SHIPPED 2026-03-03</summary>
 
-**Milestone Goal:** Redesign the sidebar for clarity and warmth, add onboarding hints for new users, enable data export, detect subscription overlaps, and establish E2E test coverage with performance optimization.
+- [x] Phase 41: E2E Test Infrastructure (3 plans) — completed 2026-03-03
+- [x] Phase 42: CSV Export (2 plans) — completed 2026-03-03
 
-- [x] **Phase 41: E2E Test Infrastructure** - Fix broken v3.0 auth setup and establish regression baseline with 25-30 Playwright tests covering all major flows (completed 2026-03-03)
-- [x] **Phase 42: CSV Export** - Add export buttons for subscriptions and transactions with security-hardened CSV output (completed 2026-03-03)
+</details>
+
+### Unassigned Phases (candidates for next milestone)
+
 - [ ] **Phase 43: Overlap Detection** - Detect and surface same-category subscription redundancies with per-group dismissal
 - [ ] **Phase 44: Onboarding Hints** - Add contextual empty-state hints with persistent dismissal across all key zero-data screens
 - [ ] **Phase 45: Sidebar Redesign** - Rename all nav items to plain English and apply warm/friendly visual design in both light and dark modes
 - [ ] **Phase 46: Performance Audit** - Generate bundle treemap, document Lighthouse baseline, and apply targeted optimizations
-
-## Phase Details
-
-### Phase 41: E2E Test Infrastructure
-**Goal**: Reliable Playwright test suite covering all major v3.1 user flows runs clean with zero auth failures
-**Depends on**: Nothing (first phase of v3.1)
-**Requirements**: TEST-01, TEST-02, TEST-03
-**Success Criteria** (what must be TRUE):
-  1. Existing E2E tests pass with correct v3.0 URLs and zero auth errors from stale `waitForURL` calls
-  2. 25-30 Playwright tests cover auth, subscriptions, vault, analytics, billing, accounts, export, overlap, and onboarding flows
-  3. Interactive elements have `data-testid` attributes that tests rely on for reliable selectors
-**Plans**: 3 plans
-- [ ] 41-01-PLAN.md -- Fix auth setup, update existing test URLs, add data-testid attributes
-- [ ] 41-02-PLAN.md -- Write auth, vault, analytics, billing, and accounts test specs
-- [ ] 41-03-PLAN.md -- Write export, overlap, and onboarding test specs
-
-### Phase 42: CSV Export
-**Goal**: Users can download their subscription and transaction data as well-formatted, safe CSV files
-**Depends on**: Phase 41
-**Requirements**: EXPRT-01, EXPRT-02, EXPRT-03, EXPRT-04
-**Success Criteria** (what must be TRUE):
-  1. User can click an export button on the subscriptions page and receive a CSV file of all active subscriptions
-  2. User can click an export button on the transactions page and receive a CSV file of transaction history
-  3. CSV files open correctly in Excel for international users (UTF-8 BOM present, special characters preserved)
-  4. CSV cells with leading `=`, `+`, `-`, or `@` characters are sanitized so they do not execute as formulas in Excel
-**Plans**: 2 plans
-- [ ] 42-01-PLAN.md -- TDD: CSV formula injection sanitization and UTF-8 BOM
-- [ ] 42-02-PLAN.md -- Transaction export API, export buttons on both pages, un-skip E2E tests
-
-### Phase 43: Overlap Detection
-**Goal**: Users can see which subscriptions may be redundant and dismiss warnings per overlap group
-**Depends on**: Phase 42
-**Requirements**: OVRLP-01, OVRLP-02, OVRLP-03
-**Success Criteria** (what must be TRUE):
-  1. Subscriptions in the same category with similar amounts and nearby renewal dates display an inline amber badge on their rows
-  2. User can dismiss an overlap badge for a group and it stays dismissed across page refresh
-  3. Dismissed overlap badges reappear automatically when a subscription in that category is added, removed, or updated
-**Plans**: TBD
-
-### Phase 44: Onboarding Hints
-**Goal**: New users see contextual guidance on every zero-data screen with a clear action to take next
-**Depends on**: Phase 43
-**Requirements**: ONBRD-01, ONBRD-02, ONBRD-03, ONBRD-04, ONBRD-05, ONBRD-06
-**Success Criteria** (what must be TRUE):
-  1. User sees a contextual hint with a direct action CTA on each of the five empty-state screens (subscriptions, vault, transactions, dashboard, suggestions)
-  2. Hints only appear when the screen has no data and the page has finished loading (no flash during load)
-  3. User can dismiss any individual hint and it does not reappear after page refresh or navigation away and back
-**Plans**: TBD
-
-### Phase 45: Sidebar Redesign
-**Goal**: Navigation uses plain English labels and a warm, friendly visual style that works in both light and dark modes
-**Depends on**: Phase 44
-**Requirements**: SIDE-01, SIDE-02, SIDE-03, SIDE-04, SIDE-05, SIDE-06
-**Success Criteria** (what must be TRUE):
-  1. All sidebar nav items display plain English labels with no internal shorthand (e.g., "Dashboard", "Subscriptions", "Upload Statements")
-  2. The active nav item is visually distinct with a warm accent color that clearly communicates the current location
-  3. Sidebar sections are organized into 4 or more logical groups with clear, user-facing section names
-  4. Feature-gate wrappers and locked nav items remain fully functional after the visual redesign
-  5. Warm theme displays correctly with no broken colors or contrast failures in dark mode
-**Plans**: TBD
-
-### Phase 46: Performance Audit
-**Goal**: Bundle size is understood, Lighthouse baseline is documented, and known heavy imports are optimized
-**Depends on**: Phase 45
-**Requirements**: PERF-01, PERF-02, PERF-03, PERF-04
-**Success Criteria** (what must be TRUE):
-  1. Bundle treemap report is generated and committed so future milestones have a size baseline to compare against
-  2. Lighthouse scores are documented against the production build (targets: Performance 80+, Accessibility 95+, Best Practices 95+)
-  3. `lucide-react` is configured with `optimizePackageImports` in `next.config.ts`, reducing icon bundle weight
-  4. Heavy components identified by the audit (react-pdf, recharts) are dynamically imported to reduce initial bundle
-**Plans**: TBD
 
 ## Progress
 
@@ -196,14 +129,13 @@
 | 24-30 | v2.1 | 19/19 | Complete | 2026-02-18 |
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
 | 35-40 | v3.0 | 12/12 | Complete | 2026-02-27 |
-| 41. E2E Test Infrastructure | 3/3 | Complete    | 2026-03-03 | - |
-| 42. CSV Export | 2/2 | Complete    | 2026-03-03 | - |
-| 43. Overlap Detection | v3.1 | 0/TBD | Not started | - |
-| 44. Onboarding Hints | v3.1 | 0/TBD | Not started | - |
-| 45. Sidebar Redesign | v3.1 | 0/TBD | Not started | - |
-| 46. Performance Audit | v3.1 | 0/TBD | Not started | - |
+| 41-42 | v3.1 | 5/5 | Complete | 2026-03-03 |
+| 43. Overlap Detection | — | 0/TBD | Not started | - |
+| 44. Onboarding Hints | — | 0/TBD | Not started | - |
+| 45. Sidebar Redesign | — | 0/TBD | Not started | - |
+| 46. Performance Audit | — | 0/TBD | Not started | - |
 
-**Total:** 40 phases complete (110 plans) + 6 phases planned for v3.1
+**Total:** 42 phases complete (115 plans) + 4 phases unassigned
 
 ---
-*Last updated: 2026-03-02 — v3.1 roadmap created*
+*Last updated: 2026-03-03 — v3.1 milestone completed*

@@ -1,5 +1,45 @@
 # Milestones: Subscription Manager
 
+## v3.1 "Test & Export" (2026-03-02 → 2026-03-03)
+
+**Goal:** Establish E2E test infrastructure and ship CSV export with security hardening.
+
+**What shipped:**
+- Fixed broken Playwright E2E auth cascade — updated waitForURL from v1.0 /dashboard to v3.0 **/payments/dashboard** glob pattern
+- 23 Playwright E2E smoke tests across 8 spec files covering auth, vault, analytics, billing, accounts, export, overlap, and onboarding flows
+- CSV formula injection sanitization (CWE-1236) via tab-prefix for cells starting with =, +, -, @, \t, \r — with 21 unit tests
+- UTF-8 BOM support in CSV responses for correct Excel rendering of international characters
+- Transaction export API (/api/transactions/export) with full filter passthrough
+- Export CSV buttons on both subscriptions and transactions pages with disabled-on-empty-data state
+
+**Phases completed:** 2 (Phases 41-42)
+- Phase 41: E2E Test Infrastructure (3 plans)
+- Phase 42: CSV Export (2 plans)
+
+**Stats:**
+- 5 plans, 11 tasks, 28 commits
+- 45 files changed (+6,570 / -1,735 lines)
+- ~48,100 lines TypeScript total
+- 1 day development
+
+**Requirements:** 7/7 complete
+- TEST-01, TEST-02, TEST-03 (E2E Testing)
+- EXPRT-01, EXPRT-02, EXPRT-03, EXPRT-04 (Data Export)
+
+**Key decisions:**
+- waitForURL glob pattern **/payments/dashboard** to survive future query param additions
+- data-testid naming convention: kebab-case component-action format
+- Playwright config trimmed to chromium+firefox only (webkit adds no value for Next.js)
+- Formula injection sanitization private to escapeCSVValue (not exported separately)
+- BOM added at transport level (createCSVResponse) not data level (objectsToCSV)
+- Test file in tests/unit/ to match vitest config include pattern
+
+**Deferred to next milestone:** Phases 43-46 (Overlap Detection, Onboarding Hints, Sidebar Redesign, Performance Audit — 19 requirements)
+
+**What's next:** `/gsd:new-milestone` for next milestone planning
+
+---
+
 ## Completed Milestones
 
 ### v3.0 "Navigation & Account Vault" (2026-02-22 → 2026-02-27)
