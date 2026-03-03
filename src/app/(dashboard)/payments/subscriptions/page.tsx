@@ -50,8 +50,11 @@ import {
   useRestoreSubscription,
   useCategoryOptions,
   useDelayedLoading,
+  useOverlapGroups,
+  useOverlapDismissals,
   type SubscriptionFilters,
 } from "@/lib/hooks";
+import { OverlapBadge } from "@/components/subscriptions/overlap-badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate, getDaysUntil } from "@/lib/utils/dates";
 import { isRetryableError } from "@/lib/utils/errors";
@@ -98,6 +101,9 @@ export default function SubscriptionsPage() {
 
   const subscriptions = data?.subscriptions ?? [];
   const summary = data?.summary;
+
+  const overlapGroups = useOverlapGroups(subscriptions);
+  const { isDismissed, dismiss } = useOverlapDismissals(overlapGroups);
 
   // Filter for needs attention if specified
   const displayedSubscriptions =
@@ -402,6 +408,28 @@ export default function SubscriptionsPage() {
                                 Needs Update
                               </Badge>
                             )}
+                            {(() => {
+                              const overlappingGroupId = subscription.categoryId
+                                ? (overlapGroups.has(subscription.categoryId) ? subscription.categoryId : null)
+                                : null;
+
+                              if (!overlappingGroupId) return null;
+                              if (isDismissed(overlappingGroupId)) return null;
+
+                              const groupIds = overlapGroups.get(overlappingGroupId) ?? [];
+                              const otherNames = subscriptions
+                                .filter(s => groupIds.includes(s.id) && s.id !== subscription.id)
+                                .map(s => s.name);
+
+                              return (
+                                <OverlapBadge
+                                  key={overlappingGroupId}
+                                  categoryId={overlappingGroupId}
+                                  otherNames={otherNames}
+                                  onDismiss={dismiss}
+                                />
+                              );
+                            })()}
                             {subscription.url && (
                               <a
                                 href={subscription.url}

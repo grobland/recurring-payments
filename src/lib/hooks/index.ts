@@ -77,3 +77,7 @@ export {
   useUpdateAccount,
   useDeleteFinancialAccount,
 } from "./use-accounts";
+
+// Overlap detection hooks
+export { useOverlapGroups } from "./use-overlap-groups";
+export { useOverlapDismissals } from "./use-overlap-dismissals";
