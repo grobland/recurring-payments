@@ -194,7 +194,7 @@
 | 24-30 | v2.1 | 19/19 | Complete | 2026-02-18 |
 | 31-34 | v2.2 | 9/9 | Complete | 2026-02-21 |
 | 35-40 | v3.0 | 12/12 | Complete | 2026-02-27 |
-| 41. E2E Test Infrastructure | 3/3 | Complete   | 2026-03-03 | - |
+| 41. E2E Test Infrastructure | 3/3 | Complete    | 2026-03-03 | - |
 | 42. CSV Export | v3.1 | 0/TBD | Not started | - |
 | 43. Overlap Detection | v3.1 | 0/TBD | Not started | - |
 | 44. Onboarding Hints | v3.1 | 0/TBD | Not started | - |
