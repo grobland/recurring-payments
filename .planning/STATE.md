@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: UX & Quality
 status: active
-last_updated: "2026-03-02T00:00:00.000Z"
+last_updated: "2026-03-03T00:00:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 ## Current Position
 
 Phase: 41 of 46 (E2E Test Infrastructure)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-03-02 — v3.1 roadmap created, 6 phases defined
+Plan: 41-01 complete — 41-02 next
+Status: In progress
+Last activity: 2026-03-03 — Plan 41-01 complete: auth setup fixed, URLs updated, data-testid added
 
-Progress: [░░░░░░░░░░] 0% (0/6 phases)
+Progress: [░░░░░░░░░░] 0% (0/6 phases, 1/3 plans in Phase 41)
 
 ## Archived Milestones
 
@@ -58,6 +58,13 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases)
 
 (Cleared at milestone boundary — see .planning/PROJECT.md Key Decisions table for full history)
 
+**41-01 decisions:**
+- Used `**/payments/dashboard**` glob in waitForURL to survive Phase 44 query params
+- 1 local retry in playwright.config.ts — catches flaky tests without masking failures
+- Trim browser projects to chromium+firefox only (webkit and Mobile Chrome add no value for Next.js)
+- Replace fragile `button.last()` with `getByTestId("subscription-actions-menu")` for stable selectors
+- data-testid naming convention: kebab-case component-action format
+
 **v3.1 phase ordering rationale:**
 - Tests first (Phase 41): broken `auth.setup.ts` `waitForURL("/dashboard")` silently times out on v3.0 paths — fix before any other E2E work
 - CSV export second (Phase 42): highest value-to-effort; formula injection security fix must land before export UI ships
@@ -68,8 +75,8 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases)
 
 ### Blockers/Concerns
 
-**Critical — fix before Phase 41 begins:**
-- `auth.setup.ts` `waitForURL("/dashboard")` references v1.0 path; v3.0 routes to `/payments/dashboard` — cascades into all E2E tests as auth errors
+**RESOLVED (Plan 41-01):**
+- `auth.setup.ts` `waitForURL("/dashboard")` — fixed to `**/payments/dashboard**` glob pattern
 
 **Production deployment (carried forward):**
 - RESEND_FROM_EMAIL needs verified domain for email delivery
@@ -78,5 +85,5 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases)
 
 ## Session Continuity
 
-Last session: 2026-03-02
-Stopped at: v3.1 roadmap created — ready to plan Phase 41
+Last session: 2026-03-03
+Stopped at: Completed 41-01-PLAN.md — auth setup fixed, all test URLs updated to v3.0, data-testid attributes added

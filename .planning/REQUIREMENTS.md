@@ -40,9 +40,9 @@ Requirements for v3.1 UX & Quality milestone. Each maps to roadmap phases.
 
 ### E2E Testing
 
-- [ ] **TEST-01**: Existing E2E tests updated with correct v3.0 URLs and pass cleanly
+- [x] **TEST-01**: Existing E2E tests updated with correct v3.0 URLs and pass cleanly
 - [ ] **TEST-02**: 25-30 Playwright tests cover all major user flows (auth, subscriptions, vault, analytics, billing, accounts, export, overlap, onboarding)
-- [ ] **TEST-03**: Interactive elements use data-testid attributes for reliable test selectors
+- [x] **TEST-03**: Interactive elements use data-testid attributes for reliable test selectors
 
 ### Performance
 
@@ -111,9 +111,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OVRLP-01 | Phase 43 | Pending |
 | OVRLP-02 | Phase 43 | Pending |
 | OVRLP-03 | Phase 43 | Pending |
-| TEST-01 | Phase 41 | Pending |
+| TEST-01 | Phase 41 | Complete |
 | TEST-02 | Phase 41 | Pending |
-| TEST-03 | Phase 41 | Pending |
+| TEST-03 | Phase 41 | Complete |
 | PERF-01 | Phase 46 | Pending |
 | PERF-02 | Phase 46 | Pending |
 | PERF-03 | Phase 46 | Pending |
