@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: UX & Quality
 status: active
-last_updated: "2026-03-03T00:00:00.000Z"
+last_updated: "2026-03-03T00:11:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 3
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 ## Current Position
 
 Phase: 41 of 46 (E2E Test Infrastructure)
-Plan: 41-01 complete — 41-02 next
+Plan: 41-03 complete — Phase 41 all plans done
 Status: In progress
-Last activity: 2026-03-03 — Plan 41-01 complete: auth setup fixed, URLs updated, data-testid added
+Last activity: 2026-03-03 — Plan 41-03 complete: export, overlap, and onboarding E2E specs created
 
-Progress: [░░░░░░░░░░] 0% (0/6 phases, 1/3 plans in Phase 41)
+Progress: [░░░░░░░░░░] 0% (0/6 phases, 3/3 plans in Phase 41)
 
 ## Archived Milestones
 
@@ -65,6 +65,12 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases, 1/3 plans in Phase 41
 - Replace fragile `button.last()` with `getByTestId("subscription-actions-menu")` for stable selectors
 - data-testid naming convention: kebab-case component-action format
 
+**41-03 decisions:**
+- All export tests use test.skip — Phase 42 ships export button, un-skipping EXPRT-01 and EXPRT-02
+- All overlap tests use test.skip — Phase 43 ships overlap detection, un-skipping OVRLP-01..03
+- Onboarding tests written against actual Step 0 UI: Welcome title, Skip setup button, Continue button
+- Skip flow test uses `**/payments/dashboard**` glob in waitForURL per established pattern
+
 **v3.1 phase ordering rationale:**
 - Tests first (Phase 41): broken `auth.setup.ts` `waitForURL("/dashboard")` silently times out on v3.0 paths — fix before any other E2E work
 - CSV export second (Phase 42): highest value-to-effort; formula injection security fix must land before export UI ships
@@ -86,4 +92,4 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases, 1/3 plans in Phase 41
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Completed 41-01-PLAN.md — auth setup fixed, all test URLs updated to v3.0, data-testid attributes added
+Stopped at: Completed 41-03-PLAN.md — export, overlap, and onboarding E2E spec files created (9 tests: 6 skipped for Phase 42/43, 3 active)
