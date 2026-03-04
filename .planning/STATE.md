@@ -4,7 +4,7 @@ milestone: v3.2
 milestone_name: UX & Performance
 status: unknown
 stopped_at: Completed 45-01-PLAN.md (sidebar restructure + warm theme)
-last_updated: "2026-03-04T17:53:22.318Z"
+last_updated: "2026-03-04T22:23:07.129Z"
 last_activity: 2026-03-03 — Completed 44-02 (dismissible hints wired into all 5 pages)
 progress:
   total_phases: 4
