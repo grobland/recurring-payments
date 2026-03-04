@@ -117,7 +117,7 @@
 
 - [x] **Phase 43: Overlap Detection** - Detect and surface same-category subscription redundancies with per-group dismissal (completed 2026-03-03)
 - [x] **Phase 44: Onboarding Hints** - Add contextual empty-state hints with persistent dismissal across all key zero-data screens (completed 2026-03-03)
-- [ ] **Phase 45: Sidebar Redesign** - Rename all nav items to plain English and apply warm/friendly visual design in both light and dark modes
+- [x] **Phase 45: Sidebar Redesign** - Rename all nav items to plain English and apply warm/friendly visual design in both light and dark modes (completed 2026-03-04)
 - [ ] **Phase 46: Performance Audit** - Generate bundle treemap, document Lighthouse baseline, and apply targeted optimizations
 
 ## Phase Details
@@ -194,7 +194,7 @@ Plans:
 | 41-42 | v3.1 | 5/5 | Complete | 2026-03-03 |
 | 43. Overlap Detection | 2/2 | Complete    | 2026-03-03 | - |
 | 44. Onboarding Hints | 2/2 | Complete   | 2026-03-03 | - |
-| 45. Sidebar Redesign | v3.2 | 0/1 | Not started | - |
+| 45. Sidebar Redesign | 1/1 | Complete   | 2026-03-04 | - |
 | 46. Performance Audit | v3.2 | 0/TBD | Not started | - |
 
 **Total:** 42 phases complete (115 plans) + 4 phases in v3.2

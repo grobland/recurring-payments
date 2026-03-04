@@ -24,12 +24,12 @@ Requirements for v3.2 UX & Performance milestone. Carried forward from v3.1 defe
 
 ### Sidebar Redesign
 
-- [ ] **SIDE-01**: User sees plain English labels on all sidebar nav items (Dashboard, Subscriptions, Upload Statements, etc.)
-- [ ] **SIDE-02**: Sidebar uses warm/friendly accent colors for active item and hover states (Notion/Todoist aesthetic)
-- [ ] **SIDE-03**: Sidebar sections reorganized into 4+ logical groups with clearer section names
-- [ ] **SIDE-04**: Sidebar icons refreshed to complement warm visual design
-- [ ] **SIDE-05**: Feature-gate logic preserved via typed nav item data structure during redesign
-- [ ] **SIDE-06**: Warm theme works correctly in both light and dark modes
+- [x] **SIDE-01**: User sees plain English labels on all sidebar nav items (Dashboard, Subscriptions, Upload Statements, etc.)
+- [x] **SIDE-02**: Sidebar uses warm/friendly accent colors for active item and hover states (Notion/Todoist aesthetic)
+- [x] **SIDE-03**: Sidebar sections reorganized into 4+ logical groups with clearer section names
+- [x] **SIDE-04**: Sidebar icons refreshed to complement warm visual design
+- [x] **SIDE-05**: Feature-gate logic preserved via typed nav item data structure during redesign
+- [x] **SIDE-06**: Warm theme works correctly in both light and dark modes
 
 ### Performance
 
@@ -87,12 +87,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ONBRD-04 | Phase 44 | Complete |
 | ONBRD-05 | Phase 44 | Complete |
 | ONBRD-06 | Phase 44 | Complete |
-| SIDE-01 | Phase 45 | Pending |
-| SIDE-02 | Phase 45 | Pending |
-| SIDE-03 | Phase 45 | Pending |
-| SIDE-04 | Phase 45 | Pending |
-| SIDE-05 | Phase 45 | Pending |
-| SIDE-06 | Phase 45 | Pending |
+| SIDE-01 | Phase 45 | Complete |
+| SIDE-02 | Phase 45 | Complete |
+| SIDE-03 | Phase 45 | Complete |
+| SIDE-04 | Phase 45 | Complete |
+| SIDE-05 | Phase 45 | Complete |
+| SIDE-06 | Phase 45 | Complete |
 | PERF-01 | Phase 46 | Pending |
 | PERF-02 | Phase 46 | Pending |
 | PERF-03 | Phase 46 | Pending |
