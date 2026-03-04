@@ -7,8 +7,6 @@ import {
   LayoutDashboard,
   CreditCard,
   BarChart3,
-  FolderUp,
-  FileStack,
   Receipt,
   Bell,
   Settings,
@@ -18,12 +16,15 @@ import {
   Moon,
   Monitor,
   TrendingUp,
-  Sparkles,
   Shield,
   Webhook,
-  Archive,
-  Database,
   HelpCircle,
+  FileText,
+  Upload,
+  FolderOpen,
+  Landmark,
+  Lightbulb,
+  TableProperties,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -54,27 +55,30 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useUserStatus } from "@/lib/hooks";
 
-const finVaultItems = [
-  { title: "doc Vault", href: "/vault", icon: Archive },
-  { title: "doc Load", href: "/vault/load", icon: FolderUp },
-  { title: "Sources", href: "/sources", icon: FileStack },
-  { title: "data Vault", href: "/accounts", icon: Database },
+const documentsItems = [
+  { title: "Statements", href: "/vault", icon: FileText },
+  { title: "Upload", href: "/vault/load", icon: Upload },
+  { title: "Sources", href: "/sources", icon: FolderOpen },
+  { title: "Accounts", href: "/accounts", icon: Landmark },
 ];
 
-const paymentsPortalItems = [
-  { title: "subs Dash", href: "/payments/dashboard", icon: LayoutDashboard },
+const overviewItems = [
+  { title: "Dashboard", href: "/payments/dashboard", icon: LayoutDashboard },
   { title: "Analytics", href: "/payments/analytics", icon: BarChart3 },
-  { title: "subs Forecast", href: "/payments/forecast", icon: TrendingUp },
-  { title: "subs Master List", href: "/payments/subscriptions", icon: CreditCard },
-  { title: "subs Selector", href: "/payments/transactions", icon: Receipt },
-  { title: "subs Suggestions", href: "/payments/suggestions", icon: Sparkles },
+  { title: "Forecast", href: "/payments/forecast", icon: TrendingUp },
+];
+
+const manageItems = [
+  { title: "Subscriptions", href: "/payments/subscriptions", icon: CreditCard },
+  { title: "Transactions", href: "/payments/transactions", icon: Receipt },
+  { title: "Suggestions", href: "/payments/suggestions", icon: Lightbulb },
   { title: "Reminders", href: "/payments/reminders", icon: Bell },
 ];
 
 const supportItems = [
   { title: "Settings", href: "/settings", icon: Settings },
   { title: "Help", href: "/support/help", icon: HelpCircle },
-  { title: "Data Schema", href: "/support/schema", icon: Database },
+  { title: "Data Schema", href: "/support/schema", icon: TableProperties },
 ];
 
 function isNavItemActive(pathname: string, href: string): boolean {
@@ -128,10 +132,10 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>fin Vault</SidebarGroupLabel>
+          <SidebarGroupLabel>Documents</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {finVaultItems.map((item) => (
+              {documentsItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
@@ -149,10 +153,31 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>payments Portal</SidebarGroupLabel>
+          <SidebarGroupLabel>Overview</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {paymentsPortalItems.map((item) => (
+              {overviewItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isNavItemActive(pathname, item.href)}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="size-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Manage</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {manageItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
