@@ -160,10 +160,10 @@ Plans:
   3. Sidebar sections are reorganized into 4 or more logical groups with clear, readable section headers
   4. Sidebar icons are visually consistent with and complement the warm design without clashing or looking mismatched
   5. Feature-gated nav items remain locked for users without the required tier, using the typed nav item data structure
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 45-01: TBD
+- [ ] 45-01-PLAN.md — Restructure nav labels/groups/icons and apply warm CSS theme
 
 ### Phase 46: Performance Audit
 **Goal**: The bundle is measured, a Lighthouse baseline is documented, and targeted import optimizations are applied based on the audit findings
@@ -194,10 +194,10 @@ Plans:
 | 41-42 | v3.1 | 5/5 | Complete | 2026-03-03 |
 | 43. Overlap Detection | 2/2 | Complete    | 2026-03-03 | - |
 | 44. Onboarding Hints | 2/2 | Complete   | 2026-03-03 | - |
-| 45. Sidebar Redesign | v3.2 | 0/TBD | Not started | - |
+| 45. Sidebar Redesign | v3.2 | 0/1 | Not started | - |
 | 46. Performance Audit | v3.2 | 0/TBD | Not started | - |
 
 **Total:** 42 phases complete (115 plans) + 4 phases in v3.2
 
 ---
-*Last updated: 2026-03-03 — Phase 43 planned (2 plans)*
+*Last updated: 2026-03-04 — Phase 45 planned (1 plan)*
