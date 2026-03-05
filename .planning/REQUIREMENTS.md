@@ -33,9 +33,9 @@ Requirements for v3.2 UX & Performance milestone. Carried forward from v3.1 defe
 
 ### Performance
 
-- [ ] **PERF-01**: Bundle treemap report generated and committed
+- [x] **PERF-01**: Bundle treemap report generated and committed
 - [ ] **PERF-02**: Lighthouse baseline scores documented (targets: Performance 80+, Accessibility 95+, Best Practices 95+)
-- [ ] **PERF-03**: optimizePackageImports configured for lucide-react in next.config.ts
+- [x] **PERF-03**: optimizePackageImports configured for lucide-react in next.config.ts
 - [ ] **PERF-04**: Heavy components (react-pdf, recharts) dynamically imported based on audit findings
 
 ## Future Requirements
@@ -93,9 +93,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SIDE-04 | Phase 45 | Complete |
 | SIDE-05 | Phase 45 | Complete |
 | SIDE-06 | Phase 45 | Complete |
-| PERF-01 | Phase 46 | Pending |
+| PERF-01 | Phase 46 | Complete |
 | PERF-02 | Phase 46 | Pending |
-| PERF-03 | Phase 46 | Pending |
+| PERF-03 | Phase 46 | Complete |
 | PERF-04 | Phase 46 | Pending |
 
 **Coverage:**

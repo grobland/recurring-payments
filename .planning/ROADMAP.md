@@ -196,7 +196,7 @@ Plans:
 | 43. Overlap Detection | 2/2 | Complete    | 2026-03-03 | - |
 | 44. Onboarding Hints | 2/2 | Complete   | 2026-03-03 | - |
 | 45. Sidebar Redesign | 1/1 | Complete    | 2026-03-04 | - |
-| 46. Performance Audit | v3.2 | 0/2 | Not started | - |
+| 46. Performance Audit | 1/2 | In Progress|  | - |
 
 **Total:** 42 phases complete (115 plans) + 4 phases in v3.2
 
