@@ -174,10 +174,11 @@ Plans:
   2. Lighthouse baseline scores are documented in the planning files with targets confirmed (Performance 80+, Accessibility 95+, Best Practices 95+)
   3. lucide-react is configured under optimizePackageImports in next.config.ts, reducing icon tree-shaking overhead
   4. Heavy libraries (react-pdf and recharts) are dynamically imported where they are used, reducing the initial page load bundle
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 46-01: TBD
+- [ ] 46-01-PLAN.md — Install bundle analyzer, configure next.config.ts (optimizePackageImports + analyzer), generate before-optimization treemap
+- [ ] 46-02-PLAN.md — Dynamic import all recharts charts, generate after treemap, document Lighthouse baseline
 
 ## Progress
 
@@ -195,9 +196,9 @@ Plans:
 | 43. Overlap Detection | 2/2 | Complete    | 2026-03-03 | - |
 | 44. Onboarding Hints | 2/2 | Complete   | 2026-03-03 | - |
 | 45. Sidebar Redesign | 1/1 | Complete    | 2026-03-04 | - |
-| 46. Performance Audit | v3.2 | 0/TBD | Not started | - |
+| 46. Performance Audit | v3.2 | 0/2 | Not started | - |
 
 **Total:** 42 phases complete (115 plans) + 4 phases in v3.2
 
 ---
-*Last updated: 2026-03-04 — Phase 45 planned (1 plan)*
+*Last updated: 2026-03-05 — Phase 46 planned (2 plans)*
