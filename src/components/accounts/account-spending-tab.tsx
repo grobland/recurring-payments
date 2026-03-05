@@ -1,11 +1,16 @@
 "use client";
 
 import { AlertCircle, RefreshCw } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAccountSpending } from "@/lib/hooks/use-account-spending";
-import { AccountSpendingChart } from "./account-spending-chart";
+
+const AccountSpendingChart = dynamic(
+  () => import("./account-spending-chart").then((m) => ({ default: m.AccountSpendingChart })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full" /> }
+);
 
 interface AccountSpendingTabProps {
   accountId: string;

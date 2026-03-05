@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+import dynamic from "next/dynamic";
 import { DashboardHeader } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,10 +19,22 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PeriodSelector, getPeriodIdFromParams } from "@/components/dashboard/period-selector";
 import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
-import { CategoryChart } from "@/components/dashboard/category-chart";
-import { YearOverYearChart } from "@/components/charts/year-over-year-chart";
-import { CategoryTrendsChart } from "@/components/charts/category-trends-chart";
 import { PatternSuggestionsCard } from "@/components/dashboard/pattern-suggestions-card";
+
+const CategoryChart = dynamic(
+  () => import("@/components/dashboard/category-chart").then((m) => ({ default: m.CategoryChart })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full" /> }
+);
+
+const YearOverYearChart = dynamic(
+  () => import("@/components/charts/year-over-year-chart").then((m) => ({ default: m.YearOverYearChart })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full" /> }
+);
+
+const CategoryTrendsChart = dynamic(
+  () => import("@/components/charts/category-trends-chart").then((m) => ({ default: m.CategoryTrendsChart })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full" /> }
+);
 import { useSubscriptions, useUserStatus, useDelayedLoading } from "@/lib/hooks";
 import { useTrends } from "@/lib/hooks/use-analytics";
 import { formatCurrency } from "@/lib/utils/currency";

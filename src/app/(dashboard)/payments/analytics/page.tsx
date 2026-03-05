@@ -4,11 +4,21 @@ import { useMemo } from "react";
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { Download, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
+import dynamic from "next/dynamic";
 import { DashboardHeader } from "@/components/layout";
-import { CategoryPieChart, SpendingTrendChart } from "@/components/charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const CategoryPieChart = dynamic(
+  () => import("@/components/charts/category-pie-chart").then((m) => ({ default: m.CategoryPieChart })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full" /> }
+);
+
+const SpendingTrendChart = dynamic(
+  () => import("@/components/charts/spending-trend-chart").then((m) => ({ default: m.SpendingTrendChart })),
+  { ssr: false, loading: () => <Skeleton className="h-[300px] w-full" /> }
+);
 import { useSubscriptions, useUserStatus } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils/currency";
 import { isRetryableError } from "@/lib/utils/errors";

@@ -1,7 +1,9 @@
 import { Metadata } from "next";
 import { UpcomingChargesCalendar } from "@/components/forecast/upcoming-charges-calendar";
-import { MonthlyForecastChart } from "@/components/forecast/monthly-forecast-chart";
-import { AnnualForecastFanChart } from "@/components/forecast/annual-forecast-fan-chart";
+import {
+  MonthlyForecastChartDynamic as MonthlyForecastChart,
+  AnnualForecastFanChartDynamic as AnnualForecastFanChart,
+} from "@/components/forecast/forecast-charts-dynamic";
 
 export const metadata: Metadata = {
   title: "Spending Forecast | Subscription Manager",

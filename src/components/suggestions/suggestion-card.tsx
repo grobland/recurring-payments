@@ -12,9 +12,14 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
+import dynamic from "next/dynamic";
 import { ConfidenceBadge } from "./confidence-badge";
-import { SuggestionTimeline } from "./suggestion-timeline";
 import { EvidenceList } from "./evidence-list";
+
+const SuggestionTimeline = dynamic(
+  () => import("./suggestion-timeline").then((m) => ({ default: m.SuggestionTimeline })),
+  { ssr: false, loading: () => <div className="h-20 w-full animate-pulse bg-accent rounded-md" /> }
+);
 import { formatCurrency } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils";
 import type { PatternSuggestion } from "@/lib/validations/patterns";
