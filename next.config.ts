@@ -1,8 +1,18 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["pino", "pino-pretty"],
+  experimental: {
+    // lucide-react is already auto-optimized by default in Next.js 16.
+    // This explicit entry is a belt-and-suspenders declaration per PERF-03.
+    optimizePackageImports: ["lucide-react"],
+  },
   async redirects() {
     return [
       // payments Portal moves — more specific paths first
@@ -21,7 +31,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+// Sentry must be the outermost wrapper; bundle analyzer is chained inside it.
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // Sentry organization and project
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
