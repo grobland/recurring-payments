@@ -14,9 +14,9 @@ test.describe("Onboarding", () => {
     // The onboarding wizard shows "Welcome to Subscription Manager" on step 1
     await expect(page.getByText("Welcome to Subscription Manager")).toBeVisible();
     // Progress bar is visible (4-step wizard)
-    await expect(page.locator('[role="progressbar"], .h-2')).toBeTruthy();
-    // Step labels are visible: Welcome, Your Profile, Preferences, All Set
-    await expect(page.getByText("Welcome")).toBeVisible();
+    await expect(page.locator('[role="progressbar"]')).toBeVisible();
+    // Continue button is available
+    await expect(page.getByRole("button", { name: "Continue" })).toBeVisible();
   });
 
   test("can navigate between onboarding steps", async ({ page }) => {
@@ -27,8 +27,9 @@ test.describe("Onboarding", () => {
     // Click Continue to advance to step 2
     await page.getByRole("button", { name: "Continue" }).click();
 
-    // Assert step 2 content appears (Your Profile)
-    await expect(page.getByText("Your Profile")).toBeVisible();
+    // Assert step 2 content appears - look for the form field unique to step 2
+    await expect(page.getByLabel("Your Name")).toBeVisible();
+    await expect(page.getByLabel("Display Currency")).toBeVisible();
 
     // Click Back to return to step 1
     await page.getByRole("button", { name: "Back" }).click();

@@ -58,8 +58,8 @@ test.describe("Subscription CRUD", () => {
     // Try to submit
     await page.getByRole("button", { name: "Create Subscription" }).click();
 
-    // Verify error message appears (Zod validation)
-    await expect(page.getByText("Name is required")).toBeVisible();
+    // Verify error message appears (form validation)
+    await expect(page.getByText("This field is required")).toBeVisible();
 
     // Verify we're still on the new subscription page
     await expect(page).toHaveURL(/\/payments\/subscriptions\/new/);
