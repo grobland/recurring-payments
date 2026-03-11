@@ -2,41 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: UX & Performance
-status: unknown
-stopped_at: "Checkpoint: 46-02 Task 3 human-verify — charts render verification and Lighthouse scores pending"
-last_updated: "2026-03-05T18:21:58.997Z"
-last_activity: 2026-03-03 — Completed 44-02 (dismissible hints wired into all 5 pages)
+status: complete
+last_updated: "2026-03-11T22:56:00Z"
+last_activity: 2026-03-11 — v3.2 verification complete (E2E + unit tests passing)
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 7
   completed_plans: 7
----
-
----
-gsd_state_version: 1.0
-milestone: v3.2
-milestone_name: UX & Performance
-status: unknown
-last_updated: "2026-03-03T23:53:07.982Z"
-progress:
-  total_phases: 8
-  completed_phases: 7
-  total_plans: 16
-  completed_plans: 15
----
-
----
-gsd_state_version: 1.0
-milestone: v3.2
-milestone_name: UX & Performance
-status: in_progress
-last_updated: "2026-03-03"
-progress:
-  total_phases: 4
-  completed_phases: 0
-  total_plans: 2
-  completed_plans: 2
 ---
 
 # Project State
@@ -46,21 +19,25 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-03)
 
 **Core value:** Users can see all their subscriptions in one place and never get surprised by a renewal again
-**Current focus:** Phase 43 — Overlap Detection (v3.2 start)
+**Current focus:** v3.2 complete — ready for next milestone
 
 ## Current Position
 
-Phase: 44 of 46 (Onboarding Hints)
-Plan: 2 of 2 complete
+Milestone: v3.2 UX & Performance
 Status: Complete
-Last activity: 2026-03-03 — Completed 44-02 (dismissible hints wired into all 5 pages)
+Completed: 2026-03-11
 
-Progress: [██████████] 100% (2/2 plans in phase)
+**Verification Results:**
+- Build: ✅ passes
+- Unit tests: 89/89 passed
+- E2E tests: 55/55 passed (18 skipped - data-dependent)
+- All requirements validated
 
 ## Archived Milestones
 
 | Version | Name | Shipped | Phases | Plans | Requirements |
 |---------|------|---------|--------|-------|--------------|
+| v3.2 | UX & Performance | 2026-03-11 | 43-46 | 7 | 19/19 |
 | v3.1 | Test & Export | 2026-03-03 | 41-42 | 5 | 7/7 |
 | v3.0 | Navigation & Account Vault | 2026-02-27 | 35-40 | 12 | 21/21 |
 | v2.2 | Financial Data Vault | 2026-02-21 | 31-34 | 9 | 10/10 |
@@ -71,45 +48,21 @@ Progress: [██████████] 100% (2/2 plans in phase)
 | v1.1 | Import Improvements | 2026-02-02 | 5-8 | 11 | 18/18 |
 | v1.0 | Get It Running | 2026-01-30 | 1-4 | 7 | 9/9 |
 
-**Total:** 118 plans completed, 162 requirements validated across 9 milestones
+**Total:** 122 plans completed, 167 requirements validated across 10 milestones
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 118
-- Total phases: 42 complete (43 complete)
-- Total milestones: 9 complete
-- Timeline: 2026-01-26 → 2026-03-03 (37 days)
-
-| Phase | Plan | Duration | Tasks | Files |
-|-------|------|----------|-------|-------|
-| 43-overlap-detection | 01 | 2m 6s | 2 | 3 |
-| 43-overlap-detection | 02 | 4m | 2 | 3 |
-| 44-onboarding-hints | 01 | 3m 20s | 2 | 4 |
-| 44-onboarding-hints | 02 | 8m | 2 | 5 |
-| Phase 45-sidebar-redesign P01 | 8min | 2 tasks | 2 files |
-| Phase 46-performance-audit P01 | 18min | 2 tasks | 4 files |
-| Phase 46-performance-audit P02 | 15min | 2 tasks | 11 files |
+- Total plans completed: 122
+- Total phases: 46 complete
+- Total milestones: 10 complete
+- Timeline: 2026-01-26 → 2026-03-11 (45 days)
 
 ## Accumulated Context
 
 ### Decisions
 
 (Cleared at milestone boundary — see .planning/PROJECT.md Key Decisions table for full history)
-- [Phase 43-overlap-detection]: Test file placed in tests/unit/ (not src/lib/hooks/) to match vitest config discovery pattern
-- [Phase 43-overlap-detection]: localStorage schema uses Record<categoryId, groupSignature> under 'overlap_dismissals' key
-- [Phase 43-overlap-detection]: Group signature computed as sorted(subscriptionIds).join(',') for stable re-surface detection
-- [Phase 44-onboarding-hints]: useHintDismissals uses simpler Record<pageId, boolean> vs overlap hook's Record<categoryId, signature> — no re-surface logic, dismissal is permanent
-- [Phase 44-onboarding-hints]: Subscriptions page uses DismissibleEmptyState (shared component), vault/transactions/suggestions/dashboard use useHintDismissals directly (custom layouts)
-- [Phase 44-onboarding-hints]: Dashboard uses banner approach (not per-widget empty state) since it's multi-widget and never truly empty
-- [Phase 44-onboarding-hints]: Filtered empty states on subscriptions and transactions are deliberately non-dismissible
-- [Phase 45-sidebar-redesign]: Split paymentsPortalItems into overviewItems (Dashboard/Analytics/Forecast) and manageItems (Subscriptions/Transactions/Suggestions/Reminders) for clearer mental model
-- [Phase 45-sidebar-redesign]: Warm sidebar oklch palette: light mode cream h80+peach accent h70, dark mode charcoal h55+amber accent h65
-- [Phase 46-performance-audit]: Use --webpack flag in analyze script because Next.js 16.1.4 Turbopack is incompatible with @next/bundle-analyzer
-- [Phase 46-performance-audit]: Add cross-env devDependency for Windows-compatible ANALYZE=true env var in npm scripts
-- [Phase 46-performance-audit]: withSentryConfig is outermost wrapper: withSentryConfig(withBundleAnalyzer(nextConfig))
-- [Phase 46-performance-audit]: Server Components cannot use ssr:false in next/dynamic — created forecast-charts-dynamic.tsx client wrapper pattern
-- [Phase 46-performance-audit]: Analytics pages replaced barrel chart import with direct file imports to enable individual dynamic imports
 
 ### Blockers/Concerns
 
@@ -120,7 +73,6 @@ Progress: [██████████] 100% (2/2 plans in phase)
 
 ## Session Continuity
 
-Last session: 2026-03-05T18:21:58.993Z
-Stopped at: Checkpoint: 46-02 Task 3 human-verify — charts render verification and Lighthouse scores pending
-Resume file: None
-Resume: Phase 44 complete — all 2 plans done. Run `/gsd:execute-phase` for phase 45.
+Last session: 2026-03-11T22:56:00Z
+Stopped at: v3.2 milestone complete
+Resume: Ready for next milestone planning
