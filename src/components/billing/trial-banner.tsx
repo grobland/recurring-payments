@@ -79,10 +79,11 @@ export function TrialBanner() {
 }
 
 export function TrialExpiredBanner() {
-  const { isTrialActive, isPaid, billingStatus } = useUserStatus();
+  const { isTrialActive, isPaid, billingStatus, isLoading } = useUserStatus();
 
+  // Don't show while loading (prevents flash of expired banner before data arrives)
   // Only show if trial has expired (not active and not paid)
-  if (isPaid || isTrialActive || billingStatus === "trial") {
+  if (isLoading || isPaid || isTrialActive || billingStatus === "trial") {
     return null;
   }
 

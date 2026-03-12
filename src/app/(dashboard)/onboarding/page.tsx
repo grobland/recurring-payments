@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronRight, Loader2 } from "lucide-react";
 
@@ -40,17 +40,18 @@ export default function OnboardingPage() {
     reminderDaysBefore: [7, 1],
   });
 
-  // Initialize form data when user data loads
-  useState(() => {
+  // Initialize form data when user data loads (pre-fill name from registration)
+  useEffect(() => {
     if (data?.user) {
-      setFormData({
-        name: data.user.name ?? "",
-        displayCurrency: data.user.displayCurrency ?? "USD",
-        emailRemindersEnabled: data.user.emailRemindersEnabled ?? true,
-        reminderDaysBefore: data.user.reminderDaysBefore ?? [7, 1],
-      });
+      setFormData((prev) => ({
+        ...prev,
+        name: data.user.name ?? prev.name,
+        displayCurrency: data.user.displayCurrency ?? prev.displayCurrency,
+        emailRemindersEnabled: data.user.emailRemindersEnabled ?? prev.emailRemindersEnabled,
+        reminderDaysBefore: data.user.reminderDaysBefore ?? prev.reminderDaysBefore,
+      }));
     }
-  });
+  }, [data?.user]);
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
