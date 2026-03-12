@@ -45,7 +45,8 @@ import { AccountCombobox } from "@/components/import/account-combobox";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DuplicateWarning } from "@/components/subscriptions/duplicate-warning";
 import { DuplicateComparison } from "@/components/subscriptions/duplicate-comparison";
-import { useCategoryOptions, useImportSources, useImportHistory } from "@/lib/hooks";
+import { useCategoryOptions, useImportHistory } from "@/lib/hooks";
+import { useAccounts } from "@/lib/hooks/use-accounts";
 import { formatCurrency } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -278,7 +279,8 @@ export default function ImportPage() {
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>(null);
 
   const { options: categoryOptions } = useCategoryOptions();
-  const { data: importSources = [] } = useImportSources();
+  const { data: accountsData } = useAccounts();
+  const accounts = accountsData?.accounts ?? [];
   const { data: importHistoryData, isLoading: isLoadingHistory } = useImportHistory();
 
   const statusMessages: Record<Exclude<ProcessingStatus, null>, string> = {
@@ -632,7 +634,7 @@ export default function ImportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           subscriptions: toImport,
-          statementSource,
+          statementSource: accounts.find(a => a.id === statementSource)?.name ?? statementSource,
           rawExtractionData,
         }),
       });
@@ -698,11 +700,10 @@ export default function ImportPage() {
                   <AccountCombobox
                     value={statementSource}
                     onChange={setStatementSource}
-                    previousAccounts={importSources}
                     disabled={isProcessing}
                   />
                   <p className="text-xs text-muted-foreground">
-                    e.g., &quot;Chase Visa&quot; or &quot;Wells Fargo Checking&quot;
+                    Select the account this statement belongs to
                   </p>
                 </div>
 

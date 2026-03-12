@@ -17,32 +17,33 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useAccounts } from "@/lib/hooks/use-accounts";
 
 interface AccountComboboxProps {
+  /** Selected account ID (UUID) */
   value: string;
-  onChange: (value: string) => void;
-  previousAccounts: string[];
+  /** Called with account ID when selection changes */
+  onChange: (accountId: string) => void;
   disabled?: boolean;
 }
 
 export function AccountCombobox({
   value,
   onChange,
-  previousAccounts,
   disabled = false,
 }: AccountComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
+  const { data, isLoading } = useAccounts();
+
+  const accounts = data?.accounts ?? [];
 
   // Contains-match filtering (case-insensitive)
-  const filtered = previousAccounts.filter((account) =>
-    account.toLowerCase().includes(search.toLowerCase())
+  const filtered = accounts.filter((account) =>
+    account.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Show "Create [name]" option when typing new account that doesn't exist
-  const showCreateOption =
-    search.trim().length > 0 &&
-    !filtered.some((acc) => acc.toLowerCase() === search.toLowerCase());
+  const selectedAccount = accounts.find((a) => a.id === value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -52,13 +53,18 @@ export function AccountCombobox({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          disabled={disabled}
+          disabled={disabled || isLoading}
         >
-          {value ? (
-            <span className="truncate">{value}</span>
+          {selectedAccount ? (
+            <span className="truncate">
+              {selectedAccount.name}
+              {selectedAccount.institution
+                ? ` — ${selectedAccount.institution}`
+                : ""}
+            </span>
           ) : (
             <span className="text-muted-foreground">
-              Select or type account name...
+              {isLoading ? "Loading accounts..." : "Select account..."}
             </span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -75,29 +81,16 @@ export function AccountCombobox({
             onValueChange={setSearch}
           />
           <CommandList>
-            {filtered.length === 0 && !showCreateOption && (
-              <CommandEmpty>Type to create new account</CommandEmpty>
+            {filtered.length === 0 && (
+              <CommandEmpty>No accounts found</CommandEmpty>
             )}
             <CommandGroup>
-              {showCreateOption && (
-                <CommandItem
-                  value={`create-${search}`}
-                  onSelect={() => {
-                    onChange(search.trim());
-                    setOpen(false);
-                    setSearch("");
-                  }}
-                  className="font-medium"
-                >
-                  Create &quot;{search}&quot;
-                </CommandItem>
-              )}
               {filtered.map((account) => (
                 <CommandItem
-                  key={account}
-                  value={account}
+                  key={account.id}
+                  value={account.id}
                   onSelect={() => {
-                    onChange(account);
+                    onChange(account.id);
                     setOpen(false);
                     setSearch("");
                   }}
@@ -105,10 +98,17 @@ export function AccountCombobox({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === account ? "opacity-100" : "opacity-0"
+                      value === account.id ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {account}
+                  <div>
+                    <span className="font-medium">{account.name}</span>
+                    {account.institution && (
+                      <span className="ml-1.5 text-muted-foreground">
+                        — {account.institution}
+                      </span>
+                    )}
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>

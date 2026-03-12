@@ -27,7 +27,9 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const hash = formData.get("hash") as string | null;
-    const sourceType = formData.get("sourceType") as string | null;
+    const accountId = formData.get("accountId") as string | null;
+    // Legacy support: accept sourceType if accountId not provided
+    const legacySourceType = formData.get("sourceType") as string | null;
     const statementDateStr = formData.get("statementDate") as string | null;
 
     // Validate inputs
@@ -59,9 +61,45 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!sourceType || sourceType.trim().length === 0) {
+    // Resolve account → derive sourceType from account name
+    let resolvedAccountId: string | null = null;
+    let sourceType: string;
+
+    if (accountId) {
+      // New flow: accountId provided — look up the account
+      const account = await db.query.financialAccounts.findFirst({
+        where: and(
+          eq(financialAccounts.id, accountId),
+          eq(financialAccounts.userId, session.user.id)
+        ),
+        columns: { id: true, name: true },
+      });
+
+      if (!account) {
+        return NextResponse.json(
+          { error: "Account not found" },
+          { status: 404 }
+        );
+      }
+
+      resolvedAccountId = account.id;
+      sourceType = account.name; // Use account name as sourceType for grouping
+    } else if (legacySourceType && legacySourceType.trim().length > 0) {
+      // Legacy flow: sourceType string provided
+      sourceType = legacySourceType.trim();
+
+      // Try to find a linked account
+      const linkedAccount = await db.query.financialAccounts.findFirst({
+        where: and(
+          eq(financialAccounts.userId, session.user.id),
+          eq(financialAccounts.linkedSourceType, sourceType)
+        ),
+        columns: { id: true },
+      });
+      resolvedAccountId = linkedAccount?.id ?? null;
+    } else {
       return NextResponse.json(
-        { error: "Statement source is required" },
+        { error: "Account is required" },
         { status: 400 }
       );
     }
@@ -72,19 +110,18 @@ export async function POST(request: Request) {
       statementDate = new Date(statementDateStr.trim() + "-01T00:00:00Z");
     }
 
-    // Check for duplicate within the same source (client should have checked, but double-verify)
+    // Check for duplicate (user + hash scoped)
     const existingStatement = await db.query.statements.findFirst({
       where: and(
         eq(statements.userId, session.user.id),
         eq(statements.pdfHash, hash),
-        eq(statements.sourceType, sourceType.trim())
+        eq(statements.sourceType, sourceType)
       ),
       columns: { id: true, statementDate: true },
     });
 
     if (existingStatement) {
-      // If caller provided a statementDate (e.g. from coverage wizard),
-      // backfill it on the existing statement so it appears in the coverage grid
+      // If caller provided a statementDate, backfill it on the existing statement
       if (statementDate && !existingStatement.statementDate) {
         await db
           .update(statements)
@@ -98,26 +135,17 @@ export async function POST(request: Request) {
       });
     }
 
-    // Auto-assign account for linked sources (ACCT-08)
-    const linkedAccount = await db.query.financialAccounts.findFirst({
-      where: and(
-        eq(financialAccounts.userId, session.user.id),
-        eq(financialAccounts.linkedSourceType, sourceType.trim())
-      ),
-      columns: { id: true },
-    });
-
     // Create statement record (pending processing)
     const [newStatement] = await db
       .insert(statements)
       .values({
         userId: session.user.id,
-        sourceType: sourceType.trim(),
+        sourceType,
         pdfHash: hash,
         originalFilename: file.name,
         fileSizeBytes: file.size,
         processingStatus: "pending",
-        accountId: linkedAccount?.id ?? null,
+        accountId: resolvedAccountId,
         ...(statementDate ? { statementDate } : {}),
       })
       .returning({ id: statements.id });
@@ -125,7 +153,7 @@ export async function POST(request: Request) {
     // Upload PDF to Supabase Storage (non-fatal — import continues even if storage fails)
     let pdfStoragePath: string | null = null;
     try {
-      const storageResult = await uploadStatementPdf(file, session.user.id, sourceType.trim());
+      const storageResult = await uploadStatementPdf(file, session.user.id, sourceType);
       if (storageResult) {
         pdfStoragePath = storageResult.path;
         await db

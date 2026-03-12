@@ -3,12 +3,12 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, ArrowRight, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AccountCombobox } from "@/components/import/account-combobox";
 import { FileQueue } from "./file-queue";
 import { useBatchUpload } from "@/lib/hooks/use-batch-upload";
-import { useImportSources } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 
 interface BatchUploaderProps {
@@ -22,10 +22,8 @@ interface BatchUploaderProps {
 }
 
 export function BatchUploader({ onComplete }: BatchUploaderProps) {
-  const { data: importSources = [] } = useImportSources();
-
-  // Source selection
-  const [sourceType, setSourceType] = useState("");
+  // Account selection (UUID)
+  const [accountId, setAccountId] = useState("");
 
   // Batch upload hook
   const {
@@ -39,7 +37,7 @@ export function BatchUploader({ onComplete }: BatchUploaderProps) {
     resolveDuplicate,
     startProcessing,
   } = useBatchUpload({
-    sourceType,
+    accountId,
     onComplete,
   });
 
@@ -54,27 +52,31 @@ export function BatchUploader({ onComplete }: BatchUploaderProps) {
       "application/pdf": [".pdf"],
     },
     maxSize: 50 * 1024 * 1024, // 50MB
-    disabled: !sourceType || isProcessing,
+    disabled: !accountId || isProcessing,
   });
 
-  const canProcess = queue.length > 0 && stats.pending > 0 && !isProcessing && sourceType;
+  const canProcess = queue.length > 0 && stats.pending > 0 && !isProcessing && accountId;
 
   return (
     <Card>
       <CardContent className="space-y-6 pt-6">
-        {/* Source selection */}
+        {/* Account selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium">
             Account <span className="text-destructive">*</span>
           </label>
           <AccountCombobox
-            value={sourceType}
-            onChange={setSourceType}
-            previousAccounts={importSources}
+            value={accountId}
+            onChange={setAccountId}
             disabled={isProcessing}
           />
           <p className="text-xs text-muted-foreground">
-            All files in this batch will be associated with this account
+            All files in this batch will be associated with this account.
+            To create a new account go to the{" "}
+            <Link href="/accounts" className="text-primary underline underline-offset-2 hover:text-primary/80">
+              Accounts
+            </Link>{" "}
+            page.
           </p>
         </div>
 
@@ -86,7 +88,7 @@ export function BatchUploader({ onComplete }: BatchUploaderProps) {
             isDragActive
               ? "border-primary bg-primary/5"
               : "border-muted-foreground/25 hover:border-primary/50",
-            (!sourceType || isProcessing) && "opacity-50 cursor-not-allowed"
+            (!accountId || isProcessing) && "opacity-50 cursor-not-allowed"
           )}
         >
           <input {...getInputProps()} />

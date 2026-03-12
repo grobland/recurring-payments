@@ -60,7 +60,7 @@ export interface QueuedFile {
 export type DuplicateAction = "skip" | "reimport";
 
 interface UseBatchUploadOptions {
-  sourceType: string;
+  accountId: string;
   onComplete?: (results: BatchUploadResult) => void;
 }
 
@@ -78,7 +78,7 @@ const STORAGE_KEY = "batch-upload-queue";
  * Save queue state to localStorage (for persistence across refresh).
  * Only saves metadata, not File objects (those cannot be serialized).
  */
-function saveQueueState(queue: QueuedFile[], sourceType: string): void {
+function saveQueueState(queue: QueuedFile[], accountId: string): void {
   try {
     const serializable: SerializableQueueItem[] = queue.map(f => ({
       id: f.id,
@@ -94,7 +94,7 @@ function saveQueueState(queue: QueuedFile[], sourceType: string): void {
       pdfStored: f.pdfStored,
       duplicateInfo: f.duplicateInfo,
     }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ queue: serializable, sourceType, timestamp: Date.now() }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ queue: serializable, accountId, timestamp: Date.now() }));
   } catch {
     // localStorage might be unavailable or full
   }
@@ -104,7 +104,7 @@ function saveQueueState(queue: QueuedFile[], sourceType: string): void {
  * Load persisted queue state from localStorage.
  * Returns partial state that can be restored (status info for files that were in progress).
  */
-function loadQueueState(): { queue: SerializableQueueItem[]; sourceType: string; timestamp: number } | null {
+function loadQueueState(): { queue: SerializableQueueItem[]; accountId: string; timestamp: number } | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
@@ -137,7 +137,7 @@ function clearQueueState(): void {
  * Persists queue state to localStorage for resume on page refresh.
  */
 export function useBatchUpload(options: UseBatchUploadOptions) {
-  const { sourceType, onComplete } = options;
+  const { accountId, onComplete } = options;
   const queryClient = useQueryClient();
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -154,10 +154,10 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
     setQueue(prev => {
       const updated = prev.map(f => f.id === id ? { ...f, ...updates } : f);
       queueRef.current = updated;
-      saveQueueState(updated, sourceType);
+      saveQueueState(updated, accountId);
       return updated;
     });
-  }, [sourceType]);
+  }, [accountId]);
 
   // Add files to the queue
   const addFiles = useCallback((files: File[]) => {
@@ -181,10 +181,10 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
     setQueue(prev => {
       const updated = [...prev, ...newFiles];
       queueRef.current = updated;
-      saveQueueState(updated, sourceType);
+      saveQueueState(updated, accountId);
       return updated;
     });
-  }, [sourceType]);
+  }, [accountId]);
 
   // Remove a file from the queue
   const removeFile = useCallback((id: string) => {
@@ -192,10 +192,10 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
     setQueue(prev => {
       const updated = prev.filter(f => f.id !== id);
       queueRef.current = updated;
-      saveQueueState(updated, sourceType);
+      saveQueueState(updated, accountId);
       return updated;
     });
-  }, [sourceType]);
+  }, [accountId]);
 
   // Cancel all pending files
   const cancelAll = useCallback(() => {
@@ -204,12 +204,12 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
         f.status === "complete" || f.status === "duplicate"
       );
       queueRef.current = updated;
-      saveQueueState(updated, sourceType);
+      saveQueueState(updated, accountId);
       return updated;
     });
     processingRef.current = false;
     setIsProcessing(false);
-  }, [sourceType]);
+  }, [accountId]);
 
   // Retry a failed file
   const retryFile = useCallback((id: string) => {
@@ -218,10 +218,10 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
         f.id === id ? { ...f, status: "pending" as FileStatus, error: null, progress: 0 } : f
       );
       queueRef.current = updated;
-      saveQueueState(updated, sourceType);
+      saveQueueState(updated, accountId);
       return updated;
     });
-  }, [sourceType]);
+  }, [accountId]);
 
   // Handle duplicate resolution
   const resolveDuplicate = useCallback((id: string, action: DuplicateAction) => {
@@ -276,7 +276,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
       const uploadFormData = new FormData();
       uploadFormData.append("file", file);
       uploadFormData.append("hash", hash);
-      uploadFormData.append("sourceType", sourceType);
+      uploadFormData.append("accountId", accountId);
 
       const uploadResponse = await fetch("/api/batch/upload", {
         method: "POST",
@@ -336,7 +336,7 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
-  }, [sourceType, updateFile]);
+  }, [accountId, updateFile]);
 
   // Process the queue sequentially
   const processQueue = useCallback(async () => {
