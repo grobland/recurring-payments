@@ -7,6 +7,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 });
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   serverExternalPackages: ["pino", "pino-pretty"],
   experimental: {
     // lucide-react is already auto-optimized by default in Next.js 16.
