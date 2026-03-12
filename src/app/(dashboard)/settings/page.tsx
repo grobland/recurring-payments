@@ -45,12 +45,12 @@ export default function SettingsPage() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: "",
-      displayCurrency: "USD",
+      displayCurrency: "GBP",
     },
     values: data?.user
       ? {
           name: data.user.name ?? "",
-          displayCurrency: data.user.displayCurrency,
+          displayCurrency: data.user.displayCurrency ?? "GBP",
         }
       : undefined,
   });

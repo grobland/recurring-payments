@@ -35,7 +35,7 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
-    displayCurrency: "USD",
+    displayCurrency: "GBP",
     emailRemindersEnabled: true,
     reminderDaysBefore: [7, 1],
   });

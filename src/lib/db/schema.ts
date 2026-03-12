@@ -80,7 +80,7 @@ export const users = pgTable("users", {
 
   // Preferences
   displayCurrency: varchar("display_currency", { length: 3 })
-    .default("USD")
+    .default("GBP")
     .notNull(),
   locale: varchar("locale", { length: 10 }).default("en-US").notNull(),
 
