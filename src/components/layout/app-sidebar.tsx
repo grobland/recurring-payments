@@ -56,8 +56,8 @@ import { Badge } from "@/components/ui/badge";
 import { useUserStatus } from "@/lib/hooks";
 
 const documentsItems = [
-  { title: "Statements", href: "/vault", icon: FileText },
-  { title: "Upload", href: "/vault/load", icon: Upload },
+  { title: "Document Vault", href: "/vault", icon: FileText },
+  { title: "Load Documents", href: "/vault/load", icon: Upload },
   { title: "Sources", href: "/sources", icon: FolderOpen },
   { title: "Accounts", href: "/accounts", icon: Landmark },
 ];

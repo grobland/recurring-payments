@@ -58,6 +58,10 @@ export function VaultPage() {
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); localStorage.setItem(VAULT_VIEW_KEY, v); }}>
         <TabsList>
+          <TabsTrigger value="coverage">
+            <BarChart3 className="size-4 mr-1.5" />
+            Coverage
+          </TabsTrigger>
           <TabsTrigger value="file-cabinet">
             <FolderOpen className="size-4 mr-1.5" />
             File Cabinet
@@ -65,10 +69,6 @@ export function VaultPage() {
           <TabsTrigger value="timeline">
             <CalendarDays className="size-4 mr-1.5" />
             Timeline
-          </TabsTrigger>
-          <TabsTrigger value="coverage">
-            <BarChart3 className="size-4 mr-1.5" />
-            Coverage
           </TabsTrigger>
         </TabsList>
         <TabsContent value="file-cabinet">
