@@ -40,15 +40,12 @@ export default function OnboardingPage() {
     reminderDaysBefore: [7, 1],
   });
 
-  // Initialize form data when user data loads (pre-fill name from registration)
+  // Pre-fill name from registration; keep other defaults as-is for user to choose
   useEffect(() => {
     if (data?.user) {
       setFormData((prev) => ({
         ...prev,
         name: data.user.name ?? prev.name,
-        displayCurrency: data.user.displayCurrency ?? prev.displayCurrency,
-        emailRemindersEnabled: data.user.emailRemindersEnabled ?? prev.emailRemindersEnabled,
-        reminderDaysBefore: data.user.reminderDaysBefore ?? prev.reminderDaysBefore,
       }));
     }
   }, [data?.user]);
