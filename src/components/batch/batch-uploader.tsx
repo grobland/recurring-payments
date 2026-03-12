@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AccountCombobox } from "@/components/import/account-combobox";
 import { FileQueue } from "./file-queue";
 import { useBatchUpload } from "@/lib/hooks/use-batch-upload";
@@ -61,13 +61,7 @@ export function BatchUploader({ onComplete }: BatchUploaderProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Batch Upload Statements</CardTitle>
-        <CardDescription>
-          Upload multiple bank statements at once. We&apos;ll extract all transactions and detect recurring charges.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-6">
         {/* Source selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium">

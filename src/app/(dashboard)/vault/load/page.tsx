@@ -39,10 +39,10 @@ export default function BatchImportPage() {
           {/* Header */}
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Batch Import Statements
+              Load Financial Documents
             </h2>
             <p className="text-muted-foreground">
-              Upload multiple bank statements at once. We&apos;ll store all transactions
+              Upload multiple bank documents for a single account at once. We&apos;ll store all transactions
               and automatically detect potential subscriptions.
             </p>
           </div>
