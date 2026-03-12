@@ -1,23 +1,24 @@
 import * as Sentry from "@sentry/nextjs";
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Performance monitoring
-  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+    // Performance monitoring
+    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
-  // Session replay for debugging
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
+    // Session replay for debugging
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
 
-  integrations: [Sentry.replayIntegration()],
+    integrations: [Sentry.replayIntegration()],
 
-  // Environment
-  environment: process.env.NODE_ENV,
+    // Environment
+    environment: process.env.NODE_ENV,
 
-  // Debug mode in development
-  debug: process.env.NODE_ENV === "development",
-});
+    debug: false,
+  });
+}
 
 // Instrument navigations for performance monitoring
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
