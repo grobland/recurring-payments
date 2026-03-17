@@ -1,7 +1,37 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm run dev*)",
+      "Bash(npm run test*)",
+      "Bash(npm run lint*)",
+      "Bash(npm run db:*)",
+      "Bash(npm run analyze*)",
+      "Bash(npm run start*)",
+      "Bash(npx drizzle-kit*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git stash*)",
+      "Bash(git show*)",
+      "Bash(git blame*)",
+      "Bash(git tag*)",
+      "Bash(git merge*)",
+      "Bash(git worktree*)",
+      "Bash(npx playwright*)",
+      "Bash(npx vitest*)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)"
     ]
   }
 }

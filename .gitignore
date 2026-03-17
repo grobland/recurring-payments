@@ -1,7 +1,6 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,6 +11,9 @@
 
 # testing
 /coverage
+playwright/.auth/
+test-results/
+playwright-report/
 
 # next.js
 /.next/
@@ -19,28 +21,56 @@
 
 # production
 /build
+dist/
+
+# env files
+.env
+.env.*
+!.env.example
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
+*.swp
+*.swo
+*~
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
+# IDE
+.idea/
+.vscode/
+*.code-workspace
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
+# vercel
 .vercel
 
-# Playwright auth state
-playwright/.auth/
+# python (scripts)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# other build artifacts
+target/
+vendor/
+.cache/
+tmp/
+
+# GSD runtime (auto-generated, not committed)
+.gsd/activity/
+.gsd/runtime/
+.gsd/worktrees/
+.gsd/auto.lock
+.gsd/metrics.json
+.gsd/STATE.md
