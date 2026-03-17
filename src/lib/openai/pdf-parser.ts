@@ -170,21 +170,27 @@ export async function parseTextForSubscriptions(text: string): Promise<ParseResu
   const openai = getOpenAIClient();
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: SYSTEM_PROMPT,
-        },
-        {
-          role: "user",
-          content: `Please analyze this bank statement text and identify any recurring subscription payments. Return the results as a JSON array.\n\n--- BANK STATEMENT TEXT ---\n${text}\n--- END OF TEXT ---`,
-        },
-      ],
-      max_tokens: 4096,
-      temperature: 0.1,
-    });
+    const response = await openai.chat.completions.create(
+      {
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: SYSTEM_PROMPT,
+          },
+          {
+            role: "user",
+            content: `Please analyze this bank statement text and identify any recurring subscription payments. Return the results as a JSON array.\n\n--- BANK STATEMENT TEXT ---\n${text}\n--- END OF TEXT ---`,
+          },
+        ],
+        max_tokens: 4096,
+        temperature: 0.1,
+      },
+      {
+        timeout: 120_000,  // 120s — subscription detection on dense statements
+        maxRetries: 0,     // Don't retry — fail fast
+      }
+    );
 
     const content = response.choices[0]?.message?.content;
 

@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       columns: {
         id: true,
         sourceType: true,
+        pdfHash: true,
       },
     });
 
@@ -95,7 +96,8 @@ export async function POST(request: Request) {
     const storageResult = await uploadStatementPdf(
       file,
       session.user.id,
-      statement.sourceType
+      statement.sourceType,
+      statement.pdfHash,
     );
 
     if (!storageResult) {

@@ -2,7 +2,6 @@
 
 import { Building2, CreditCard, TrendingDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -85,14 +84,7 @@ export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
               </p>
             )}
 
-            {/* Linked source badge */}
-            {account.linkedSourceType && (
-              <div className="mt-1.5">
-                <Badge variant="secondary" className="text-xs">
-                  {account.linkedSourceType}
-                </Badge>
-              </div>
-            )}
+            {/* linkedSourceType badge removed — statements are now linked via accountId FK */}
           </div>
         </button>
 

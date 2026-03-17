@@ -2,19 +2,22 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { statements } from "@/lib/db/schema";
-import { eq, gte, and } from "drizzle-orm";
-import { startOfMonth, subMonths, format } from "date-fns";
+import { eq, gte, lte, and, sql } from "drizzle-orm";
+import { startOfMonth, subMonths, addMonths, format, parseISO } from "date-fns";
 
 /**
  * GET /api/vault/coverage
- * Returns a per-source x 12-month coverage grid showing which
- * source+month combinations have PDFs, data only, or nothing.
+ * Returns a per-source coverage grid showing which source+month
+ * combinations have PDFs, data only, or nothing.
  *
- * Response shape: { sources: CoverageSource[], gapCount: number, months: string[] }
- * Each source has exactly 12 cells ordered oldest to newest.
+ * Query params:
+ *   from  - Start month in yyyy-MM format (default: 11 months ago)
+ *   to    - End month in yyyy-MM format (default: current month)
+ *
+ * Response shape: { sources: CoverageSource[], gapCount: number, months: string[], dateRange: { earliest, latest } }
  * Never exposes pdfStoragePath to the client — only derives cell state from it.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -22,19 +25,30 @@ export async function GET() {
     }
 
     const userId = session.user.id;
+    const { searchParams } = new URL(request.url);
 
-    // Compute the 12-month window: months[0] = 11 months ago, months[11] = current month
+    // Parse date range from query params (default to last 12 months)
     const now = new Date();
-    const windowStart = startOfMonth(subMonths(now, 11));
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
 
-    // Build the ordered list of 12 month labels (yyyy-MM)
+    const windowStart = fromParam
+      ? startOfMonth(parseISO(fromParam + "-01"))
+      : startOfMonth(subMonths(now, 11));
+
+    const windowEnd = toParam
+      ? startOfMonth(parseISO(toParam + "-01"))
+      : startOfMonth(now);
+
+    // Build ordered list of month labels (yyyy-MM) for the window
     const months: string[] = [];
-    for (let i = 11; i >= 0; i--) {
-      months.push(format(startOfMonth(subMonths(now, i)), "yyyy-MM"));
+    let cursor = windowStart;
+    while (cursor <= windowEnd) {
+      months.push(format(cursor, "yyyy-MM"));
+      cursor = addMonths(cursor, 1);
     }
 
-    // Single query: fetch all statements for the user in the 12-month window
-    // (statementDate >= windowStart). We need pdfStoragePath only to derive state.
+    // Fetch statements in the date window
     const windowStatements = await db
       .select({
         id: statements.id,
@@ -47,18 +61,28 @@ export async function GET() {
       .where(
         and(
           eq(statements.userId, userId),
-          gte(statements.statementDate, windowStart)
+          gte(statements.statementDate, windowStart),
+          lte(statements.statementDate, windowEnd)
         )
       );
 
-    // Separately query all distinct sourceTypes for the user (includes those
-    // with only older statements — they still get a row in the grid)
+    // Get all distinct sources for the user (so sources with no statements
+    // in the window still get a row)
     const allSourceRows = await db
       .selectDistinct({ sourceType: statements.sourceType })
       .from(statements)
       .where(eq(statements.userId, userId));
 
     const allSources = allSourceRows.map((r) => r.sourceType);
+
+    // Also fetch the global earliest/latest statement dates for the "All" preset
+    const [dateRangeRow] = await db
+      .select({
+        earliest: sql<string>`MIN(${statements.statementDate})`,
+        latest: sql<string>`MAX(${statements.statementDate})`,
+      })
+      .from(statements)
+      .where(eq(statements.userId, userId));
 
     // Group window statements by "sourceType::yyyy-MM" key
     // For each cell key we may have multiple statements — we keep the preferred one
@@ -141,10 +165,21 @@ export async function GET() {
       return { sourceType, cells };
     });
 
+    // Format earliest/latest for the client to build the "All" preset
+    const dateRange = {
+      earliest: dateRangeRow?.earliest
+        ? format(new Date(dateRangeRow.earliest), "yyyy-MM")
+        : null,
+      latest: dateRangeRow?.latest
+        ? format(new Date(dateRangeRow.latest), "yyyy-MM")
+        : null,
+    };
+
     const response = {
       sources,
       gapCount,
       months,
+      dateRange,
     };
 
     return NextResponse.json(response);

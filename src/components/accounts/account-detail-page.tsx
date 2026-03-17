@@ -11,6 +11,7 @@ import { useAccount } from "@/lib/hooks/use-accounts";
 import { AccountDetailHeader } from "./account-detail-header";
 import { AccountDetailsTab } from "./account-details-tab";
 import { AccountCoverageTab } from "./account-coverage-tab";
+import { AccountLedgerTab } from "./account-ledger-tab";
 import { AccountTransactionsTab } from "./account-transactions-tab";
 import { AccountSpendingTab } from "./account-spending-tab";
 import type { TransactionFilters } from "@/types/transaction";
@@ -35,11 +36,6 @@ export function AccountDetailPage({ accountId }: AccountDetailPageProps) {
     },
     [accountId]
   );
-
-  // Navigate back from coverage empty state to details tab (to link a source)
-  const handleNavigateToDetails = useCallback(() => {
-    setActiveTab("details");
-  }, []);
 
   if (isLoading) {
     return (
@@ -88,6 +84,7 @@ export function AccountDetailPage({ accountId }: AccountDetailPageProps) {
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="coverage">Coverage</TabsTrigger>
+          <TabsTrigger value="ledger">Ledger</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="spending">Spending</TabsTrigger>
         </TabsList>
@@ -101,8 +98,11 @@ export function AccountDetailPage({ accountId }: AccountDetailPageProps) {
             accountId={accountId}
             account={account}
             onNavigateToTransactions={handleCoverageCellToTransactions}
-            onNavigateToDetails={handleNavigateToDetails}
           />
+        </TabsContent>
+
+        <TabsContent value="ledger" className="mt-4">
+          <AccountLedgerTab accountId={accountId} />
         </TabsContent>
 
         <TabsContent value="transactions" className="mt-4">

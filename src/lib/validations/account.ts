@@ -27,6 +27,11 @@ const accountBaseSchema = z.object({
     .optional()
     .nullable()
     .transform((v) => v || null),
+  currency: z
+    .string()
+    .length(3, "Currency must be a 3-letter ISO 4217 code")
+    .toUpperCase()
+    .optional(),
   creditLimit: z.preprocess(
     emptyToUndefined,
     z.coerce

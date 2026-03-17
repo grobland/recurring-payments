@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, CreditCard, Bell, Shield } from "lucide-react";
+import { User, FolderOpen, CreditCard, Bell, Shield } from "lucide-react";
 
 import { DashboardHeader } from "@/components/layout";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,11 @@ const settingsNav = [
     title: "Profile",
     href: "/settings",
     icon: User,
+  },
+  {
+    title: "Sources",
+    href: "/sources",
+    icon: FolderOpen,
   },
   {
     title: "Billing",

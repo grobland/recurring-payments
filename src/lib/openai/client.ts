@@ -2,6 +2,9 @@ import OpenAI from "openai";
 
 let openaiInstance: OpenAI | null = null;
 
+/** Default timeout for all OpenAI API calls */
+export const OPENAI_DEFAULT_TIMEOUT = 120_000; // 120s
+
 export function getOpenAIClient(): OpenAI {
   if (!openaiInstance) {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -10,8 +13,8 @@ export function getOpenAIClient(): OpenAI {
     }
     openaiInstance = new OpenAI({
       apiKey,
-      timeout: 60000, // 60 seconds for document processing
-      maxRetries: 2,  // Retry 408, 429, 5xx errors automatically
+      timeout: OPENAI_DEFAULT_TIMEOUT,
+      maxRetries: 1,
     });
   }
   return openaiInstance;

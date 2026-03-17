@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AccountCombobox } from "@/components/import/account-combobox";
+import { AccountCoverageList } from "./account-coverage-list";
 import { FileQueue } from "./file-queue";
 import { useBatchUpload } from "@/lib/hooks/use-batch-upload";
 import { cn } from "@/lib/utils";
@@ -78,6 +79,9 @@ export function BatchUploader({ onComplete }: BatchUploaderProps) {
             </Link>{" "}
             page.
           </p>
+
+          {/* Account coverage preview */}
+          {accountId && <AccountCoverageList accountId={accountId} />}
         </div>
 
         {/* Dropzone */}

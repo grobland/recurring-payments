@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { statements, transactions } from "@/lib/db/schema";
+import {
+  statements,
+  transactions,
+  statementLineItems,
+  financialAccounts,
+  type BankLineItemDetails,
+  type CreditCardLineItemDetails,
+  type LoanLineItemDetails,
+  type DocumentType,
+} from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { parseTextForSubscriptions } from "@/lib/openai/pdf-parser";
+import { extractBankLineItems, extractCreditCardLineItems, extractLoanLineItems } from "@/lib/openai/line-item-extractor";
 import { generateTransactionFingerprint } from "@/lib/utils/file-hash";
+import { parseFilenameDate } from "@/lib/utils/parse-filename-date";
 
 // Helper to extract text from PDF buffer server-side using pdf2json
 async function extractPdfTextServer(buffer: Buffer): Promise<string> {
@@ -92,6 +103,8 @@ export async function POST(request: Request) {
         id: true,
         processingStatus: true,
         statementDate: true,
+        originalFilename: true,
+        accountId: true,
       },
     });
 
@@ -116,11 +129,65 @@ export async function POST(request: Request) {
       .where(eq(statements.id, statementId));
 
     try {
-      // Use existing AI parser (returns subscriptions, but we treat as all transactions)
-      // TODO: Update parseTextForSubscriptions to return ALL line items, not just subscriptions
-      const parseResult = await parseTextForSubscriptions(extractedText);
+      // ── Resolve account type for line item extraction ──────────────
+      let documentType: DocumentType = "bank_debit";
+      let accountCurrency = "GBP"; // fallback
 
-      // Transform parsed results to transactions
+      if (statement.accountId) {
+        const account = await db.query.financialAccounts.findFirst({
+          where: eq(financialAccounts.id, statement.accountId),
+          columns: { accountType: true, currency: true },
+        });
+        if (account) {
+          documentType = account.accountType as DocumentType;
+          accountCurrency = account.currency;
+        }
+      }
+
+      // ── Run BOTH extractions in parallel ──────────────────────────
+      // Subscription detection (existing) + full line item extraction (new)
+      // run concurrently to avoid doubling processing time.
+      const extractionStart = Date.now();
+      console.log(`[batch/process] Starting parallel extraction (text: ${extractedText.length} chars, type: ${documentType})`);
+
+      const subscriptionPromise = parseTextForSubscriptions(extractedText);
+
+      type LineItemResult = { type: DocumentType; items: unknown[] } | null;
+      let lineItemPromise: Promise<LineItemResult>;
+
+      const wrapExtraction = async (
+        type: DocumentType,
+        fn: () => Promise<unknown[]>
+      ): Promise<LineItemResult> => {
+        try {
+          const items = await fn();
+          return { type, items };
+        } catch (err) {
+          console.error(
+            `[batch/process] Line item extraction (${type}) failed (non-fatal):`,
+            err instanceof Error ? err.message : err
+          );
+          return null;
+        }
+      };
+
+      if (documentType === "bank_debit") {
+        lineItemPromise = wrapExtraction("bank_debit", () => extractBankLineItems(extractedText));
+      } else if (documentType === "credit_card") {
+        lineItemPromise = wrapExtraction("credit_card", () => extractCreditCardLineItems(extractedText));
+      } else if (documentType === "loan") {
+        lineItemPromise = wrapExtraction("loan", () => extractLoanLineItems(extractedText));
+      } else {
+        lineItemPromise = Promise.resolve(null);
+      }
+
+      const [parseResult, lineItemResult] = await Promise.all([
+        subscriptionPromise,
+        lineItemPromise,
+      ]);
+      console.log(`[batch/process] Parallel extraction done in ${((Date.now() - extractionStart) / 1000).toFixed(1)}s — subs: ${parseResult.subscriptions.length}, lineItems: ${lineItemResult?.items?.length ?? 0}`);
+
+      // ── Process subscription results (existing logic) ─────────────
       const transactionRecords = parseResult.subscriptions.map((item) => {
         const transactionDate = item.transactionDate
           ? new Date(item.transactionDate)
@@ -145,16 +212,15 @@ export async function POST(request: Request) {
               ? ("potential_subscription" as const)
               : ("unreviewed" as const),
           confidenceScore: item.confidence,
-          categoryGuess: null, // Will be populated in future phases
+          categoryGuess: null,
           rawText: item.rawText || null,
           aiMetadata: {
             extractedAt: new Date().toISOString(),
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
           },
         };
       });
 
-      // Count high-confidence items tagged as potential_subscription
       const potentialCount = transactionRecords.filter(
         (t) => t.tagStatus === "potential_subscription"
       ).length;
@@ -166,12 +232,105 @@ export async function POST(request: Request) {
         derivedStatementDate = new Date(Math.min(...dates));
       }
 
+      if (!derivedStatementDate && statement.originalFilename) {
+        const filenameDate = parseFilenameDate(statement.originalFilename);
+        if (filenameDate) {
+          derivedStatementDate = filenameDate;
+        }
+      }
+
       // Insert transactions (if any)
       if (transactionRecords.length > 0) {
         await db.insert(transactions).values(transactionRecords);
       }
 
-      // Update statement as complete (include statementDate only if not already set)
+      // ── Insert line items (if extraction succeeded) ───────────────
+      let lineItemCount = 0;
+
+      if (lineItemResult && lineItemResult.items.length > 0) {
+        // Build records based on document type
+        const records = lineItemResult.items.map((rawItem) => {
+          if (lineItemResult.type === "bank_debit") {
+            const item = rawItem as import("@/lib/validations/line-item").BankLineItem;
+            return {
+              statementId,
+              userId: session.user!.id,
+              sequenceNumber: item.sequenceNumber,
+              transactionDate: item.date ? new Date(item.date + "T00:00:00Z") : null,
+              description: item.description,
+              amount: item.debitAmount != null
+                ? (-item.debitAmount).toString()
+                : item.creditAmount != null
+                  ? item.creditAmount.toString()
+                  : null,
+              currency: accountCurrency,
+              balance: item.balance?.toString() ?? null,
+              documentType: "bank_debit" as const,
+              details: {
+                debitAmount: item.debitAmount?.toString() ?? null,
+                creditAmount: item.creditAmount?.toString() ?? null,
+                reference: item.reference ?? null,
+                type: item.type ?? null,
+                rawDescription: item.rawDescription ?? null,
+              } satisfies BankLineItemDetails,
+            };
+          } else if (lineItemResult.type === "credit_card") {
+            const item = rawItem as import("@/lib/validations/line-item").CreditCardLineItem;
+            return {
+              statementId,
+              userId: session.user!.id,
+              sequenceNumber: item.sequenceNumber,
+              transactionDate: item.transactionDate ? new Date(item.transactionDate + "T00:00:00Z") : null,
+              description: item.description,
+              amount: item.amount?.toString() ?? null,
+              currency: accountCurrency,
+              balance: null,
+              documentType: "credit_card" as const,
+              details: {
+                postingDate: item.postingDate ?? null,
+                merchantCategory: item.merchantCategory ?? null,
+                foreignCurrencyAmount: item.foreignCurrencyAmount?.toString() ?? null,
+                foreignCurrency: item.foreignCurrency ?? null,
+                reference: item.reference ?? null,
+                rawDescription: item.rawDescription ?? null,
+              } satisfies CreditCardLineItemDetails,
+            };
+          } else {
+            // loan
+            const item = rawItem as import("@/lib/validations/line-item").LoanLineItem;
+            return {
+              statementId,
+              userId: session.user!.id,
+              sequenceNumber: item.sequenceNumber,
+              transactionDate: item.date ? new Date(item.date + "T00:00:00Z") : null,
+              description: item.description,
+              amount: item.paymentAmount?.toString() ?? null,
+              currency: accountCurrency,
+              balance: item.remainingBalance?.toString() ?? null,
+              documentType: "loan" as const,
+              details: {
+                principalAmount: item.principalAmount?.toString() ?? null,
+                interestAmount: item.interestAmount?.toString() ?? null,
+                feesAmount: item.feesAmount?.toString() ?? null,
+                remainingBalance: item.remainingBalance?.toString() ?? null,
+                rawDescription: item.rawDescription ?? null,
+              } satisfies LoanLineItemDetails,
+            };
+          }
+        });
+
+        try {
+          await db.insert(statementLineItems).values(records);
+          lineItemCount = records.length;
+        } catch (insertError) {
+          console.error(
+            "[batch/process] Line item DB insert failed (non-fatal):",
+            insertError instanceof Error ? insertError.message : insertError
+          );
+        }
+      }
+
+      // Update statement as complete
       await db
         .update(statements)
         .set({
@@ -188,6 +347,7 @@ export async function POST(request: Request) {
         success: true,
         statementId,
         transactionCount: transactionRecords.length,
+        lineItemCount,
         potentialCount,
         processingTime: parseResult.processingTime,
       });

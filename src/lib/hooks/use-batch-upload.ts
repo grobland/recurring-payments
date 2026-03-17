@@ -271,6 +271,35 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
         return; // Stop processing, wait for user decision
       }
 
+      // Step 2b: If statement exists but PDF is missing, re-attach the PDF
+      // without creating a new statement or re-processing transactions.
+      if (checkData.needsPdfReattach && checkData.existingStatementId) {
+        updateFile(id, { status: "storing", progress: 50 });
+
+        const attachFormData = new FormData();
+        attachFormData.append("file", file);
+        attachFormData.append("statementId", checkData.existingStatementId);
+
+        const attachResponse = await fetch("/api/vault/attach-pdf", {
+          method: "POST",
+          body: attachFormData,
+        });
+
+        if (!attachResponse.ok) {
+          const errorData = await attachResponse.json();
+          throw new Error(errorData.error || "Failed to re-attach PDF");
+        }
+
+        updateFile(id, {
+          status: "complete",
+          progress: 100,
+          statementId: checkData.existingStatementId,
+          pdfStored: true,
+          transactionCount: checkData.existing?.transactionCount ?? 0,
+        });
+        return;
+      }
+
       // Step 3: Upload the file (creates statement record)
       updateFile(id, { status: "uploading", progress: 40 });
       const uploadFormData = new FormData();
@@ -400,6 +429,11 @@ export function useBatchUpload(options: UseBatchUploadOptions) {
 
     // Invalidate import sources cache so new accounts appear in dropdown
     queryClient.invalidateQueries({ queryKey: ["import-sources"] });
+
+    // Invalidate account coverage so the coverage list refreshes immediately
+    if (accountId) {
+      queryClient.invalidateQueries({ queryKey: ["accounts", accountId, "coverage"] });
+    }
 
     // Clear persisted state on completion
     clearQueueState();

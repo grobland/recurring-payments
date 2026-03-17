@@ -55,27 +55,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       months.push(format(startOfMonth(subMonths(now, i)), "yyyy-MM"));
     }
 
-    // If account has no linked source type, return empty sources with month labels
-    // CoverageGrid still needs months for header rendering
-    if (!account.linkedSourceType) {
-      // Still check if there are any statements linked via FK (edge case: manual linking)
-      const linkedStatements = await db
-        .select({ id: statements.id })
-        .from(statements)
-        .where(eq(statements.accountId, id))
-        .limit(1);
-
-      if (linkedStatements.length === 0) {
-        return NextResponse.json({
-          sources: [],
-          gapCount: 0,
-          months,
-        });
-      }
-    }
-
-    // Query statements linked to this account via accountId FK (not sourceType string)
-    // CRITICAL: Use statements.accountId = id, NOT statements.sourceType = linkedSourceType
+    // Query statements linked to this account via accountId FK
     const windowStatements = await db
       .select({
         id: statements.id,
@@ -93,8 +73,8 @@ export async function GET(request: Request, { params }: RouteParams) {
         )
       );
 
-    // If no statements linked to account, return empty sources
-    if (windowStatements.length === 0 && !account.linkedSourceType) {
+    // If no statements linked to this account at all, return empty
+    if (windowStatements.length === 0) {
       return NextResponse.json({
         sources: [],
         gapCount: 0,
@@ -102,11 +82,11 @@ export async function GET(request: Request, { params }: RouteParams) {
       });
     }
 
-    // Determine the source type label — use account's linkedSourceType or derive from statements
+    // Determine the source type label — use account name (primary) or derive from statements
     const sourceTypeLabel =
-      account.linkedSourceType ??
+      account.name ??
       windowStatements[0]?.sourceType ??
-      account.name;
+      "Unknown";
 
     // Group window statements by "sourceType::yyyy-MM" key
     // For each cell key we may have multiple statements — prefer statement with PDF

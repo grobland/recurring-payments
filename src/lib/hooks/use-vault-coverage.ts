@@ -19,12 +19,12 @@ export interface CoverageCell {
 }
 
 /**
- * A single source row in the coverage grid, with exactly 12 month cells.
+ * A single source row in the coverage grid.
  */
 export interface CoverageSource {
   /** Source type identifier (e.g., "Chase Sapphire") */
   sourceType: string;
-  /** Exactly 12 cells ordered oldest to newest */
+  /** Cells ordered oldest to newest (count matches months.length) */
   cells: CoverageCell[];
 }
 
@@ -36,16 +36,38 @@ export interface CoverageResponse {
   sources: CoverageSource[];
   /** Total count of "missing" cells across all sources */
   gapCount: number;
-  /** 12 month labels in display order (oldest first), e.g. ["2025-03", ..., "2026-02"] */
+  /** Month labels in display order (oldest first), e.g. ["2025-03", ..., "2026-02"] */
   months: string[];
+  /** Global date range of the user's earliest and latest statements */
+  dateRange: {
+    earliest: string | null;
+    latest: string | null;
+  };
+}
+
+/** Date range parameters for the coverage query */
+export interface CoverageDateRange {
+  /** Start month in yyyy-MM format */
+  from: string;
+  /** End month in yyyy-MM format */
+  to: string;
 }
 
 export const vaultCoverageKeys = {
   all: () => ["vault", "coverage"] as const,
+  range: (from: string, to: string) => ["vault", "coverage", from, to] as const,
 };
 
-async function fetchVaultCoverage(): Promise<CoverageResponse> {
-  const response = await fetch("/api/vault/coverage");
+async function fetchVaultCoverage(range?: CoverageDateRange): Promise<CoverageResponse> {
+  const params = new URLSearchParams();
+  if (range) {
+    params.set("from", range.from);
+    params.set("to", range.to);
+  }
+  const qs = params.toString();
+  const url = qs ? `/api/vault/coverage?${qs}` : "/api/vault/coverage";
+
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error("Failed to fetch vault coverage");
   }
@@ -54,13 +76,14 @@ async function fetchVaultCoverage(): Promise<CoverageResponse> {
 
 /**
  * TanStack Query hook for vault coverage grid data.
- * Returns per-source x 12-month coverage showing which cells have
- * PDFs, data only, or are missing entirely.
+ * Accepts optional date range; defaults to last 12 months on the server.
  */
-export function useVaultCoverage() {
+export function useVaultCoverage(range?: CoverageDateRange) {
   return useQuery({
-    queryKey: vaultCoverageKeys.all(),
-    queryFn: fetchVaultCoverage,
+    queryKey: range
+      ? vaultCoverageKeys.range(range.from, range.to)
+      : vaultCoverageKeys.all(),
+    queryFn: () => fetchVaultCoverage(range),
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }

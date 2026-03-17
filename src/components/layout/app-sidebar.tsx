@@ -58,7 +58,6 @@ import { useUserStatus } from "@/lib/hooks";
 const documentsItems = [
   { title: "Document Vault", href: "/vault", icon: FileText },
   { title: "Load Documents", href: "/vault/load", icon: Upload },
-  { title: "Sources", href: "/sources", icon: FolderOpen },
   { title: "Accounts", href: "/accounts", icon: Landmark },
 ];
 
@@ -69,8 +68,8 @@ const overviewItems = [
 ];
 
 const manageItems = [
-  { title: "Subscriptions", href: "/payments/subscriptions", icon: CreditCard },
   { title: "Transactions", href: "/payments/transactions", icon: Receipt },
+  { title: "Subscriptions", href: "/payments/subscriptions", icon: CreditCard },
   { title: "Suggestions", href: "/payments/suggestions", icon: Lightbulb },
   { title: "Reminders", href: "/payments/reminders", icon: Bell },
 ];

@@ -5,6 +5,7 @@ import { statements, financialAccounts } from "@/lib/db/schema";
 import { isUserActive } from "@/lib/auth/helpers";
 import { eq, and } from "drizzle-orm";
 import { uploadStatementPdf } from "@/lib/storage/pdf-storage";
+import { parseFilenameDate } from "@/lib/utils/parse-filename-date";
 
 // Maximum file size: 50MB (larger than import for batch uploads)
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -105,9 +106,16 @@ export async function POST(request: Request) {
     }
 
     // Parse optional statementDate (yyyy-MM format → first of that month)
+    // Fallback: extract date from filename if not explicitly provided
     let statementDate: Date | undefined;
     if (statementDateStr && statementDateStr.trim().length > 0) {
       statementDate = new Date(statementDateStr.trim() + "-01T00:00:00Z");
+    } else {
+      // Try to extract date from the original filename
+      const filenameDate = parseFilenameDate(file.name);
+      if (filenameDate) {
+        statementDate = filenameDate;
+      }
     }
 
     // Check for duplicate (user + hash scoped)
@@ -153,7 +161,7 @@ export async function POST(request: Request) {
     // Upload PDF to Supabase Storage (non-fatal — import continues even if storage fails)
     let pdfStoragePath: string | null = null;
     try {
-      const storageResult = await uploadStatementPdf(file, session.user.id, sourceType);
+      const storageResult = await uploadStatementPdf(file, session.user.id, sourceType, hash);
       if (storageResult) {
         pdfStoragePath = storageResult.path;
         await db

@@ -68,6 +68,12 @@ export const accountTypeEnum = pgEnum("account_type", [
   "loan",
 ]);
 
+export const documentTypeEnum = pgEnum("document_type", [
+  "bank_debit",
+  "credit_card",
+  "loan",
+]);
+
 // ============ USERS TABLE ============
 
 export const users = pgTable("users", {
@@ -510,7 +516,7 @@ export const financialAccounts = pgTable(
     name: varchar("name", { length: 100 }).notNull(),
     accountType: accountTypeEnum("account_type").notNull(),
     institution: varchar("institution", { length: 100 }),
-    currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+    currency: varchar("currency", { length: 3 }).default("GBP").notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     notes: text("notes"),
     linkedSourceType: varchar("linked_source_type", { length: 100 }), // optional source linking (e.g. "Chase Sapphire")
@@ -578,6 +584,83 @@ export const statements = pgTable(
     index("statements_pdf_hash_idx").on(table.pdfHash),
     uniqueIndex("statements_user_hash_source_idx").on(table.userId, table.pdfHash, table.sourceType), // User+source-scoped uniqueness
     index("statements_account_id_idx").on(table.accountId),
+  ]
+);
+
+// ============ STATEMENT LINE ITEMS TABLE ============
+// Immutable ledger — faithful electronic copy of every line item from uploaded PDFs.
+// No UPDATE/PATCH endpoints. Re-extraction replaces all items for a statement wholesale.
+
+/** Type-specific details for bank_debit line items */
+export interface BankLineItemDetails {
+  debitAmount?: string | null;
+  creditAmount?: string | null;
+  reference?: string | null;
+  type?: string | null;
+  rawDescription?: string | null;
+}
+
+/** Type-specific details for credit_card line items */
+export interface CreditCardLineItemDetails {
+  postingDate?: string | null;
+  merchantCategory?: string | null;
+  foreignCurrencyAmount?: string | null;
+  foreignCurrency?: string | null;
+  reference?: string | null;
+  rawDescription?: string | null;
+}
+
+/** Type-specific details for loan line items */
+export interface LoanLineItemDetails {
+  principalAmount?: string | null;
+  interestAmount?: string | null;
+  feesAmount?: string | null;
+  remainingBalance?: string | null;
+  rawDescription?: string | null;
+}
+
+export type LineItemDetails =
+  | BankLineItemDetails
+  | CreditCardLineItemDetails
+  | LoanLineItemDetails;
+
+export const statementLineItems = pgTable(
+  "statement_line_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    statementId: uuid("statement_id")
+      .notNull()
+      .references(() => statements.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Position on the PDF (1-indexed, order of appearance)
+    sequenceNumber: integer("sequence_number").notNull(),
+
+    // Common fields — normalized across all document types
+    transactionDate: timestamp("transaction_date", { withTimezone: true }), // nullable: opening balance lines may lack a date
+    description: text("description").notNull(), // normalized description
+    amount: decimal("amount", { precision: 12, scale: 2 }), // signed: negative=debit, positive=credit. Nullable for non-monetary lines.
+    currency: varchar("currency", { length: 3 }), // ISO 4217
+    balance: decimal("balance", { precision: 12, scale: 2 }), // running balance after this line. Nullable.
+
+    // Document type discriminator — determines the shape of `details`
+    documentType: documentTypeEnum("document_type").notNull(),
+
+    // Type-specific fields as JSONB (schema varies by documentType)
+    details: jsonb("details").$type<LineItemDetails>(),
+
+    // Immutable: created once, never updated
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("sli_statement_id_idx").on(table.statementId),
+    index("sli_user_id_idx").on(table.userId),
+    index("sli_transaction_date_idx").on(table.transactionDate),
+    uniqueIndex("sli_statement_sequence_idx").on(table.statementId, table.sequenceNumber),
   ]
 );
 
@@ -888,9 +971,21 @@ export const statementsRelations = relations(statements, ({ one, many }) => ({
     references: [users.id],
   }),
   transactions: many(transactions),
+  lineItems: many(statementLineItems),
   financialAccount: one(financialAccounts, {
     fields: [statements.accountId],
     references: [financialAccounts.id],
+  }),
+}));
+
+export const statementLineItemsRelations = relations(statementLineItems, ({ one }) => ({
+  statement: one(statements, {
+    fields: [statementLineItems.statementId],
+    references: [statements.id],
+  }),
+  user: one(users, {
+    fields: [statementLineItems.userId],
+    references: [users.id],
   }),
 }));
 
@@ -995,3 +1090,7 @@ export type NewTrialExtension = typeof trialExtensions.$inferInsert;
 export type FinancialAccount = typeof financialAccounts.$inferSelect;
 export type NewFinancialAccount = typeof financialAccounts.$inferInsert;
 export type AccountType = "bank_debit" | "credit_card" | "loan";
+
+export type StatementLineItem = typeof statementLineItems.$inferSelect;
+export type NewStatementLineItem = typeof statementLineItems.$inferInsert;
+export type DocumentType = "bank_debit" | "credit_card" | "loan";

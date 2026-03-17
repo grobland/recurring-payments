@@ -41,11 +41,23 @@ import {
 import { useSources } from "@/lib/hooks/use-sources";
 import type { FinancialAccount, AccountType } from "@/lib/db/schema";
 
+// Common currencies for the currency selector
+const CURRENCY_OPTIONS = [
+  { value: "GBP", label: "GBP (£)" },
+  { value: "USD", label: "USD ($)" },
+  { value: "EUR", label: "EUR (€)" },
+  { value: "CAD", label: "CAD (C$)" },
+  { value: "AUD", label: "AUD (A$)" },
+  { value: "CHF", label: "CHF (Fr)" },
+  { value: "JPY", label: "JPY (¥)" },
+] as const;
+
 // Form values type — matches what react-hook-form manages in state
 interface AccountFormValues {
   name: string;
   accountType: AccountType;
   institution: string;
+  currency: string;
   linkedSourceType: string;
   creditLimit: string;
   interestRate: string;
@@ -82,6 +94,7 @@ export function AccountForm({
       name: "",
       accountType: defaultAccountType ?? "bank_debit",
       institution: "",
+      currency: "GBP",
       linkedSourceType: "",
       creditLimit: "",
       interestRate: "",
@@ -96,6 +109,7 @@ export function AccountForm({
         name: account.name,
         accountType: account.accountType,
         institution: account.institution ?? "",
+        currency: account.currency ?? "GBP",
         linkedSourceType: account.linkedSourceType ?? "",
         // interestRate: DB stores 0.0499 → show 4.99 in form
         interestRate:
@@ -112,6 +126,7 @@ export function AccountForm({
         name: "",
         accountType: defaultAccountType ?? "bank_debit",
         institution: "",
+        currency: "GBP",
         linkedSourceType: "",
         creditLimit: "",
         interestRate: "",
@@ -135,6 +150,7 @@ export function AccountForm({
       name: data.name,
       accountType: data.accountType,
       institution: data.institution || null,
+      currency: data.currency,
       linkedSourceType: data.linkedSourceType || null,
       creditLimit:
         data.creditLimit !== "" ? parseFloat(data.creditLimit) : null,
@@ -243,6 +259,35 @@ export function AccountForm({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Currency */}
+            <FormField
+              control={form.control}
+              name="currency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Currency</FormLabel>
+                  <Select
+                    value={field.value || "GBP"}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select currency..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {CURRENCY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

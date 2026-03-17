@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { useStatement } from "@/lib/hooks/use-statement";
 import { useStatementTransactions } from "@/lib/hooks/use-statement-transactions";
+import { useStatementLineItems } from "@/lib/hooks/use-statement-line-items";
 import { formatCurrency } from "@/lib/utils/currency";
 import {
   TransactionStatusBadge,
@@ -25,6 +27,7 @@ import {
 } from "@/components/sources/transaction-status-badge";
 import { ReimportWizard } from "@/components/sources/reimport-wizard";
 import { PdfViewerModal } from "@/components/statements/pdf-viewer-modal";
+import { LineItemsTable } from "@/components/statements/line-items-table";
 
 function PdfStatusIcon({ hasPdf }: { hasPdf: boolean }) {
   return (
@@ -67,8 +70,11 @@ export function StatementDetail({ statementId }: StatementDetailProps) {
     refetch,
   } = useStatementTransactions(statementId);
 
+  const { data: lineItemsData } = useStatementLineItems(statementId);
+
   const transactions = transactionsData?.transactions ?? [];
   const statement = statementData?.statement;
+  const lineItemCount = lineItemsData?.lineItemCount ?? 0;
 
   // Compute selectable IDs (not converted)
   const selectableIds = useMemo(() => {
@@ -229,72 +235,91 @@ export function StatementDetail({ statementId }: StatementDetailProps) {
         </div>
       )}
 
-      {/* Transaction Table */}
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={isAllSelected}
-                  onCheckedChange={toggleAll}
-                  aria-label="Select all selectable transactions"
-                  data-state={isSomeSelected ? "indeterminate" : undefined}
-                  disabled={selectableIds.size === 0}
-                />
-              </TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Merchant</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  No transactions found in this statement.
-                </TableCell>
-              </TableRow>
-            ) : (
-              transactions.map((tx) => {
-                const isConverted = tx.tagStatus === "converted";
-                const isSelected = selectedIds.has(tx.id);
-                const importStatus = getImportStatus(tx.tagStatus);
+      {/* Tabs: Subscriptions / Ledger */}
+      <Tabs defaultValue={lineItemCount > 0 ? "ledger" : "subscriptions"}>
+        <TabsList>
+          <TabsTrigger value="subscriptions">
+            Subscriptions ({transactions.length})
+          </TabsTrigger>
+          <TabsTrigger value="ledger">
+            Ledger {lineItemCount > 0 && `(${lineItemCount})`}
+          </TabsTrigger>
+        </TabsList>
 
-                return (
-                  <TableRow
-                    key={tx.id}
-                    data-state={isSelected ? "selected" : undefined}
-                    className={isConverted ? "opacity-60" : undefined}
-                  >
-                    <TableCell>
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleOne(tx.id)}
-                        disabled={isConverted}
-                        aria-label={`Select ${tx.merchantName}`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(tx.transactionDate), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {tx.merchantName}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(parseFloat(tx.amount), tx.currency)}
-                    </TableCell>
-                    <TableCell>
-                      <TransactionStatusBadge status={importStatus} />
+        {/* Subscriptions tab — existing transaction table */}
+        <TabsContent value="subscriptions">
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all selectable transactions"
+                      data-state={isSomeSelected ? "indeterminate" : undefined}
+                      disabled={selectableIds.size === 0}
+                    />
+                  </TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Merchant</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No transactions found in this statement.
                     </TableCell>
                   </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                ) : (
+                  transactions.map((tx) => {
+                    const isConverted = tx.tagStatus === "converted";
+                    const isSelected = selectedIds.has(tx.id);
+                    const importStatus = getImportStatus(tx.tagStatus);
+
+                    return (
+                      <TableRow
+                        key={tx.id}
+                        data-state={isSelected ? "selected" : undefined}
+                        className={isConverted ? "opacity-60" : undefined}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleOne(tx.id)}
+                            disabled={isConverted}
+                            aria-label={`Select ${tx.merchantName}`}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(tx.transactionDate), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {tx.merchantName}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(parseFloat(tx.amount), tx.currency)}
+                        </TableCell>
+                        <TableCell>
+                          <TransactionStatusBadge status={importStatus} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* Ledger tab — all line items */}
+        <TabsContent value="ledger">
+          <LineItemsTable statementId={statementId} />
+        </TabsContent>
+      </Tabs>
 
       {/* Re-import Wizard Dialog */}
       {showWizard && (

@@ -18,7 +18,7 @@ export function VaultPage() {
   const { data, isLoading } = useSources();
   const sources = data?.sources ?? [];
 
-  const [activeTab, setActiveTab] = useState("file-cabinet");
+  const [activeTab, setActiveTab] = useState("coverage");
 
   useEffect(() => {
     const saved = localStorage.getItem(VAULT_VIEW_KEY);
@@ -47,6 +47,15 @@ export function VaultPage() {
 
   return (
     <div className="space-y-0">
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold tracking-tight">
+          View of documents loaded into the vault
+        </h2>
+        <p className="text-muted-foreground">
+          Shows documents loaded by account and by month.
+        </p>
+      </div>
+
       {/* Stats bar — only shown when timeline data is loaded and user has statements */}
       {timelineData && timelineData.totalStatements > 0 && (
         <VaultStatsBar

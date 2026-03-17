@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { CategoryManager } from "@/components/categories/category-manager";
 import { TagManager } from "@/components/tags";
 
+
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   displayCurrency: z.string().length(3),
@@ -156,6 +157,7 @@ export default function SettingsPage() {
               </Button>
             </form>
           </Form>
+
         </CardContent>
       </Card>
 

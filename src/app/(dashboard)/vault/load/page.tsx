@@ -25,10 +25,10 @@ export default function BatchImportPage() {
   return (
     <>
       <DashboardHeader
-        title="Batch Import"
+        title="Load Documents"
         breadcrumbs={[
-          { label: "subs Dash", href: "/payments/dashboard" },
-          { label: "Batch Import" },
+          { label: "Documents", href: "/vault" },
+          { label: "Load Documents" },
         ]}
       />
       <main className="flex-1 p-4 md:p-6">

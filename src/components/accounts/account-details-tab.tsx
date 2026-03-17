@@ -5,16 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Building2, CreditCard, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// Select import removed — linkedSourceType dropdown no longer needed
 import {
   Form,
   FormControl,
@@ -26,8 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { createAccountFormSchema } from "@/lib/validations/account";
-import { useUpdateAccount, useAccounts } from "@/lib/hooks/use-accounts";
-import { useSources } from "@/lib/hooks/use-sources";
+import { useUpdateAccount } from "@/lib/hooks/use-accounts";
 import type { FinancialAccount, AccountType } from "@/lib/db/schema";
 
 // Form values type — matches what react-hook-form manages in state
@@ -35,7 +27,6 @@ interface AccountFormValues {
   name: string;
   accountType: AccountType;
   institution: string;
-  linkedSourceType: string;
   creditLimit: string;
   interestRate: string;
   loanTermMonths: string;
@@ -57,11 +48,6 @@ const accountTypeOptions: {
 
 export function AccountDetailsTab({ account }: AccountDetailsTabProps) {
   const updateMutation = useUpdateAccount();
-  const { data: sourcesData } = useSources();
-  const { data: accountsData } = useAccounts();
-
-  const sources = sourcesData?.sources ?? [];
-  const allAccounts = accountsData?.accounts ?? [];
 
   const form = useForm<AccountFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,7 +56,6 @@ export function AccountDetailsTab({ account }: AccountDetailsTabProps) {
       name: account.name,
       accountType: account.accountType,
       institution: account.institution ?? "",
-      linkedSourceType: account.linkedSourceType ?? "",
       // interestRate: DB stores 0.0499 → show 4.99 in form
       interestRate:
         account.interestRate != null
@@ -89,7 +74,6 @@ export function AccountDetailsTab({ account }: AccountDetailsTabProps) {
       name: account.name,
       accountType: account.accountType,
       institution: account.institution ?? "",
-      linkedSourceType: account.linkedSourceType ?? "",
       // interestRate: DB stores 0.0499 → show 4.99 in form
       interestRate:
         account.interestRate != null
@@ -104,20 +88,11 @@ export function AccountDetailsTab({ account }: AccountDetailsTabProps) {
 
   const accountType = form.watch("accountType");
 
-  // Build a map of sourceType -> account name for already-linked sources
-  const linkedSourceMap = new Map<string, string>();
-  for (const acc of allAccounts) {
-    if (acc.linkedSourceType && acc.id !== account.id) {
-      linkedSourceMap.set(acc.linkedSourceType, acc.name);
-    }
-  }
-
   const onSubmit = async (data: AccountFormValues) => {
     const payload = {
       name: data.name,
       accountType: data.accountType,
       institution: data.institution || null,
-      linkedSourceType: data.linkedSourceType || null,
       creditLimit:
         data.creditLimit !== "" ? parseFloat(data.creditLimit) : null,
       interestRate:
@@ -195,46 +170,8 @@ export function AccountDetailsTab({ account }: AccountDetailsTabProps) {
               )}
             />
 
-            {/* Source Linking */}
-            <FormField
-              control={form.control}
-              name="linkedSourceType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Linked Statement Source (optional)</FormLabel>
-                  <Select
-                    value={field.value || "__none__"}
-                    onValueChange={(val) =>
-                      field.onChange(val === "__none__" ? "" : val)
-                    }
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a source..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="__none__">None</SelectItem>
-                      {sources.map((source) => {
-                        const alreadyLinkedTo = linkedSourceMap.get(source.sourceType);
-                        return (
-                          <SelectItem
-                            key={source.sourceType}
-                            value={source.sourceType}
-                          >
-                            {source.sourceType}
-                            {alreadyLinkedTo
-                              ? ` (linked to ${alreadyLinkedTo})`
-                              : ""}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* linkedSourceType removed — batch uploads now link statements
+                via the accountId FK directly, no manual source linking needed */}
 
             {/* Credit Card fields */}
             {accountType === "credit_card" && (
@@ -318,21 +255,7 @@ export function AccountDetailsTab({ account }: AccountDetailsTabProps) {
           </form>
         </Form>
 
-        {/* Linked source info section */}
-        {account.linkedSourceType ? (
-          <div className="mt-6 pt-4 border-t">
-            <p className="text-sm font-medium text-muted-foreground mb-2">
-              Linked Source
-            </p>
-            <Badge variant="secondary">{account.linkedSourceType}</Badge>
-          </div>
-        ) : (
-          <div className="mt-6 pt-4 border-t">
-            <p className="text-sm text-muted-foreground">
-              No statement source linked. Use the dropdown above to link a source.
-            </p>
-          </div>
-        )}
+        {/* Statement count info — statements are linked via account ID at import time */}
       </CardContent>
     </Card>
   );

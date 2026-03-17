@@ -102,12 +102,18 @@ async function cacheRates(rates: FxRates): Promise<void> {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + CACHE_DURATION_HOURS * 60 * 60 * 1000);
 
-    await db.insert(fxRatesCache).values({
-      baseCurrency: "USD",
-      rates,
-      fetchedAt: now,
-      expiresAt,
-    });
+    await db
+      .insert(fxRatesCache)
+      .values({
+        baseCurrency: "USD",
+        rates,
+        fetchedAt: now,
+        expiresAt,
+      })
+      .onConflictDoUpdate({
+        target: fxRatesCache.baseCurrency,
+        set: { rates, fetchedAt: now, expiresAt },
+      });
   } catch (error) {
     console.error("Failed to cache rates:", error);
   }

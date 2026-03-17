@@ -11,10 +11,10 @@ export default function VaultRoutePage() {
   return (
     <>
       <DashboardHeader
-        title="Vault"
+        title="Document Vault"
         breadcrumbs={[
-          { label: "subs Dash", href: "/payments/dashboard" },
-          { label: "Vault" },
+          { label: "Documents", href: "/payments/dashboard" },
+          { label: "Document Vault" },
         ]}
       />
       <main className="flex-1 p-4 md:p-6">

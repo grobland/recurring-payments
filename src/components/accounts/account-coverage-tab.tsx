@@ -13,14 +13,12 @@ interface AccountCoverageTabProps {
   accountId: string;
   account: FinancialAccount;
   onNavigateToTransactions: (dateFrom: string, dateTo: string) => void;
-  onNavigateToDetails: () => void;
 }
 
 export function AccountCoverageTab({
   accountId,
   account,
   onNavigateToTransactions,
-  onNavigateToDetails,
 }: AccountCoverageTabProps) {
   const router = useRouter();
   const { data, isLoading, isError, error, refetch } = useAccountCoverage(accountId);
@@ -71,15 +69,22 @@ export function AccountCoverageTab({
     );
   }
 
-  // Empty state: no linked source
-  if (!account.linkedSourceType) {
+  // Empty state: no sources returned by the API (account has no linked statements)
+  const sources = data?.sources ?? [];
+  const months = data?.months ?? [];
+
+  if (sources.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">
-          No statement source linked to this account.
+          No statements linked to this account yet.
         </p>
-        <Button variant="outline" className="mt-4" onClick={onNavigateToDetails}>
-          Go to Details to link a source
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => router.push("/vault/load")}
+        >
+          Import Statements
         </Button>
       </div>
     );
@@ -88,8 +93,8 @@ export function AccountCoverageTab({
   return (
     <div>
       <CoverageGrid
-        sources={data?.sources ?? []}
-        months={data?.months ?? []}
+        sources={sources}
+        months={months}
         onCellClick={handleCellClick}
       />
     </div>

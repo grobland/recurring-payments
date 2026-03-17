@@ -1,5 +1,4 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { format } from "date-fns";
 
 const BUCKET = "statements";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -7,15 +6,21 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 /**
  * Upload a PDF statement to Supabase Storage.
  *
- * Path format: {userId}/{yyyy-MM}/{sourceSlug-yyyy-MM}.pdf
- * Uses current date at upload time (statement date not yet known).
+ * Path format: {userId}/{sourceSlug}/{hashPrefix}-{originalFilename}.pdf
+ * Uses the file's SHA-256 hash prefix for uniqueness so each distinct file
+ * gets its own storage path.
  *
+ * @param file - The PDF file to upload
+ * @param userId - Owning user's UUID
+ * @param sourceType - Source name (e.g. "Lloyds Bank") — used as folder slug
+ * @param pdfHash - SHA-256 hex hash of the file (first 12 chars used in path)
  * @returns { path } on success, null on failure (non-fatal)
  */
 export async function uploadStatementPdf(
   file: File,
   userId: string,
-  sourceType: string
+  sourceType: string,
+  pdfHash?: string,
 ): Promise<{ path: string } | null> {
   if (!supabaseAdmin) {
     console.error("PDF storage upload failed: Supabase admin client not configured");
@@ -39,14 +44,22 @@ export async function uploadStatementPdf(
   }
 
   try {
-    const now = new Date();
-    const yearMonth = format(now, "yyyy-MM");
     const sourceSlug = sourceType
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9-]/g, "");
 
-    const path = `${userId}/${yearMonth}/${sourceSlug}-${yearMonth}.pdf`;
+    // Build a unique filename from the hash prefix + sanitised original name.
+    // If no hash provided, fall back to a timestamp for uniqueness.
+    const hashPrefix = pdfHash ? pdfHash.slice(0, 12) : Date.now().toString(36);
+    const safeName = file.name
+      .replace(/\.pdf$/i, "")
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .slice(0, 60);
+
+    const path = `${userId}/${sourceSlug}/${hashPrefix}-${safeName}.pdf`;
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
