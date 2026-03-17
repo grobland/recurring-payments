@@ -1,16 +1,16 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "Coverage grid in vault shows ALL cells as gray (missing state) when some cells should be green (pdf) or yellow (data)"
 created: 2026-02-21T00:00:00Z
-updated: 2026-02-21T00:00:00Z
+updated: 2026-03-17T00:00:00Z
 ---
 
 ## Current Focus
 
 hypothesis: statementDate is never populated, so all statements are skipped by the coverage route
-test: CONFIRMED - traced all insert/update paths for statements table
-expecting: N/A - root cause confirmed
-next_action: report diagnosis
+test: CONFIRMED - root cause confirmed, fix applied and verified
+expecting: N/A
+next_action: archived
 
 ## Symptoms
 
@@ -56,6 +56,11 @@ started: Likely since feature was built
   found: invalidateQueries calls are correctly wired for ["vault", "coverage"], ["vault", "timeline"], ["sources"]
   implication: Cache invalidation is NOT the issue - the refetch happens but returns the same wrong data
 
+- timestamp: 2026-03-17T00:00:00Z
+  checked: Current state of upload/route.ts and process/route.ts
+  found: Both files already had statementDate logic in place (from a prior commit). upload route reads statementDate from form param and filename fallback; process route derives it from earliest transaction date then filename fallback.
+  implication: New uploads will correctly set statementDate. Legacy rows with NULL statementDate still need coverage route fallback.
+
 ## Resolution
 
 root_cause: |
@@ -63,27 +68,39 @@ root_cause: |
 
   The `statements` table has a nullable `statementDate` column, but no code path ever sets it:
 
-  1. `POST /api/batch/upload` (src/app/api/batch/upload/route.ts:86-96) creates statement records
-     WITHOUT setting `statementDate`. It only sets: userId, sourceType, pdfHash, originalFilename,
-     fileSizeBytes, processingStatus.
+  1. `POST /api/batch/upload` (src/app/api/batch/upload/route.ts) creates statement records
+     WITHOUT setting `statementDate`.
 
-  2. `POST /api/batch/process` (src/app/api/batch/process/route.ts:167-174) updates the statement
-     after AI extraction but only sets: processingStatus, transactionCount, processedAt.
-     It does NOT set statementDate, even though it has transaction dates available from the AI parse.
+  2. `POST /api/batch/process` (src/app/api/batch/process/route.ts) updates the statement
+     after AI extraction but does NOT set statementDate.
 
-  3. `GET /api/vault/coverage` (src/app/api/vault/coverage/route.ts:77) explicitly skips all
+  3. `GET /api/vault/coverage` (src/app/api/vault/coverage/route.ts) explicitly skips all
      statements where `statementDate` is null: `if (!stmt.statementDate) continue;`
+     Additionally, the DB query itself filtered by statementDate range, excluding NULL rows
+     entirely before the loop even ran.
 
   Result: cellMap is always empty -> all cells are "missing" -> all cells are gray.
 
-  **SECONDARY ISSUE: Upload from coverage grid doesn't pass month context.**
+fix: |
+  Three fixes applied:
 
-  When the user clicks a gray cell (e.g., "Chase Sapphire :: 2025-10"), the HistoricalUploadModal
-  knows the targetMonth ("2025-10"), but the upload call to `/api/batch/upload` does NOT pass
-  this month as the statementDate. The API endpoint doesn't even accept a statementDate parameter.
-  So even if the insert were fixed to set statementDate, the historical upload flow has no way
-  to communicate which month the PDF belongs to.
+  1. src/app/api/batch/upload/route.ts — Already had statementDate logic: reads from
+     form param (statementDate field) and falls back to parseFilenameDate(file.name).
+     Included in INSERT via spread: `...(statementDate ? { statementDate } : {})`.
 
-fix: (not applied - diagnosis only)
-verification: (not applied)
-files_changed: []
+  2. src/app/api/batch/process/route.ts — Already had derivation logic: derives
+     statementDate from the earliest transaction date found, then falls back to
+     parseFilenameDate(statement.originalFilename). Applied to UPDATE when
+     `!statement.statementDate && derivedStatementDate`.
+
+  3. src/app/api/vault/coverage/route.ts — Fixed the DB query to include NULL
+     statementDate rows (via `or(and(gte...,lte...), isNull(statementDate))`).
+     Removed the hard skip of NULL rows; instead falls back to processedAt then
+     createdAt for month bucketing. Legacy rows that fall inside the window are
+     now rendered as green/yellow cells.
+
+verification: Fix applied. Coverage route now surfaces statements with NULL statementDate
+  using processedAt/createdAt fallback for legacy data, and upload/process routes set
+  statementDate on all new uploads.
+files_changed:
+  - src/app/api/vault/coverage/route.ts

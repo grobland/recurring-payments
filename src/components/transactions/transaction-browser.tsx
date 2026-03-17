@@ -38,7 +38,9 @@ const EMPTY_MESSAGES: Record<PaymentType, string> = {
 export function TransactionBrowser() {
   const [filters, setFilters] = useState<TransactionFiltersType>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Ref is updated synchronously on every render so handleBulkTag never sees a stale Set
   const selectedIdsRef = useRef(selectedIds);
+  selectedIdsRef.current = selectedIds;
   const isMobile = useIsMobile();
 
   const { isDismissed: isHintDismissed, dismiss: dismissHint } = useHintDismissals();
@@ -49,11 +51,6 @@ export function TransactionBrowser() {
     "paymentType",
     parseAsStringLiteral(PAYMENT_TYPES).withDefault("all")
   );
-
-  // Sync ref with state for handleBulkTag callback
-  useEffect(() => {
-    selectedIdsRef.current = selectedIds;
-  }, [selectedIds]);
 
   // Debounce search input (300ms)
   const debouncedSearch = useDebouncedValue(filters.search, 300);

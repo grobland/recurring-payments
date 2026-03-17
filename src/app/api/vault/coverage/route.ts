@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { statements } from "@/lib/db/schema";
-import { eq, gte, lte, and, sql } from "drizzle-orm";
+import { eq, gte, lte, and, or, isNull, sql } from "drizzle-orm";
 import { startOfMonth, subMonths, addMonths, format, parseISO } from "date-fns";
 
 /**
@@ -48,7 +48,10 @@ export async function GET(request: Request) {
       cursor = addMonths(cursor, 1);
     }
 
-    // Fetch statements in the date window
+    // Fetch statements in the date window.
+    // Include statements whose statementDate falls in the window OR whose
+    // statementDate is NULL (legacy rows) — those will be mapped using
+    // processedAt or createdAt as a fallback month indicator.
     const windowStatements = await db
       .select({
         id: statements.id,
@@ -56,13 +59,20 @@ export async function GET(request: Request) {
         statementDate: statements.statementDate,
         transactionCount: statements.transactionCount,
         pdfStoragePath: statements.pdfStoragePath,
+        processedAt: statements.processedAt,
+        createdAt: statements.createdAt,
       })
       .from(statements)
       .where(
         and(
           eq(statements.userId, userId),
-          gte(statements.statementDate, windowStart),
-          lte(statements.statementDate, windowEnd)
+          or(
+            and(
+              gte(statements.statementDate, windowStart),
+              lte(statements.statementDate, windowEnd)
+            ),
+            isNull(statements.statementDate)
+          )
         )
       );
 
@@ -97,27 +107,43 @@ export async function GET(request: Request) {
     const cellMap = new Map<string, CellRecord>();
 
     for (const stmt of windowStatements) {
-      // Skip statements with null statementDate — they have no month to map to
-      if (!stmt.statementDate) continue;
+      // Resolve which date to use for month bucketing.
+      // Prefer statementDate; fall back to processedAt then createdAt for
+      // legacy rows where statementDate was never populated.
+      const dateForBucket =
+        stmt.statementDate ??
+        stmt.processedAt ??
+        stmt.createdAt;
 
-      const monthLabel = format(
-        stmt.statementDate instanceof Date
-          ? stmt.statementDate
-          : new Date(stmt.statementDate),
-        "yyyy-MM"
-      );
+      if (!dateForBucket) continue;
+
+      const bucketDate =
+        dateForBucket instanceof Date ? dateForBucket : new Date(dateForBucket);
+
+      // Skip if the fallback date falls outside the requested window
+      if (bucketDate < windowStart || bucketDate > windowEnd) continue;
+
+      const monthLabel = format(bucketDate, "yyyy-MM");
       const key = `${stmt.sourceType}::${monthLabel}`;
       const hasPdf = stmt.pdfStoragePath !== null;
+
+      // Use statementDate when available; otherwise expose the fallback date
+      // so the client knows roughly when this statement belongs to.
+      const resolvedDateIso = (stmt.statementDate ?? bucketDate).toISOString
+        ? (stmt.statementDate instanceof Date
+            ? stmt.statementDate
+            : stmt.statementDate
+              ? new Date(stmt.statementDate)
+              : bucketDate
+          ).toISOString()
+        : bucketDate.toISOString();
 
       const existing = cellMap.get(key);
       if (!existing) {
         cellMap.set(key, {
           statementId: stmt.id,
           transactionCount: stmt.transactionCount || 0,
-          statementDate:
-            stmt.statementDate instanceof Date
-              ? stmt.statementDate.toISOString()
-              : String(stmt.statementDate),
+          statementDate: resolvedDateIso,
           hasPdf,
         });
       } else if (hasPdf && !existing.hasPdf) {
@@ -125,10 +151,7 @@ export async function GET(request: Request) {
         cellMap.set(key, {
           statementId: stmt.id,
           transactionCount: stmt.transactionCount || 0,
-          statementDate:
-            stmt.statementDate instanceof Date
-              ? stmt.statementDate.toISOString()
-              : String(stmt.statementDate),
+          statementDate: resolvedDateIso,
           hasPdf,
         });
       }
