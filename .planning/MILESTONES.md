@@ -1,5 +1,43 @@
 # Milestones: Subscription Manager
 
+## v3.2 "UX & Performance" (2026-03-03 → 2026-03-17)
+
+**Goal:** Complete deferred UX improvements and performance optimization.
+
+**What shipped:**
+- Overlap detection surfacing same-category subscription redundancies with per-group dismissible badges
+- Contextual onboarding hints on all 5 empty-data screens with persistent localStorage dismissal
+- Sidebar redesign with plain English labels, 4 logical groups, and warm oklch theme (light + dark)
+- Bundle analyzer setup with treemap reports and Lighthouse baseline documentation
+- Dynamic imports for recharts and react-pdf reducing initial page load bundle
+- optimizePackageImports for lucide-react in next.config.ts
+
+**Phases completed:** 4 (Phases 43-46)
+- Phase 43: Overlap Detection (2 plans)
+- Phase 44: Onboarding Hints (2 plans)
+- Phase 45: Sidebar Redesign (1 plan)
+- Phase 46: Performance Audit (2 plans)
+
+**Requirements:** 19/19 complete
+- OVRLP-01 through OVRLP-03 (Overlap Detection)
+- ONBRD-01 through ONBRD-06 (Onboarding Hints)
+- SIDE-01 through SIDE-06 (Sidebar Redesign)
+- PERF-01 through PERF-04 (Performance)
+
+**Key decisions:**
+- Confidence thresholds 80/50 for overlap detection (conservative to reduce false positives)
+- Warm oklch hues: light mode cream (h80) + peach accent (h70), dark mode charcoal (h55) + amber accent (h65)
+- --webpack flag for bundle analyzer (Next.js 16 defaults to Turbopack which is incompatible)
+- cross-env for Windows-compatible ANALYZE=true in npm scripts
+- Server Components can't use ssr:false in next/dynamic — client wrapper pattern used
+
+**Also fixed (post-milestone):**
+- Coverage grid all-gray bug (statementDate never populated → fallback to processedAt/createdAt)
+- Bulk tagging stale closure (useEffect ref sync → synchronous inline assignment)
+- Tag management UI confirmed already implemented
+
+---
+
 ## v3.1 "Test & Export" (2026-03-02 → 2026-03-03)
 
 **Goal:** Establish E2E test infrastructure and ship CSV export with security hardening.

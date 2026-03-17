@@ -10,9 +10,10 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ## Current State
 
-**Version:** v3.1 Test & Export (shipped 2026-03-03)
-**Codebase:** ~48,100 lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
+**Version:** v3.2 UX & Performance (shipped 2026-03-17)
+**Codebase:** ~50,000+ lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
 **Production URL:** https://recurring-payments.vercel.app
+**Milestones shipped:** 10 (v1.0 → v3.2), 46 phases, 122 plans, 167+ requirements validated
 
 **Current capabilities:**
 - Restructured navigation with 3 sections (fin Vault, payments Portal, Support)
@@ -173,17 +174,17 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - ✓ CSV export sanitizes formula injection characters (CWE-1236 prevention) — v3.1
 - ✓ CSV files include UTF-8 BOM for correct Excel rendering of international characters — v3.1
 
+**v3.2 UX & Performance:**
+- ✓ Overlap detection with same-category badge and per-group dismissal — v3.2
+- ✓ Onboarding hints on all 5 empty-data screens with persistent dismissal — v3.2
+- ✓ Sidebar redesign with plain English labels, warm oklch theme, 4 logical groups — v3.2
+- ✓ Bundle treemap and Lighthouse baseline documented — v3.2
+- ✓ Dynamic imports for recharts and react-pdf — v3.2
+- ✓ optimizePackageImports for lucide-react — v3.2
+
 ### Active
 
-## Current Milestone: v3.2 UX & Performance
-
-**Goal:** Complete deferred UX improvements and performance optimization — overlap detection, onboarding hints, sidebar redesign, and bundle/Lighthouse audit.
-
-**Target features:**
-- Overlap Detection — surface same-category subscription redundancies with dismissible badges
-- Onboarding Hints — contextual empty-state guidance with persistent dismissal
-- Sidebar Redesign — plain English labels, warm visual design, logical grouping
-- Performance Audit — bundle treemap, Lighthouse baseline, dynamic imports
+(No active milestone — ready for v4.0 planning)
 
 ### Out of Scope
 
@@ -216,7 +217,7 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ## Context
 
-**Codebase state:** v3.1 complete. Full subscription management platform with structured navigation, financial account management, data vault, billing, monetization, admin tools, CSV export with security hardening, and E2E test coverage. All 159 requirements across 9 milestones validated.
+**Codebase state:** v3.2 complete. Full subscription management platform with structured navigation, financial account management, data vault, billing, monetization, admin tools, CSV export, E2E tests, overlap detection, onboarding hints, warm sidebar design, and performance optimization. All 186 requirements across 10 milestones validated.
 
 **Known issues:**
 - Email delivery requires verified Resend domain (RESEND_FROM_EMAIL)
@@ -298,4 +299,4 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | BOM at transport level only | createCSVResponse adds BOM, objectsToCSV does not (prevents double-BOM) | ✓ Good |
 
 ---
-*Last updated: 2026-03-03 after v3.2 milestone started*
+*Last updated: 2026-03-17 after v3.2 milestone completed*
