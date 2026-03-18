@@ -74,6 +74,28 @@ export const documentTypeEnum = pgEnum("document_type", [
   "loan",
 ]);
 
+// v4.0: Recurring Payment Intelligence enums
+export const recurringKindEnum = pgEnum("recurring_kind", [
+  "subscription",
+  "utility",
+  "insurance",
+  "loan",
+  "rent_mortgage",
+  "membership",
+  "installment",
+  "other_recurring",
+]);
+
+export const recurringStatusEnum = pgEnum("recurring_status", [
+  "active",
+  "paused",
+  "cancelled",
+  "dormant",
+  "needs_review",
+]);
+
+export const amountTypeEnum = pgEnum("amount_type", ["fixed", "variable"]);
+
 // ============ USERS TABLE ============
 
 export const users = pgTable("users", {
@@ -706,6 +728,10 @@ export const transactions = pgTable(
       { onDelete: "set null" }
     ),
 
+    // v4.0: Recurring payment support
+    normalizedDescription: text("normalized_description"), // nullable — populated by ingestion pipeline
+    sourceHash: varchar("source_hash", { length: 64 }), // nullable — statement-line-origin hash for dedup
+
     // Timestamps
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -717,6 +743,7 @@ export const transactions = pgTable(
     index("transactions_fingerprint_idx").on(table.fingerprint),
     index("transactions_tag_status_idx").on(table.tagStatus),
     index("transactions_date_idx").on(table.transactionDate),
+    uniqueIndex("transactions_user_source_hash_idx").on(table.userId, table.sourceHash),
   ]
 );
 
@@ -832,6 +859,290 @@ export const trialExtensions = pgTable(
   ]
 );
 
+// ============ MERCHANT ENTITIES TABLE ============
+// NOTE: Trigram GIN indexes for fuzzy matching added via raw SQL in migration (pg_trgm extension required)
+
+export const merchantEntities = pgTable(
+  "merchant_entities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    normalizedName: varchar("normalized_name", { length: 255 }).notNull(),
+    category: varchar("category", { length: 100 }),
+    website: text("website"),
+    logoUrl: text("logo_url"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("merchant_entities_user_id_idx").on(table.userId),
+    uniqueIndex("merchant_entities_user_normalized_name_idx").on(table.userId, table.normalizedName),
+  ]
+);
+
+// ============ MERCHANT ALIASES TABLE ============
+// NOTE: Trigram GIN indexes for fuzzy matching added via raw SQL in migration (pg_trgm extension required)
+
+export const merchantAliases = pgTable(
+  "merchant_aliases",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    merchantEntityId: uuid("merchant_entity_id")
+      .notNull()
+      .references(() => merchantEntities.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    aliasText: varchar("alias_text", { length: 255 }).notNull(),
+    isUserDefined: boolean("is_user_defined").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("merchant_aliases_merchant_entity_id_idx").on(table.merchantEntityId),
+    index("merchant_aliases_user_id_idx").on(table.userId),
+    uniqueIndex("merchant_aliases_user_alias_text_idx").on(table.userId, table.aliasText),
+  ]
+);
+
+// ============ RECURRING SERIES TABLE ============
+
+export const recurringSeries = pgTable(
+  "recurring_series",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    merchantEntityId: uuid("merchant_entity_id")
+      .references(() => merchantEntities.id, { onDelete: "set null" }),
+
+    // Cadence info
+    detectedFrequency: varchar("detected_frequency", { length: 50 }), // "monthly", "yearly", "weekly", "quarterly", "custom"
+    intervalDays: integer("interval_days"),
+    dayOfMonth: integer("day_of_month"),
+
+    // Amount statistics
+    amountType: amountTypeEnum("amount_type"),
+    avgAmount: decimal("avg_amount", { precision: 10, scale: 2 }),
+    minAmount: decimal("min_amount", { precision: 10, scale: 2 }),
+    maxAmount: decimal("max_amount", { precision: 10, scale: 2 }),
+    amountStddev: decimal("amount_stddev", { precision: 10, scale: 4 }),
+    currency: varchar("currency", { length: 3 }),
+
+    // Detection metadata
+    confidence: decimal("confidence", { precision: 5, scale: 4 }), // 0.0000 to 1.0000
+    transactionCount: integer("transaction_count").default(0).notNull(),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    nextExpectedAt: timestamp("next_expected_at", { withTimezone: true }),
+
+    // Status
+    isActive: boolean("is_active").default(true).notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("recurring_series_user_id_idx").on(table.userId),
+    index("recurring_series_merchant_entity_id_idx").on(table.merchantEntityId),
+    index("recurring_series_active_idx").on(table.userId, table.isActive),
+  ]
+);
+
+// ============ RECURRING SERIES TRANSACTIONS (Junction) ============
+
+export const recurringSeriesTransactions = pgTable(
+  "recurring_series_transactions",
+  {
+    seriesId: uuid("series_id")
+      .notNull()
+      .references(() => recurringSeries.id, { onDelete: "cascade" }),
+    transactionId: uuid("transaction_id")
+      .notNull()
+      .references(() => transactions.id, { onDelete: "cascade" }),
+    matchConfidence: decimal("match_confidence", { precision: 5, scale: 4 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.seriesId, table.transactionId] }),
+    index("rst_series_id_idx").on(table.seriesId),
+    index("rst_transaction_id_idx").on(table.transactionId),
+  ]
+);
+
+// ============ RECURRING MASTERS TABLE ============
+
+export const recurringMasters = pgTable(
+  "recurring_masters",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    merchantEntityId: uuid("merchant_entity_id")
+      .references(() => merchantEntities.id, { onDelete: "set null" }),
+    categoryId: uuid("category_id")
+      .references(() => categories.id, { onDelete: "set null" }),
+
+    // Identity
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    notes: text("notes"),
+    url: text("url"),
+
+    // Classification
+    recurringKind: recurringKindEnum("recurring_kind").notNull(),
+    status: recurringStatusEnum("status").default("active").notNull(),
+
+    // Amount expectations
+    amountType: amountTypeEnum("amount_type"),
+    expectedAmount: decimal("expected_amount", { precision: 10, scale: 2 }),
+    expectedAmountMin: decimal("expected_amount_min", { precision: 10, scale: 2 }),
+    expectedAmountMax: decimal("expected_amount_max", { precision: 10, scale: 2 }),
+    currency: varchar("currency", { length: 3 }).notNull(),
+
+    // Billing
+    billingFrequency: varchar("billing_frequency", { length: 50 }), // "monthly", "yearly", "weekly", "quarterly", "custom"
+    billingDayOfMonth: integer("billing_day_of_month"),
+    nextExpectedDate: timestamp("next_expected_date", { withTimezone: true }),
+    lastChargeDate: timestamp("last_charge_date", { withTimezone: true }),
+
+    // Confidence & user control
+    confidence: decimal("confidence", { precision: 5, scale: 4 }),
+    importanceRating: integer("importance_rating"), // 1-5 user rating
+
+    // Timestamps
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("recurring_masters_user_id_idx").on(table.userId),
+    index("recurring_masters_merchant_entity_id_idx").on(table.merchantEntityId),
+    index("recurring_masters_user_status_idx").on(table.userId, table.status),
+    index("recurring_masters_user_kind_idx").on(table.userId, table.recurringKind),
+    index("recurring_masters_next_expected_date_idx").on(table.nextExpectedDate),
+  ]
+);
+
+// ============ RECURRING MASTER SERIES LINKS (Junction) ============
+
+export const recurringMasterSeriesLinks = pgTable(
+  "recurring_master_series_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    recurringMasterId: uuid("recurring_master_id")
+      .notNull()
+      .references(() => recurringMasters.id, { onDelete: "cascade" }),
+    seriesId: uuid("series_id")
+      .notNull()
+      .references(() => recurringSeries.id, { onDelete: "cascade" }),
+    isPrimary: boolean("is_primary").default(false).notNull(),
+    linkedAt: timestamp("linked_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("rmsl_master_series_idx").on(table.recurringMasterId, table.seriesId),
+    index("rmsl_recurring_master_id_idx").on(table.recurringMasterId),
+    index("rmsl_series_id_idx").on(table.seriesId),
+  ]
+);
+
+// ============ USER TRANSACTION LABELS TABLE ============
+
+export const userTransactionLabels = pgTable(
+  "user_transaction_labels",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    transactionId: uuid("transaction_id")
+      .notNull()
+      .references(() => transactions.id, { onDelete: "cascade" }),
+    label: varchar("label", { length: 50 }).notNull(), // "recurring", "not_recurring", "ignore"
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("utl_user_transaction_idx").on(table.userId, table.transactionId),
+    index("utl_user_id_idx").on(table.userId),
+    index("utl_transaction_id_idx").on(table.transactionId),
+    index("utl_label_idx").on(table.userId, table.label),
+  ]
+);
+
+// ============ REVIEW QUEUE ITEMS TABLE ============
+
+export const reviewQueueItems = pgTable(
+  "review_queue_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // What needs review
+    itemType: varchar("item_type", { length: 50 }).notNull(), // "new_series", "amount_change", "descriptor_change", "unmatched"
+    seriesId: uuid("series_id")
+      .references(() => recurringSeries.id, { onDelete: "cascade" }),
+    recurringMasterId: uuid("recurring_master_id")
+      .references(() => recurringMasters.id, { onDelete: "cascade" }),
+    transactionId: uuid("transaction_id")
+      .references(() => transactions.id, { onDelete: "cascade" }),
+
+    // Suggestion
+    confidence: decimal("confidence", { precision: 5, scale: 4 }),
+    suggestedAction: jsonb("suggested_action").$type<{
+      action: string;
+      targetMasterId?: string;
+      reason?: string;
+    }>(),
+
+    // Resolution
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    resolution: varchar("resolution", { length: 50 }), // "confirmed", "ignored", "linked", "created_new", "not_recurring"
+    resolutionNotes: text("resolution_notes"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("review_queue_user_id_idx").on(table.userId),
+    index("review_queue_unresolved_idx").on(table.userId, table.resolvedAt),
+    index("review_queue_series_id_idx").on(table.seriesId),
+    index("review_queue_item_type_idx").on(table.userId, table.itemType),
+  ]
+);
+
+// ============ RECURRING EVENTS TABLE ============
+// Append-only audit trail — no updatedAt
+
+export const recurringEvents = pgTable(
+  "recurring_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    recurringMasterId: uuid("recurring_master_id")
+      .references(() => recurringMasters.id, { onDelete: "cascade" }),
+
+    // Event details
+    eventType: varchar("event_type", { length: 50 }).notNull(), // "created", "linked", "unlinked", "amount_changed", "paused", "cancelled", "reactivated", "merged"
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("recurring_events_user_id_idx").on(table.userId),
+    index("recurring_events_master_id_idx").on(table.recurringMasterId),
+    index("recurring_events_created_at_idx").on(table.createdAt),
+    index("recurring_events_event_type_idx").on(table.eventType),
+  ]
+);
+
 // ============ RELATIONS ============
 
 export const financialAccountsRelations = relations(
@@ -860,6 +1171,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   tags: many(tags),
   trialExtensions: many(trialExtensions),
   financialAccounts: many(financialAccounts),
+  // v4.0 additions
+  merchantEntities: many(merchantEntities),
+  merchantAliases: many(merchantAliases),
+  recurringSeries: many(recurringSeries),
+  recurringMasters: many(recurringMasters),
+  userTransactionLabels: many(userTransactionLabels),
+  reviewQueueItems: many(reviewQueueItems),
+  recurringEvents: many(recurringEvents),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -1003,6 +1322,9 @@ export const transactionsRelations = relations(transactions, ({ one, many }) => 
     references: [subscriptions.id],
   }),
   transactionTags: many(transactionTags),
+  // v4.0 additions
+  recurringSeriesTransactions: many(recurringSeriesTransactions),
+  userTransactionLabels: many(userTransactionLabels),
 }));
 
 export const tagsRelations = relations(tags, ({ one, many }) => ({
@@ -1094,3 +1416,92 @@ export type AccountType = "bank_debit" | "credit_card" | "loan";
 export type StatementLineItem = typeof statementLineItems.$inferSelect;
 export type NewStatementLineItem = typeof statementLineItems.$inferInsert;
 export type DocumentType = "bank_debit" | "credit_card" | "loan";
+
+// ============ v4.0 RELATIONS ============
+
+export const merchantEntitiesRelations = relations(merchantEntities, ({ one, many }) => ({
+  user: one(users, { fields: [merchantEntities.userId], references: [users.id] }),
+  aliases: many(merchantAliases),
+  recurringSeries: many(recurringSeries),
+  recurringMasters: many(recurringMasters),
+}));
+
+export const merchantAliasesRelations = relations(merchantAliases, ({ one }) => ({
+  merchantEntity: one(merchantEntities, { fields: [merchantAliases.merchantEntityId], references: [merchantEntities.id] }),
+  user: one(users, { fields: [merchantAliases.userId], references: [users.id] }),
+}));
+
+export const recurringSeriesRelations = relations(recurringSeries, ({ one, many }) => ({
+  user: one(users, { fields: [recurringSeries.userId], references: [users.id] }),
+  merchantEntity: one(merchantEntities, { fields: [recurringSeries.merchantEntityId], references: [merchantEntities.id] }),
+  seriesTransactions: many(recurringSeriesTransactions),
+  masterLinks: many(recurringMasterSeriesLinks),
+}));
+
+export const recurringSeriesTransactionsRelations = relations(recurringSeriesTransactions, ({ one }) => ({
+  series: one(recurringSeries, { fields: [recurringSeriesTransactions.seriesId], references: [recurringSeries.id] }),
+  transaction: one(transactions, { fields: [recurringSeriesTransactions.transactionId], references: [transactions.id] }),
+}));
+
+export const recurringMastersRelations = relations(recurringMasters, ({ one, many }) => ({
+  user: one(users, { fields: [recurringMasters.userId], references: [users.id] }),
+  merchantEntity: one(merchantEntities, { fields: [recurringMasters.merchantEntityId], references: [merchantEntities.id] }),
+  category: one(categories, { fields: [recurringMasters.categoryId], references: [categories.id] }),
+  seriesLinks: many(recurringMasterSeriesLinks),
+  events: many(recurringEvents),
+}));
+
+export const recurringMasterSeriesLinksRelations = relations(recurringMasterSeriesLinks, ({ one }) => ({
+  recurringMaster: one(recurringMasters, { fields: [recurringMasterSeriesLinks.recurringMasterId], references: [recurringMasters.id] }),
+  series: one(recurringSeries, { fields: [recurringMasterSeriesLinks.seriesId], references: [recurringSeries.id] }),
+}));
+
+export const userTransactionLabelsRelations = relations(userTransactionLabels, ({ one }) => ({
+  user: one(users, { fields: [userTransactionLabels.userId], references: [users.id] }),
+  transaction: one(transactions, { fields: [userTransactionLabels.transactionId], references: [transactions.id] }),
+}));
+
+export const reviewQueueItemsRelations = relations(reviewQueueItems, ({ one }) => ({
+  user: one(users, { fields: [reviewQueueItems.userId], references: [users.id] }),
+  series: one(recurringSeries, { fields: [reviewQueueItems.seriesId], references: [recurringSeries.id] }),
+  recurringMaster: one(recurringMasters, { fields: [reviewQueueItems.recurringMasterId], references: [recurringMasters.id] }),
+  transaction: one(transactions, { fields: [reviewQueueItems.transactionId], references: [transactions.id] }),
+}));
+
+export const recurringEventsRelations = relations(recurringEvents, ({ one }) => ({
+  user: one(users, { fields: [recurringEvents.userId], references: [users.id] }),
+  recurringMaster: one(recurringMasters, { fields: [recurringEvents.recurringMasterId], references: [recurringMasters.id] }),
+}));
+
+// ============ v4.0 TYPE EXPORTS ============
+
+export type MerchantEntity = typeof merchantEntities.$inferSelect;
+export type NewMerchantEntity = typeof merchantEntities.$inferInsert;
+
+export type MerchantAlias = typeof merchantAliases.$inferSelect;
+export type NewMerchantAlias = typeof merchantAliases.$inferInsert;
+
+export type RecurringSeries = typeof recurringSeries.$inferSelect;
+export type NewRecurringSeries = typeof recurringSeries.$inferInsert;
+
+export type RecurringSeriesTransaction = typeof recurringSeriesTransactions.$inferSelect;
+export type NewRecurringSeriesTransaction = typeof recurringSeriesTransactions.$inferInsert;
+
+export type RecurringMaster = typeof recurringMasters.$inferSelect;
+export type NewRecurringMaster = typeof recurringMasters.$inferInsert;
+
+export type RecurringMasterSeriesLink = typeof recurringMasterSeriesLinks.$inferSelect;
+export type NewRecurringMasterSeriesLink = typeof recurringMasterSeriesLinks.$inferInsert;
+
+export type UserTransactionLabel = typeof userTransactionLabels.$inferSelect;
+export type NewUserTransactionLabel = typeof userTransactionLabels.$inferInsert;
+
+export type ReviewQueueItem = typeof reviewQueueItems.$inferSelect;
+export type NewReviewQueueItem = typeof reviewQueueItems.$inferInsert;
+
+export type RecurringEvent = typeof recurringEvents.$inferSelect;
+export type NewRecurringEvent = typeof recurringEvents.$inferInsert;
+
+export type RecurringKind = "subscription" | "utility" | "insurance" | "loan" | "rent_mortgage" | "membership" | "installment" | "other_recurring";
+export type RecurringStatus = "active" | "paused" | "cancelled" | "dormant" | "needs_review";
+export type AmountType = "fixed" | "variable";

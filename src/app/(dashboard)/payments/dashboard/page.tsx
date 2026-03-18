@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PeriodSelector, getPeriodIdFromParams } from "@/components/dashboard/period-selector";
 import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
 import { PatternSuggestionsCard } from "@/components/dashboard/pattern-suggestions-card";
+import { RecurringDashboardCard } from "@/components/recurring/recurring-dashboard-card";
 
 const CategoryChart = dynamic(
   () => import("@/components/dashboard/category-chart").then((m) => ({ default: m.CategoryChart })),
@@ -134,6 +135,9 @@ export default function DashboardPage() {
 
         {/* Pattern Suggestions - only renders if patterns exist */}
         <PatternSuggestionsCard />
+
+        {/* Recurring Summary Card */}
+        <RecurringDashboardCard />
 
         {/* Analytics Stat Cards */}
         <AnalyticsCards params={analyticsParams} />

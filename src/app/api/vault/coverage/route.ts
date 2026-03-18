@@ -129,14 +129,12 @@ export async function GET(request: Request) {
 
       // Use statementDate when available; otherwise expose the fallback date
       // so the client knows roughly when this statement belongs to.
-      const resolvedDateIso = (stmt.statementDate ?? bucketDate).toISOString
-        ? (stmt.statementDate instanceof Date
-            ? stmt.statementDate
-            : stmt.statementDate
-              ? new Date(stmt.statementDate)
-              : bucketDate
-          ).toISOString()
-        : bucketDate.toISOString();
+      const resolvedDate = stmt.statementDate instanceof Date
+        ? stmt.statementDate
+        : stmt.statementDate
+          ? new Date(stmt.statementDate)
+          : bucketDate;
+      const resolvedDateIso = resolvedDate.toISOString();
 
       const existing = cellMap.get(key);
       if (!existing) {

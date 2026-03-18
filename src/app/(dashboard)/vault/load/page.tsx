@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ArrowRight } from "lucide-react";
 import { DashboardHeader } from "@/components/layout";
-import { BatchUploader } from "@/components/batch/batch-uploader";
+import { BatchUploaderWithStats } from "@/components/vault/batch-uploader";
 import { IncompleteBatchBanner } from "@/components/sources/incomplete-batch-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -92,7 +92,7 @@ export default function BatchImportPage() {
               </CardContent>
             </Card>
           ) : (
-            <BatchUploader onComplete={handleComplete} />
+            <BatchUploaderWithStats onComplete={handleComplete} />
           )}
 
           {/* Help text */}

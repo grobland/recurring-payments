@@ -1,8 +1,9 @@
 "use client";
 
-import { X, Search } from "lucide-react";
+import { X, Search, TrendingUp, Unlink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Toggle } from "@/components/ui/toggle";
 import {
   Select,
   SelectContent,
@@ -68,7 +69,27 @@ export function TransactionFilters({
   };
 
   const clearFilters = () => {
-    onFiltersChange({});
+    onFiltersChange({ recurringOnly: undefined, unmatchedOnly: undefined });
+  };
+
+  const handleRecurringOnlyChange = () => {
+    if (filters.recurringOnly) {
+      // Deselect
+      onFiltersChange({ ...filters, recurringOnly: undefined });
+    } else {
+      // Select recurring-only, clear unmatched (mutually exclusive)
+      onFiltersChange({ ...filters, recurringOnly: true, unmatchedOnly: undefined });
+    }
+  };
+
+  const handleUnmatchedOnlyChange = () => {
+    if (filters.unmatchedOnly) {
+      // Deselect
+      onFiltersChange({ ...filters, unmatchedOnly: undefined });
+    } else {
+      // Select unmatched-only, clear recurring (mutually exclusive)
+      onFiltersChange({ ...filters, unmatchedOnly: true, recurringOnly: undefined });
+    }
   };
 
   const hasActiveFilters =
@@ -76,7 +97,9 @@ export function TransactionFilters({
     filters.sourceType ||
     filters.tagStatus ||
     filters.dateFrom ||
-    filters.dateTo;
+    filters.dateTo ||
+    filters.recurringOnly ||
+    filters.unmatchedOnly;
 
   return (
     <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-4 mb-4">
@@ -145,6 +168,28 @@ export function TransactionFilters({
             placeholder="To"
           />
         </div>
+
+        {/* Recurring / Unmatched Toggles */}
+        <Toggle
+          pressed={!!filters.recurringOnly}
+          onPressedChange={handleRecurringOnlyChange}
+          size="sm"
+          aria-label="Show recurring transactions only"
+          className="gap-1.5 h-9 px-3 data-[state=on]:bg-green-100 data-[state=on]:text-green-800 dark:data-[state=on]:bg-green-950 dark:data-[state=on]:text-green-300"
+        >
+          <TrendingUp className="h-3.5 w-3.5" />
+          Recurring only
+        </Toggle>
+        <Toggle
+          pressed={!!filters.unmatchedOnly}
+          onPressedChange={handleUnmatchedOnlyChange}
+          size="sm"
+          aria-label="Show unmatched transactions only"
+          className="gap-1.5 h-9 px-3 data-[state=on]:bg-amber-100 data-[state=on]:text-amber-800 dark:data-[state=on]:bg-amber-950 dark:data-[state=on]:text-amber-300"
+        >
+          <Unlink className="h-3.5 w-3.5" />
+          Unmatched only
+        </Toggle>
 
         {/* Clear Filters Button */}
         <Button

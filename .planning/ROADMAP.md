@@ -12,6 +12,7 @@
 - ✅ **v3.0 Navigation & Account Vault** — Phases 35-40 (shipped 2026-02-27)
 - ✅ **v3.1 Test & Export** — Phases 41-42 (shipped 2026-03-03)
 - ✅ **v3.2 UX & Performance** — Phases 43-46 (shipped 2026-03-17)
+- ✅ **v4.0 Recurring Payment Intelligence** — Phases 47-51 (shipped 2026-03-18)
 
 ## Phases
 
@@ -121,6 +122,17 @@
 
 </details>
 
+<details>
+<summary>✅ v4.0 Recurring Payment Intelligence (Phases 47-51) — SHIPPED 2026-03-18</summary>
+
+- [x] Phase 47: Schema & Domain Model (2 plans) — completed 2026-03-17
+- [x] Phase 48: Ingestion Pipeline & Merchant Resolution (3 plans) — completed 2026-03-18
+- [x] Phase 49: Recurrence Detection & Auto-Linking (3 plans) — completed 2026-03-18
+- [x] Phase 50: APIs & Review Queue (2 plans) — completed 2026-03-18
+- [x] Phase 51: UI Screens & Verification (4 plans) — completed 2026-03-18
+
+</details>
+
 ## Progress
 
 | Milestone | Phases | Plans | Status | Shipped |
@@ -135,8 +147,9 @@
 | v3.0 Navigation & Account Vault | 35-40 | 12 | Complete | 2026-02-27 |
 | v3.1 Test & Export | 41-42 | 5 | Complete | 2026-03-03 |
 | v3.2 UX & Performance | 43-46 | 7 | Complete | 2026-03-17 |
+| v4.0 Recurring Payment Intelligence | 47-51 | 14 | Complete | 2026-03-18 |
 
-**Total:** 46 phases, 122 plans across 10 milestones
+**Total:** 51 phases complete (136 plans) across 11 milestones
 
 ---
-*Last updated: 2026-03-17 — v3.2 shipped*
+*Last updated: 2026-03-18 — v4.0 milestone shipped*

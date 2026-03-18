@@ -16,6 +16,11 @@ import { parseTextForSubscriptions } from "@/lib/openai/pdf-parser";
 import { extractBankLineItems, extractCreditCardLineItems, extractLoanLineItems } from "@/lib/openai/line-item-extractor";
 import { generateTransactionFingerprint } from "@/lib/utils/file-hash";
 import { parseFilenameDate } from "@/lib/utils/parse-filename-date";
+import { normalizeMerchantDescriptor } from "@/lib/utils/merchant-normalization";
+import { isTransferOrRefund } from "@/lib/utils/transfer-detection";
+import { generateSourceHash } from "@/lib/utils/source-hash";
+import { resolveMerchant } from "@/lib/services/merchant-resolver";
+import { detectAndLinkRecurrences, type RecurrenceOrchestrationResult } from "@/lib/services/recurrence-orchestrator";
 
 // Helper to extract text from PDF buffer server-side using pdf2json
 async function extractPdfTextServer(buffer: Buffer): Promise<string> {
@@ -330,6 +335,145 @@ export async function POST(request: Request) {
         }
       }
 
+      // ── v4.0 Ingestion Pipeline: normalize, deduplicate, resolve merchants ──
+      let normalizedTransactionCount = 0;
+
+      if (lineItemCount > 0) {
+        console.log(`[batch/process] Starting v4.0 ingestion pipeline for ${lineItemCount} line items`);
+
+        // Read back the inserted line items for this statement
+        const lineItems = await db
+          .select()
+          .from(statementLineItems)
+          .where(eq(statementLineItems.statementId, statementId))
+          .orderBy(statementLineItems.sequenceNumber);
+
+        const normalizedTransactions: Array<{
+          statementId: string;
+          userId: string;
+          transactionDate: Date;
+          merchantName: string;
+          amount: string;
+          currency: string;
+          description: string | null;
+          fingerprint: string;
+          tagStatus: "unreviewed";
+          normalizedDescription: string;
+          sourceHash: string;
+          aiMetadata: { extractedAt: string; model: string; pipeline: string };
+        }> = [];
+
+        for (const lineItem of lineItems) {
+          // Skip line items with no amount (opening balances, info lines)
+          if (lineItem.amount == null) {
+            continue;
+          }
+
+          // Skip line items with no transaction date
+          if (lineItem.transactionDate == null) {
+            continue;
+          }
+
+          // Compute source hash for deduplication
+          const sourceHash = generateSourceHash(statementId, lineItem.sequenceNumber);
+
+          // Check if this transaction already exists (idempotent reprocessing)
+          const existing = await db
+            .select({ id: transactions.id })
+            .from(transactions)
+            .where(
+              and(
+                eq(transactions.userId, session.user!.id),
+                eq(transactions.sourceHash, sourceHash)
+              )
+            )
+            .limit(1);
+
+          if (existing.length > 0) {
+            continue; // Already processed — skip
+          }
+
+          // Normalize the description
+          const normalizedDesc = normalizeMerchantDescriptor(lineItem.description);
+
+          // Skip empty normalized descriptions
+          if (!normalizedDesc) {
+            continue;
+          }
+
+          // Generate fingerprint for the normalized transaction
+          const amount = parseFloat(lineItem.amount);
+          const fingerprint = generateTransactionFingerprint(
+            normalizedDesc,
+            Math.abs(amount),
+            lineItem.transactionDate,
+            lineItem.currency || accountCurrency
+          );
+
+          normalizedTransactions.push({
+            statementId,
+            userId: session.user!.id,
+            transactionDate: lineItem.transactionDate,
+            merchantName: normalizedDesc,
+            amount: lineItem.amount,
+            currency: lineItem.currency || accountCurrency,
+            description: lineItem.description,
+            fingerprint,
+            tagStatus: "unreviewed" as const,
+            normalizedDescription: normalizedDesc,
+            sourceHash,
+            aiMetadata: {
+              extractedAt: new Date().toISOString(),
+              model: "gpt-4o-mini",
+              pipeline: "v4.0-ingestion",
+            },
+          });
+        }
+
+        // Batch insert normalized transactions
+        if (normalizedTransactions.length > 0) {
+          await db.insert(transactions).values(normalizedTransactions);
+          normalizedTransactionCount = normalizedTransactions.length;
+          console.log(`[batch/process] Inserted ${normalizedTransactionCount} normalized transactions`);
+        }
+
+        // Resolve merchants for non-transfer transactions
+        let merchantResolvedCount = 0;
+        for (const txn of normalizedTransactions) {
+          if (isTransferOrRefund(txn.description || txn.normalizedDescription)) {
+            continue; // Skip transfers and refunds for merchant resolution
+          }
+
+          try {
+            await resolveMerchant(db, session.user!.id, txn.normalizedDescription);
+            merchantResolvedCount++;
+          } catch (err) {
+            console.error(
+              `[batch/process] Merchant resolution failed for "${txn.normalizedDescription}" (non-fatal):`,
+              err instanceof Error ? err.message : err
+            );
+          }
+        }
+
+        console.log(`[batch/process] Resolved ${merchantResolvedCount} merchants (${normalizedTransactions.length - merchantResolvedCount} transfers/refunds skipped)`);
+      }
+
+      // ── v4.0 Recurrence Detection: detect patterns and link to masters ──
+      let recurrenceResult: RecurrenceOrchestrationResult | null = null;
+      if (normalizedTransactionCount > 0 || lineItemCount > 0) {
+        console.log(`[batch/process] Starting recurrence detection for user ${session.user!.id}`);
+        recurrenceResult = await detectAndLinkRecurrences(db, session.user!.id);
+        if (recurrenceResult) {
+          console.log(
+            `[batch/process] Recurrence detection complete: ` +
+            `${recurrenceResult.detection.detectedSeries.length} series, ` +
+            `${recurrenceResult.linking.mastersCreated} new masters, ` +
+            `${recurrenceResult.linking.reviewItemsCreated} review items ` +
+            `(${recurrenceResult.durationMs}ms)`
+          );
+        }
+      }
+
       // Update statement as complete
       await db
         .update(statements)
@@ -349,6 +493,10 @@ export async function POST(request: Request) {
         transactionCount: transactionRecords.length,
         lineItemCount,
         potentialCount,
+        normalizedTransactionCount,
+        recurrenceDetected: recurrenceResult?.detection.detectedSeries.length ?? 0,
+        mastersCreated: recurrenceResult?.linking.mastersCreated ?? 0,
+        reviewItemsCreated: recurrenceResult?.linking.reviewItemsCreated ?? 0,
         processingTime: parseResult.processingTime,
       });
     } catch (parseError) {

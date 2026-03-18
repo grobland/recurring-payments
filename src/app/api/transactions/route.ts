@@ -181,6 +181,8 @@ export async function GET(request: Request) {
       rawText: transactions.rawText,
       aiMetadata: transactions.aiMetadata,
       convertedToSubscriptionId: transactions.convertedToSubscriptionId,
+      normalizedDescription: transactions.normalizedDescription,
+      sourceHash: transactions.sourceHash,
       createdAt: transactions.createdAt,
       sourceType: statements.sourceType,
     };

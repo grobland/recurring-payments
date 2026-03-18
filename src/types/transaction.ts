@@ -22,6 +22,10 @@ export interface TransactionFilters {
   accountId?: string;
   /** Payment type filter: all | recurring | subscriptions | one-time */
   paymentType?: PaymentType;
+  /** Show only transactions linked to a recurring series */
+  recurringOnly?: boolean;
+  /** Show only transactions NOT linked to any recurring series */
+  unmatchedOnly?: boolean;
 }
 
 /**

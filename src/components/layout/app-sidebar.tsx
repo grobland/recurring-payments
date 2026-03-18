@@ -25,6 +25,8 @@ import {
   Landmark,
   Lightbulb,
   TableProperties,
+  RefreshCcw,
+  ClipboardCheck,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -65,6 +67,7 @@ const overviewItems = [
   { title: "Dashboard", href: "/payments/dashboard", icon: LayoutDashboard },
   { title: "Analytics", href: "/payments/analytics", icon: BarChart3 },
   { title: "Forecast", href: "/payments/forecast", icon: TrendingUp },
+  { title: "Recurring", href: "/recurring", icon: RefreshCcw },
 ];
 
 const manageItems = [
@@ -72,6 +75,7 @@ const manageItems = [
   { title: "Subscriptions", href: "/payments/subscriptions", icon: CreditCard },
   { title: "Suggestions", href: "/payments/suggestions", icon: Lightbulb },
   { title: "Reminders", href: "/payments/reminders", icon: Bell },
+  { title: "Review Queue", href: "/recurring/review", icon: ClipboardCheck },
 ];
 
 const supportItems = [
@@ -82,7 +86,7 @@ const supportItems = [
 
 function isNavItemActive(pathname: string, href: string): boolean {
   // Items with child routes use prefix match; others use exact match
-  const prefixMatchItems = ["/payments/subscriptions", "/settings"];
+  const prefixMatchItems = ["/payments/subscriptions", "/settings", "/recurring"];
   if (prefixMatchItems.includes(href)) {
     return pathname === href || pathname.startsWith(`${href}/`);
   }

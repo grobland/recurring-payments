@@ -1,5 +1,63 @@
 # Milestones: Subscription Manager
 
+## v4.0 "Recurring Payment Intelligence" (2026-03-17 → 2026-03-18)
+
+**Goal:** Build a recurring payment detection and management system that uploads PDF statements, extracts transactions, detects recurring payments of all types, auto-links to existing masters, and provides a review queue for user oversight.
+
+**What shipped:**
+- Three-layer domain model (transactions → recurring_series → recurring_masters) with 10 new tables, 3 enums, and trigram GIN indexes for fuzzy merchant matching
+- Complete PDF ingestion pipeline with merchant normalization, transfer/refund detection, source hash deduplication, and 3-step merchant entity resolution (exact → fuzzy → create new)
+- Recurrence detection engine with 5 rule types (alias hit, fixed monthly, variable monthly, annual, weekly/quarterly/custom) and confidence-scored auto-linking (≥0.85 auto, 0.60-0.84 review queue, <0.60 unmatched)
+- Full REST API layer (14 endpoints) including review queue with 4-way resolution (confirm/link/ignore/not-recurring), master CRUD/merge/status, and dashboard aggregate summary
+- Eight new UI screens: dashboard recurring card, review queue with confidence badges, recurring master list with filter tabs, master detail with series chain and event log, merchant alias settings, enhanced batch uploader with processing stats, statement line items with recurring context, and transaction filter toggles
+- 134 unit tests across detector (29), linker (45), orchestrator (7), and utilities (53)
+
+**Phases completed:** 5 (Phases 47-51)
+- Phase 47: Schema & Domain Model (2 plans)
+- Phase 48: Ingestion Pipeline & Merchant Resolution (3 plans)
+- Phase 49: Recurrence Detection & Auto-Linking (3 plans)
+- Phase 50: APIs & Review Queue (2 plans)
+- Phase 51: UI Screens & Verification (4 plans)
+
+**Stats:**
+- 14 plans, 66 commits
+- 101 files changed (+22,161 / -49 lines)
+- ~59,846 lines TypeScript total
+- 2 days development
+
+**Requirements:** 70/72 complete (SCHEMA-07 column removal deferred, SEC-03 documentation gap)
+- SCHEMA-01 through SCHEMA-17 (Schema & Domain Model)
+- INGEST-01 through INGEST-10 (Ingestion Pipeline)
+- MERCH-01 through MERCH-05 (Merchant Resolution)
+- DETECT-01 through DETECT-10 (Recurrence Detection)
+- LINK-01 through LINK-09 (Auto-Linking & Matching)
+- API-01 through API-07 (REST APIs)
+- UI-01 through UI-08 (UI Screens)
+- SEC-01, SEC-02, SEC-04 (Security & Privacy)
+
+**Key decisions:**
+- Three-layer model: transactions → recurring_series → recurring_masters (not flat)
+- Milestone branch (feature/recurring-payments-refactor) — schema changes too large for trunk-based
+- Trigram GIN indexes via raw SQL in migration (Drizzle DSL limitation)
+- merchantEntities scoped to userId (not global shared catalog)
+- Ingestion pipeline added purely additively — existing subscription detection flow untouched
+- Merchant resolution errors non-fatal per-transaction
+- detectPatternForGroup extracted as pure function for testability without DB mocks
+- shouldAutoLink ≥0.85 / shouldCreateReviewItem 0.60-0.84 (non-overlapping thresholds)
+- Orchestrator errors non-fatal — pipeline continues to statement completion
+
+**Known gaps:**
+- SCHEMA-07: subscription-specific column removal deferred to post-v4.0 stabilization
+- SEC-03: Audit trail functionally present but never formally closed in verification
+- LINK-09: account_migration event type not emitted (core linking works via merchantEntityId grouping)
+
+**Tech debt:**
+- zodResolver cast as any in recurring-master-table.tsx (TS2719 workaround)
+- recurringOnly/unmatchedOnly filters use tagStatus proxy
+- pg_trgm extension must be enabled in Supabase before migration 0014
+
+---
+
 ## v3.2 "UX & Performance" (2026-03-03 → 2026-03-17)
 
 **Goal:** Complete deferred UX improvements and performance optimization.

@@ -3,6 +3,10 @@
   "model_profile": "balanced",
   "workflow": {
     "research": false,
-    "_auto_chain_active": false
+    "_auto_chain_active": true
+  },
+  "branching": {
+    "strategy": "milestone",
+    "milestone_branch_template": "feature/{milestone_slug}"
   }
 }

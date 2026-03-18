@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A web application for tracking and managing recurring subscriptions with Stripe-powered billing, a financial data vault, and structured account management. Users can add subscriptions manually or import them from bank statement PDFs using AI-powered extraction. Features include batch PDF import with full statement data retention, PDF storage and in-app viewing, a vault for browsing and organizing original bank statements, coverage visualization with historical upload support, financial account management (Bank/Debit, Credit Card, Loan) with per-account detail pages showing coverage, transactions, and spending, a virtualized transaction browser with payment type filtering, manual tagging and one-click conversion, AI-powered pattern detection, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, category management, CSV data export with formula injection protection, three-tier paid subscriptions (Primary/Enhanced/Advanced), feature gating with upgrade prompts, customer portal for subscription management, admin tools for trial extensions and webhook monitoring, static support pages (data schema viewer, help/FAQ), and E2E test coverage with 23 Playwright tests.
+A web application for tracking and managing all recurring payments — subscriptions, bills, utilities, loans, and more — with automatic detection from bank statement PDFs. Users upload PDF statements and the system automatically extracts transactions, resolves merchants via fuzzy matching, detects recurring patterns using 5 detection rules, and auto-links to existing records with confidence scoring. Features include a three-layer domain model (transactions → series → masters), review queue for ambiguous matches, merchant alias management, batch PDF import with full statement data retention, PDF storage and in-app viewing, a vault for browsing and organizing original bank statements, coverage visualization with historical upload support, financial account management (Bank/Debit, Credit Card, Loan) with per-account detail pages, a virtualized transaction browser with recurring/unmatched filter toggles, manual tagging and one-click conversion, AI-powered pattern detection, comprehensive spending analytics with forecasting, duplicate detection, anomaly alerts, email reminders before renewals, category management, CSV data export with formula injection protection, three-tier paid subscriptions (Primary/Enhanced/Advanced), feature gating with upgrade prompts, customer portal for subscription management, admin tools for trial extensions and webhook monitoring, static support pages, and E2E test coverage.
 
 ## Core Value
 
@@ -10,53 +10,39 @@ Users can see all their subscriptions in one place and never get surprised by a 
 
 ## Current State
 
-**Version:** v3.2 UX & Performance (shipped 2026-03-17)
-**Codebase:** ~50,000+ lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
+**Version:** v4.0 Recurring Payment Intelligence (shipped 2026-03-18)
+**Codebase:** ~59,846 lines TypeScript, Next.js 16 + Supabase + OpenAI + Stripe
 **Production URL:** https://recurring-payments.vercel.app
-**Milestones shipped:** 10 (v1.0 → v3.2), 46 phases, 122 plans, 167+ requirements validated
+**Milestones shipped:** 11 (v1.0 → v4.0), 51 phases, 136 plans, 239 requirements validated
+**Branch:** feature/recurring-payments-refactor (not yet merged to master)
 
-**Current capabilities:**
-- Restructured navigation with 3 sections (fin Vault, payments Portal, Support)
-- Financial account management (Bank/Debit, Credit Card, Loan) with type-specific fields
-- Account detail pages with 4 tabs (Details, Coverage, Transactions, Spending)
-- Source-to-account linking with automatic assignment during batch import
-- Payment type selector with recurring/one-time filtering and nuqs URL persistence
-- Data Schema viewer (21-table card grid) and Help FAQ (6-category accordion)
-- 308 permanent redirects for all moved URLs (bookmark compatibility)
-- Batch PDF import with drag-and-drop and duplicate detection
-- PDF storage in Supabase Storage with non-fatal degradation
-- In-app PDF viewer with page navigation and download
-- Vault UI with file cabinet view (source-grouped) and timeline calendar grid
-- Coverage heat map showing PDF/data/missing per source per month
-- Historical upload wizard for filling coverage gaps
-- Full statement data retention (all line items, not just subscriptions)
-- Virtualized transaction browser with keyset pagination (10k+ items at 60fps)
-- Manual tagging with inline combobox and bulk operations
-- One-click subscription conversion with 8-second undo
-- Source dashboard with coverage visualization and gap detection
-- AI-powered pattern detection with auto-tagging during import
-- Suggestions page for accepting/dismissing detected patterns
-- Full subscription CRUD with category management
-- Dashboard with spending analytics (period selector, stat cards, category chart)
-- Spending trends (month-over-month, year-over-year, per-category)
-- Spending forecasting with calendar view and fan charts
-- Duplicate detection during import and background scanning
-- Anomaly alerts (price increases, missed renewals)
-- Notification bell UI with weekly digest emails
-- Email reminders before renewals
-- CSV export for subscriptions and transactions with formula injection protection (CWE-1236) and UTF-8 BOM
-- Three-tier billing (Primary/Enhanced/Advanced) with Stripe Checkout
-- Feature gating with upgrade prompts for locked features
-- Stripe customer portal for subscription management (tier switching, billing)
-- Grandfathering (original pricing preserved when prices change)
-- Voucher/promotion code support in checkout
-- Admin trial extension UI with audit trail
-- Admin webhook monitoring dashboard
-- Admin RBAC with role-based layout and API guards
-- Production-ready error tracking (Sentry)
-- Mobile-responsive design with polished UX
-- Structured logging and health monitoring
-- 23 Playwright E2E tests covering auth, subscriptions, vault, analytics, billing, accounts, export, and onboarding
+**Current capabilities (v4.0 additions):**
+- Three-layer recurring payment model: transactions → recurring_series → recurring_masters
+- 10 new database tables with 3 enums, trigram GIN indexes for fuzzy merchant matching
+- PDF ingestion pipeline: upload → extract → normalize → deduplicate → resolve merchants → detect recurrence → link masters → generate review items
+- Merchant normalization stripping processor prefixes, business suffixes, geo codes
+- 3-step merchant resolution: exact alias match → fuzzy trigram similarity → create new entity
+- Transfer and refund detection to filter non-recurring transactions
+- Source hash (SHA-256) deduplication preventing duplicate transactions on re-upload
+- 5 recurrence detection rules: alias hit, fixed monthly, variable monthly, annual, weekly/quarterly/custom
+- Confidence-scored auto-linking: ≥0.85 auto-link, 0.60-0.84 review queue, <0.60 unmatched
+- Amount change detection with threshold-based review items
+- User manual decisions (recurring/not-recurring/ignore) override future automation
+- 14 new REST API endpoints for recurring series, masters, review queue, dashboard, merchants
+- Review queue with 4-way resolution (confirm/link/ignore/not-recurring) and audit trail
+- Recurring master CRUD with merge, status changes, and event logging
+- Dashboard recurring card showing active counts, monthly totals, upcoming, needs-review
+- Recurring master list with filter tabs (all/subscriptions/bills/needs-review/paused)
+- Recurring master detail with series chain, event log, and inline editing
+- Merchant alias settings page for managing descriptor-to-entity mappings
+- Enhanced batch uploader with post-processing stats
+- Statement line items with merchant badge, recurring status, and user action buttons
+- Transaction browser with recurring-only and unmatched-only filter toggles
+- 134 unit tests for detection, linking, orchestration, and utilities
+
+**Carried forward from v3.2:**
+- All previous capabilities remain (navigation, accounts, vault, billing, analytics, etc.)
+- 23 Playwright E2E tests (not updated for v4.0 yet)
 
 ## Requirements
 
@@ -182,9 +168,24 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - ✓ Dynamic imports for recharts and react-pdf — v3.2
 - ✓ optimizePackageImports for lucide-react — v3.2
 
+**v4.0 Recurring Payment Intelligence:**
+- ✓ Three-layer domain model with 10 new tables, 3 enums, trigram indexes — v4.0
+- ✓ PDF ingestion pipeline with 10-step processing chain — v4.0
+- ✓ Merchant normalization and 3-step resolution (exact/fuzzy/create) — v4.0
+- ✓ Source hash deduplication preventing duplicate transactions — v4.0
+- ✓ Transfer and refund detection filtering non-recurring items — v4.0
+- ✓ 5 recurrence detection rules (alias, fixed monthly, variable monthly, annual, weekly/quarterly) — v4.0
+- ✓ Confidence-scored auto-linking with review queue for ambiguous matches — v4.0
+- ✓ 14 REST API endpoints for recurring payment management — v4.0
+- ✓ Review queue with 4-way resolution and audit trail — v4.0
+- ✓ 8 UI screens for complete recurring payment lifecycle — v4.0
+- ✓ Merchant alias management settings page — v4.0
+- ✓ 134 unit tests for detection, linking, and utilities — v4.0
+- ⚠ SCHEMA-07 column removal deferred to post-v4.0 stabilization — v4.0 (partial)
+
 ### Active
 
-(No active milestone — ready for v4.0 planning)
+(No active milestone — ready for v4.1+ planning)
 
 ### Out of Scope
 
@@ -214,39 +215,47 @@ Users can see all their subscriptions in one place and never get surprised by a 
 - Account merge/deduplicate UI — trust-destroying in financial context
 - Live DB introspection for schema viewer — security risk; static metadata is correct
 - Account balance tracking — requires bank API or manual entry
+- Global shared merchant catalog — scoped to userId for now; shared catalog adds trust/privacy concerns
+- Auto-remove subscription-specific columns — existing features still depend on them; defer to stabilization phase
+- ML-based recurrence detection — heuristic rules sufficient for v4.0; ML requires training data
 
 ## Context
 
-**Codebase state:** v3.2 complete. Full subscription management platform with structured navigation, financial account management, data vault, billing, monetization, admin tools, CSV export, E2E tests, overlap detection, onboarding hints, warm sidebar design, and performance optimization. All 186 requirements across 10 milestones validated.
+**Codebase state:** v4.0 complete. Full recurring payment intelligence platform with automatic detection from PDF statements, merchant resolution, review queue, plus all previous capabilities (navigation, accounts, vault, billing, analytics, admin). 239 requirements across 11 milestones validated.
 
 **Known issues:**
 - Email delivery requires verified Resend domain (RESEND_FROM_EMAIL)
 - Sentry requires DSN configuration for error tracking (NEXT_PUBLIC_SENTRY_DSN)
+- pg_trgm extension must be enabled in Supabase before migration 0014 can run
+- Migration 0014 not yet applied to production database
+- v4.0 work on feature/recurring-payments-refactor branch — not yet merged to master
 - auth() called twice in import route (minor inefficiency)
-- Analytics FeatureGate wraps BASIC_ANALYTICS (primary tier) — never visibly locks for current users
 - Existing statements with NULL statementDate remain gray in coverage grid until re-import or backfill
-- Old dead-code route files remain at original locations (308 redirects handle compatibility)
 
 **Tech debt:**
-- Hooks not re-exported from central index (use-duplicate-scan, useTrends, useForecast*, useAlerts, useTags, useAccount*, etc.)
+- SCHEMA-07: subscription-specific column removal deferred (tagStatus, convertedToSubscriptionId, etc. still used by live features)
+- zodResolver cast as any in recurring-master-table.tsx and AccountForm (TS2719 workaround)
+- recurringOnly/unmatchedOnly filters use tagStatus proxy (recurringSeriesId not in transactions API response)
+- Hooks not re-exported from central index (use-duplicate-scan, useTrends, useForecast*, useAlerts, useTags, useAccount*, use-recurring, etc.)
 - Logging infrastructure (withLogging, actionLog) created but not adopted by all API routes
-- EvidenceList URL params don't pre-filter transactions (minor UX enhancement)
 - PdfStatusIcon duplicated locally in 4 files (6-line component, intentional)
-- zodResolver cast as any in AccountForm (z.coerce.number() TypeScript workaround)
-- PaymentTypeSelector absent from AccountTransactionsTab (low severity enhancement)
+- Existing subscriptions table needs migration path to recurring_masters (future milestone)
+- Existing recurring_patterns table may need migration to recurring_series (future milestone)
 
 **Env vars needed:**
 - NEXT_PUBLIC_SUPABASE_URL (browser-side storage)
 - NEXT_PUBLIC_SUPABASE_ANON_KEY (browser-side storage)
 - SUPABASE_SERVICE_ROLE_KEY (server-side uploads — no NEXT_PUBLIC_ prefix)
 
-**Database migrations (12 total):**
+**Database migrations (14 total):**
 - 0001-0006: Core schema, analytics MV, patterns, alerts, statements, tags
 - 0007-0008: Webhook events, stripe prices
 - 0009: Stripe price seeding
 - 0010: User role enum for admin RBAC
 - 0011: financial_accounts table, accountTypeEnum, accountId FK on statements
 - 0012: linkedSourceType column on financial_accounts
+- 0013: (reserved)
+- 0014: v4.0 recurring payment tables — 3 enums, 9 tables, trigram GIN indexes, partial unique index on source_hash (requires pg_trgm extension)
 
 **Codebase documentation:** See `.planning/codebase/` for detailed architecture, stack, conventions, and concerns analysis.
 
@@ -297,6 +306,16 @@ Users can see all their subscriptions in one place and never get surprised by a 
 | Chromium+Firefox only in Playwright | Webkit/Mobile Chrome add no value for Next.js app | ✓ Good |
 | Formula injection tab-prefix | CWE-1236 prevention inside escapeCSVValue (private function) | ✓ Good |
 | BOM at transport level only | createCSVResponse adds BOM, objectsToCSV does not (prevents double-BOM) | ✓ Good |
+| Three-layer domain model | transactions → series → masters enables detection + user management separation | ✓ Good |
+| Milestone branch for v4.0 | Schema changes too large for trunk-based; rollback tag for safety | ✓ Good |
+| Trigram GIN indexes via raw SQL | Drizzle DSL cannot express GIN + pg_trgm operator class | ✓ Good |
+| merchantEntities scoped to userId | Privacy-first; global catalog deferred | ✓ Good |
+| Additive ingestion pipeline | Existing subscription detection flow untouched; v4.0 steps appended | ✓ Good |
+| Non-fatal merchant resolution | One bad descriptor cannot halt entire batch | ✓ Good |
+| Pure function detectPatternForGroup | All rules testable without DB mock complexity | ✓ Good |
+| Non-overlapping confidence thresholds | ≥0.85 auto, 0.60-0.84 review, <0.60 unmatched — clear boundaries | ✓ Good |
+| Non-fatal orchestrator | Detection errors don't block statement completion | ✓ Good |
+| db.transaction() per merchant group | Respects 3-connection pool limit | ✓ Good |
 
 ---
-*Last updated: 2026-03-17 after v3.2 milestone completed*
+*Last updated: 2026-03-18 after v4.0 milestone completed*

@@ -56,6 +56,7 @@ export function TransactionBrowser() {
   const debouncedSearch = useDebouncedValue(filters.search, 300);
 
   // Create debounced filters for the query — paymentType combined with existing filters (FILTER-03)
+  // recurringOnly / unmatchedOnly are passed through but applied as client-side filters below
   const debouncedFilters = useMemo(
     () => ({
       ...filters,
@@ -66,7 +67,7 @@ export function TransactionBrowser() {
   );
 
   const {
-    allTransactions,
+    allTransactions: rawTransactions,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -75,6 +76,23 @@ export function TransactionBrowser() {
     error,
     refetch,
   } = useTransactions(debouncedFilters);
+
+  // Client-side filter for recurringOnly / unmatchedOnly
+  // Uses tagStatus as a proxy: recurring = potential_subscription | converted
+  // unmatched = unreviewed | not_subscription
+  const allTransactions = useMemo(() => {
+    if (filters.recurringOnly) {
+      return rawTransactions.filter(
+        (t) => t.tagStatus === "potential_subscription" || t.tagStatus === "converted"
+      );
+    }
+    if (filters.unmatchedOnly) {
+      return rawTransactions.filter(
+        (t) => t.tagStatus === "unreviewed" || t.tagStatus === "not_subscription"
+      );
+    }
+    return rawTransactions;
+  }, [rawTransactions, filters.recurringOnly, filters.unmatchedOnly]);
 
   const bulkTagMutation = useBulkTagTransactions();
 
@@ -215,13 +233,15 @@ export function TransactionBrowser() {
   }, [allTransactions]);
 
   // Check if we have active filters (for empty state messaging)
-  // Includes paymentType !== 'all' as an active filter
+  // Includes paymentType !== 'all' and recurringOnly/unmatchedOnly toggles
   const hasActiveFilters =
     filters.search ||
     filters.sourceType ||
     filters.tagStatus ||
     filters.dateFrom ||
     filters.dateTo ||
+    filters.recurringOnly ||
+    filters.unmatchedOnly ||
     paymentType !== "all";
 
   // Shared filter controls — PaymentTypeSelector above TransactionFilters (FILTER-01)
@@ -303,7 +323,7 @@ export function TransactionBrowser() {
             </div>
             <Button
               onClick={() => {
-                setFilters({});
+                setFilters({ recurringOnly: undefined, unmatchedOnly: undefined });
                 setPaymentType("all");
               }}
               variant="outline"

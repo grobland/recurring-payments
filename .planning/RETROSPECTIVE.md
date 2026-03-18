@@ -2,6 +2,55 @@
 
 *A living document updated after each milestone. Lessons feed forward into future planning.*
 
+## Milestone: v4.0 — Recurring Payment Intelligence
+
+**Shipped:** 2026-03-18
+**Phases:** 5 | **Plans:** 14
+
+### What Was Built
+- Three-layer domain model (transactions → recurring_series → recurring_masters) with 10 new tables
+- PDF ingestion pipeline with merchant normalization, deduplication, and 3-step resolution
+- Recurrence detection engine with 5 rule types and confidence-scored auto-linking
+- 14 REST API endpoints for recurring payment management and review queue
+- 8 UI screens covering the full recurring payment lifecycle
+- 134 unit tests for detection, linking, orchestration, and utilities
+
+### What Worked
+- Pure function extraction for detection rules — all 5 rules testable without DB mocks
+- Non-fatal error patterns throughout: merchant resolution, orchestrator, dashboard card all gracefully degrade
+- Additive pipeline approach — existing subscription detection flow completely untouched
+- Milestone branch with rollback tag (pre-recurring-payments-refactor) provided safety net for large schema changes
+- Integration checker caught that Phase 51 "orphaned" components were actually already wired (commits happened after VERIFICATION.md was written)
+- Confidence threshold separation (auto/review/unmatched) eliminates ambiguity in linking decisions
+
+### What Was Inefficient
+- Phase 51 VERIFICATION.md documented gaps (BatchUploaderWithStats, StatementLineItems orphaned) that were already fixed by post-verification commits — verification happened mid-session before final wiring
+- SUMMARY.md frontmatter `requirements_completed` incomplete for Phases 48-49 — many requirements verified in VERIFICATION.md but not listed in SUMMARY frontmatter
+- SEC-03 fell through the cracks — deferred in Phase 48 VERIFICATION, functionally satisfied by Phases 49-50, but never formally closed in any VERIFICATION
+- Phase 51 plan checkboxes in ROADMAP.md remained [ ] unchecked despite all 4 SUMMARYs existing — stale ROADMAP state
+
+### Patterns Established
+- merchantEntityId-based grouping for cross-account recurring payment detection (account-agnostic by design)
+- Non-overlapping confidence thresholds: ≥0.85 auto, 0.60-0.84 review, <0.60 unmatched
+- recurringEvents append-only audit trail pattern for all state changes
+- Trigram GIN indexes via raw SQL appended to Drizzle migration (DSL limitation workaround)
+- db.transaction() per merchant group to respect 3-connection pool limit
+
+### Key Lessons
+1. Verify AFTER all commits are done — mid-session verification creates stale gap reports
+2. Deferred requirements need explicit "picked up by" tracking to prevent orphaning (SEC-03 pattern)
+3. Non-fatal error handling at every pipeline stage is critical for financial data processing — one bad transaction shouldn't block an entire batch
+4. Additive pipeline design (append steps, don't modify existing) minimizes regression risk for large features
+5. Pure function extraction for complex business logic (detection rules) enables comprehensive TDD
+6. Migration branch + rollback tag is the right strategy for schema-heavy milestones
+
+### Cost Observations
+- Model mix: balanced profile (sonnet for subagents, opus for orchestration)
+- 66 commits across 2 days
+- Notable: 22,161 lines added across 101 files — largest single-milestone code addition
+
+---
+
 ## Milestone: v3.1 — Test & Export
 
 **Shipped:** 2026-03-03
@@ -111,6 +160,8 @@
 | v2.2 | 4 | 9 | Financial data vault + PDF storage |
 | v3.0 | 6 | 12 | Navigation restructure + account management |
 | v3.1 | 2 | 5 | E2E test infrastructure + CSV export (smallest milestone) |
+| v3.2 | 4 | 7 | UX polish + performance audit |
+| v4.0 | 5 | 14 | Recurring payment intelligence (largest code addition: +22k lines) |
 
 ### Cumulative Stats
 
@@ -125,13 +176,18 @@
 | v2.2 | 98 | 120 | ~48,000 |
 | v3.0 | 110 | 152 | ~47,800 |
 | v3.1 | 115 | 159 | ~48,100 |
+| v3.2 | 122 | 167 | ~50,000 |
+| v4.0 | 136 | 239 | ~59,846 |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Sequential processing prevents memory exhaustion (PDF processing v2.0, maintained through v3.0)
-2. Keyset pagination scales better than OFFSET (v2.0, reused in v3.0 account transactions)
+1. Sequential processing prevents memory exhaustion (PDF processing v2.0, maintained through v4.0)
+2. Keyset pagination scales better than OFFSET (v2.0, reused in v3.0 and v4.0 API endpoints)
 3. Self-contained components beat shared-state modification (v2.0 TransactionBrowser, v3.0 AccountTransactionsTab)
 4. Static data for reference pages beats live DB introspection (v3.0 schema viewer — security + simplicity)
 5. Audit-driven gap closure works (v2.1 Phases 29-30, v3.0 Phase 40 after audit)
 6. TDD for security features produces comprehensive test coverage (v3.1 CSV formula injection — 21 unit tests from RED-GREEN cycle)
 7. test.skip with phase comments enables zero-rework test activation across milestones (v3.1 Phase 41 → 42)
+8. Non-fatal error handling at every pipeline stage is essential for financial data (v4.0 — merchant resolution, orchestrator, dashboard card)
+9. Pure function extraction enables comprehensive TDD without DB mocks (v4.0 — 134 tests for detection rules)
+10. Verify AFTER all commits — mid-session verification creates stale gap reports (v4.0 — Phase 51 orphaned component false alarm)

@@ -28,6 +28,7 @@ import {
 import { ReimportWizard } from "@/components/sources/reimport-wizard";
 import { PdfViewerModal } from "@/components/statements/pdf-viewer-modal";
 import { LineItemsTable } from "@/components/statements/line-items-table";
+import { StatementLineItems } from "@/components/statements/statement-line-items";
 
 function PdfStatusIcon({ hasPdf }: { hasPdf: boolean }) {
   return (
@@ -315,9 +316,9 @@ export function StatementDetail({ statementId }: StatementDetailProps) {
           </div>
         </TabsContent>
 
-        {/* Ledger tab — all line items */}
+        {/* Ledger tab — all line items with recurring status */}
         <TabsContent value="ledger">
-          <LineItemsTable statementId={statementId} />
+          <StatementLineItems statementId={statementId} />
         </TabsContent>
       </Tabs>
 
