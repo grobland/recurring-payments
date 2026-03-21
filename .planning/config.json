@@ -3,7 +3,8 @@
   "model_profile": "balanced",
   "workflow": {
     "research": false,
-    "_auto_chain_active": true
+    "_auto_chain_active": true,
+    "nyquist_validation": true
   },
   "branching": {
     "strategy": "milestone",
